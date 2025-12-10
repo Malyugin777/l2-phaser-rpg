@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>L2 Phaser RPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        height: 100%;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        color: #f8f9ff;
+      }
+
+      #game-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at top, #181830 0, #050510 60%);
+      }
+
+      canvas {
+        border-radius: 8px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+        image-rendering: pixelated;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #111320;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #424767;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #5c6188;
+      }
+    </style>
+  </head>
+ <body>
+  <div id="game-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
+
+<script src="state/heroState.js"></script>
+<script src="state/worldState.js"></script>
+<script src="state/enemyState.js"></script>
+
+
+<script src="state/mercenarySystem.js"></script>
+<script src="state/autoHuntSystem.js"></script>
+<script src="state/overdriveSystem.js"></script>
+<script src="state/economySystem.js"></script>
+<script src="state/itemSystem.js"></script>
+<script src="state/combatSystem.js"></script>
+<script src="state/progressionSystem.js"></script>
+<script src="state/arenaSystem.js"></script>
+<script src="state/dungeonSystem.js"></script>
+<script src="state/skillSystem.js"></script>
+<script src="state/locationSystem.js"></script>
+<script src="state/uiSystem.js"></script>
+<script src="./state/skillDb.js"></script>
+<script src="state/spSystem.js"></script>
+
+<script src="ui/inventoryPanel.js"></script>
+<script src="ui/statsPanel.js"></script>
+<script src="ui/forgePanel.js"></script>
+<script src="ui/questsPanel.js"></script>
+<script src="ui/shopPanel.js"></script>
+<script src="ui/arenaPanel.js"></script>
+<script src="ui/dungeonPanel.js"></script>
+<script src="ui/mapPanel.js"></script>
+<script src="ui/selectionScreen.js"></script>
+
+<script src="game.js"></script>
+
+
+</body>
+
+
+</html>
