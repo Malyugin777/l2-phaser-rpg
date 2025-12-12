@@ -8,20 +8,20 @@ function calculateDamage(attacker, defender) {
   let critChance = attacker.critChance || 0;
   let critMult = attacker.critMultiplier || 1.5;
 
-  if (attacker === heroStats) {
+  if (attacker === stats) {
     minA = getEffectiveMinAttack();
     maxA = getEffectiveMaxAttack();
     critChance = getEffectiveCritChance();
-    critMult = heroStats.critMultiplier || critMult;
+    critMult = stats.critMultiplier || critMult;
   }
 
   let base = Phaser.Math.Between(minA, maxA);
-  if (attacker === heroStats && isOverdriveActive) base = Math.round(base * 2);
+  if (attacker === stats && isOverdriveActive) base = Math.round(base * 2);
 
-  if (attacker === heroStats) {
+  if (attacker === stats) {
     let buffMul = 1;
-    if (buffPActive) buffMul *= 1.3;
-    if (buffMActive) buffMul *= 1.3;
+    if (buffs.pAtkActive) buffMul *= 1.3;
+    if (buffs.mAtkActive) buffMul *= 1.3;
     base = Math.round(base * buffMul);
   }
 
@@ -102,8 +102,10 @@ function spawnEtherGainText(scene, amount) {
 
 function spawnEliteKillText(scene, bonusGold, bonusEther) {
   if (!hero) return;
+  const mob = getCurrentMob();
+  const mobName = mob ? mob.name : "ЭЛИТНЫЙ МОБ";
   const lines = [
-    "ЭЛИТНЫЙ МОБ УБИТ!",
+    mobName + " УБИТ!",
     "+ " + bonusGold + " адены",
     "+ " + bonusEther + " Эфира",
   ];
@@ -127,22 +129,80 @@ function spawnEliteKillText(scene, bonusGold, bonusEther) {
   });
 }
 
+// Текст SP за убийство
+function spawnSpGainText(scene, amount) {
+  if (!hero) return;
+  const text = scene.add
+    .text(hero.x + 60, hero.y - 50, "+" + amount + " SP", {
+      fontFamily: "Arial",
+      fontSize: "18px",
+      color: "#aaffff",
+      stroke: "#000000",
+      strokeThickness: 3,
+    })
+    .setOrigin(0.5);
+  scene.tweens.add({
+    targets: text,
+    y: text.y - 30,
+    alpha: 0,
+    duration: 800,
+    ease: "Power1",
+    onComplete: () => text.destroy(),
+  });
+}
+
+// Текст "нельзя атаковать" при отдыхе
+function spawnCannotAttackText(scene) {
+  if (!hero) return;
+  const text = scene.add
+    .text(hero.x, hero.y - 60, "Отдыхаю!", {
+      fontFamily: "Arial",
+      fontSize: "18px",
+      color: "#ff8888",
+      stroke: "#000000",
+      strokeThickness: 3,
+    })
+    .setOrigin(0.5);
+  scene.tweens.add({
+    targets: text,
+    y: text.y - 20,
+    alpha: 0,
+    duration: 600,
+    ease: "Power1",
+    onComplete: () => text.destroy(),
+  });
+}
+
 function damageEnemy(scene, useEtherShot) {
   if (!enemy || !enemyAlive) return;
 
-  let etherUsed = false;
-  if (useEtherShot && heroEther > 0) {
-    heroEther -= 1;
-    if (heroEther < 0) heroEther = 0;
-    etherUsed = true;
+  // Нельзя атаковать сидя (встаёт и отменяет действие)
+  if (typeof canPerformAction === "function" && !canPerformAction()) {
+    spawnCannotAttackText(scene);
+    return;
+  }
+  // Fallback: старая проверка
+  if (buffs.isResting) {
+    spawnCannotAttackText(scene);
+    return;
   }
 
-  const result = calculateDamage(heroStats, enemyStats);
+  // Проверяем shots (из restSystem.js)
+  const shotResult = useShotIfEnabled();
+  
+  const result = calculateDamage(stats, enemyStats);
   let damage = result.damage;
-  if (etherUsed) damage = Math.round(damage * 1.7);
+  
+  // Применяем множитель от shots
+  if (shotResult.used) {
+    damage = Math.round(damage * shotResult.multiplier);
+  }
 
   enemyStats.hp -= damage;
   if (enemyStats.hp < 0) enemyStats.hp = 0;
+
+  // Входим в бой
+  if (typeof enterCombat === "function") enterCombat();
 
   scene.tweens.add({
     targets: enemy,
@@ -151,7 +211,7 @@ function damageEnemy(scene, useEtherShot) {
     yoyo: true,
   });
 
-  spawnDamageText(scene, damage, result.isCrit || etherUsed);
+  spawnDamageText(scene, damage, result.isCrit || shotResult.used);
   updateEnemyHpText();
   updateHeroUI();
 
@@ -163,20 +223,30 @@ function damageEnemy(scene, useEtherShot) {
 function damageEnemyWithSkill(scene, multiplier, useEtherShot) {
   if (!enemy || !enemyAlive) return;
 
-  let etherUsed = false;
-  if (useEtherShot && heroEther > 0) {
-    heroEther -= 1;
-    if (heroEther < 0) heroEther = 0;
-    etherUsed = true;
+  // Нельзя атаковать сидя (встаёт и отменяет действие)
+  if (typeof canPerformAction === "function" && !canPerformAction()) {
+    spawnCannotAttackText(scene);
+    return;
+  }
+  // Fallback: старая проверка
+  if (buffs.isResting) {
+    spawnCannotAttackText(scene);
+    return;
   }
 
-  const result = calculateDamage(heroStats, enemyStats);
+  // Проверяем shots
+  const shotResult = useShotIfEnabled();
+
+  const result = calculateDamage(stats, enemyStats);
   let damage = Math.round(result.damage * multiplier);
-  if (etherUsed) damage = Math.round(damage * 1.5);
+  if (shotResult.used) damage = Math.round(damage * shotResult.multiplier);
   if (damage < 1) damage = 1;
 
   enemyStats.hp -= damage;
   if (enemyStats.hp < 0) enemyStats.hp = 0;
+
+  // Входим в бой
+  if (typeof enterCombat === "function") enterCombat();
 
   scene.tweens.add({
     targets: enemy,
@@ -195,13 +265,18 @@ function damageEnemyWithSkill(scene, multiplier, useEtherShot) {
 }
 
 function enemyAttackHero(scene) {
-  if (heroStats.hp <= 0) return;
+  if (stats.hp <= 0) return;
   if (!hero) return;
+  if (!enemyAlive) return; // Не атакуем если враг мёртв
 
-  const result = calculateDamage(enemyStats, heroStats);
+  // Входим в бой и встаём (прерывает отдых)
+  if (typeof enterCombat === "function") enterCombat();
+  if (typeof forceStandUp === "function") forceStandUp();
+
+  const result = calculateDamage(enemyStats, stats);
   const damage = result.damage;
-  heroStats.hp -= damage;
-  if (heroStats.hp < 0) heroStats.hp = 0;
+  stats.hp -= damage;
+  if (stats.hp < 0) stats.hp = 0;
 
   scene.tweens.add({
     targets: hero,
@@ -213,18 +288,21 @@ function enemyAttackHero(scene) {
   spawnHeroDamageText(scene, damage, result.isCrit);
   updateHeroUI();
 
-  if (heroStats.hp <= 0) onHeroDeath(scene);
+  if (stats.hp <= 0) onHeroDeath(scene);
 }
 
 function mercAttackEnemy(scene) {
-  if (!mercActive) return;
+  if (!mercenary.active) return;
   if (!merc) return;
   if (!enemyAlive) return;
 
-  const result = calculateDamage(mercStats, enemyStats);
+  const result = calculateDamage(mercenary, enemyStats);
   let damage = result.damage;
   enemyStats.hp -= damage;
   if (enemyStats.hp < 0) enemyStats.hp = 0;
+
+  // Входим в бой (наёмник атакует — герой тоже в бою)
+  if (typeof enterCombat === "function") enterCombat();
 
   scene.tweens.add({
     targets: merc,
@@ -242,42 +320,67 @@ function mercAttackEnemy(scene) {
   }
 }
 
+// ============================================================
+//  УБИЙСТВО МОБА — НАГРАДЫ ИЗ currentMob
+// ============================================================
+
 function killEnemy(scene) {
   if (!enemy) return;
   if (!enemyAlive) return;
 
   enemyAlive = false;
 
-  const loc = getCurrentLocation();
-  heroGold += loc.goldReward;
-  heroKills += 1;
+  const mob = getCurrentMob();
+  
+  // Золото из моба (случайное в диапазоне)
+  const goldReward = getMobGoldReward(mob);
+  wallet.gold += goldReward;
+  
+  // EXP из моба
+  const expReward = mob ? mob.exp : 20;
+  
+  // SP из моба (напрямую)
+  const spReward = mob ? mob.sp : 2;
+  if (spReward > 0) {
+    stats.sp += spReward;
+    spawnSpGainText(scene, spReward);
+  }
+  
+  // Счётчик убийств
+  progress.kills += 1;
 
-  // эфир за убийство
+  // Эфир за убийство (шанс)
   if (Math.random() < ETHER_KILL_DROP_CHANCE) {
-    heroEther += 1;
+    wallet.ether += 1;
     spawnEtherGainText(scene, 1);
   }
 
-  // шанс "элитного" убийства
-  if (Math.random() < ELITE_KILL_CHANCE) {
-    heroEliteKills += 1;
-    const bonusGold = loc.goldReward;
+  // Элитный моб — дополнительные награды
+  const isEliteMob = mob && mob.elite;
+  if (isEliteMob || Math.random() < ELITE_KILL_CHANCE) {
+    progress.eliteKills += 1;
+    const bonusGold = Math.round(goldReward * 0.5);
     const bonusEther = 2;
-    heroGold += bonusGold;
-    heroEther += bonusEther;
+    wallet.gold += bonusGold;
+    wallet.ether += bonusEther;
     spawnEliteKillText(scene, bonusGold, bonusEther);
   }
 
-  const lootName = tryDropLoot();
-  if (lootName) {
-    inventoryItems.push(lootName);
-    spawnLootText(scene, lootName);
+  // Дроп с моба
+  const dropResult = tryMobDrop(mob);
+  if (dropResult) {
+    const loc = getCurrentLocation();
+    const lootName = dropResult.item + " [" + loc.name + "]";
+    inventory.push(lootName);
+    spawnLootText(scene, lootName, dropResult.questItem, dropResult.material);
   }
 
-  gainExp(loc.expReward, scene);
+  // EXP (без дополнительного SP)
+  gainExpDirect(expReward, scene);
+  
   checkQuestCompletion(scene);
 
-  // прогресс данжа
+  // Прогресс данжа
   if (isDungeonRun) {
     dungeonKills++;
   }
@@ -296,7 +399,7 @@ function killEnemy(scene) {
           if (isDungeonRun && dungeonKills >= DUNGEON_KILL_TARGET) {
             endDungeonRun(scene);
           } else {
-            respawnEnemy();
+            respawnEnemy(scene);
           }
         },
         [],
@@ -314,9 +417,14 @@ function killEnemy(scene) {
   }
 }
 
-function respawnEnemy() {
+// Респавн — выбираем нового моба
+function respawnEnemy(scene) {
   if (!enemy) return;
-  enemyStats.hp = enemyStats.maxHp;
+  
+  // Выбираем нового случайного моба
+  const mob = selectRandomMob();
+  applyMobToEnemy(mob);
+  
   enemyAlive = true;
   enemy.alpha = 1;
   if (enemyHpText) enemyHpText.alpha = 1;
@@ -326,11 +434,11 @@ function respawnEnemy() {
 // ----- Смерть героя -----
 
 function onHeroDeath(scene) {
-  const penalty = Math.round(heroStats.expToNext * 0.1);
-  heroStats.exp -= penalty;
-  if (heroStats.exp < 0) heroStats.exp = 0;
+  const penalty = Math.round(stats.expToNext * 0.1);
+  stats.exp -= penalty;
+  if (stats.exp < 0) stats.exp = 0;
 
-  heroStats.hp = 0;
+  stats.hp = 0;
   updateHeroUI();
 
   disableAutoHunt();
@@ -376,8 +484,8 @@ function onHeroDeath(scene) {
     () => {
       panel.destroy();
       text.destroy();
-      heroStats.hp = heroStats.maxHp;
-      heroStats.mp = heroStats.maxMp;
+      stats.hp = stats.maxHp;
+      stats.mp = stats.maxMp;
       isDungeonRun = false;
       dungeonKills = 0;
       updateHeroUI();
@@ -391,12 +499,27 @@ function onHeroDeath(scene) {
 
 // ----- EXP / LEVEL -----
 
+// Стандартная функция (используется spSystem.js для хука)
 function gainExp(amount, scene) {
-  heroStats.exp += amount;
+  stats.exp += amount;
   spawnExpText(scene, amount);
 
-  while (heroStats.exp >= heroStats.expToNext) {
-    heroStats.exp -= heroStats.expToNext;
+  while (stats.exp >= stats.expToNext) {
+    stats.exp -= stats.expToNext;
+    levelUp(scene);
+  }
+
+  updateHeroUI();
+  saveGame();
+}
+
+// Прямое начисление EXP без хука SP (SP уже добавлен из моба)
+function gainExpDirect(amount, scene) {
+  stats.exp += amount;
+  spawnExpText(scene, amount);
+
+  while (stats.exp >= stats.expToNext) {
+    stats.exp -= stats.expToNext;
     levelUp(scene);
   }
 
@@ -405,14 +528,14 @@ function gainExp(amount, scene) {
 }
 
 function levelUp(scene) {
-  heroStats.level += 1;
-  heroStats.maxHp = Math.round(heroStats.maxHp * 1.1);
-  heroStats.hp = heroStats.maxHp;
-  heroStats.maxMp = Math.round(heroStats.maxMp * 1.1);
-  heroStats.mp = heroStats.maxMp;
-  heroStats.minAttack = Math.round(heroStats.minAttack * 1.1);
-  heroStats.maxAttack = Math.round(heroStats.maxAttack * 1.1);
-  heroStats.expToNext = Math.round(heroStats.expToNext * 1.2);
+  stats.level += 1;
+  stats.maxHp = Math.round(stats.maxHp * 1.1);
+  stats.hp = stats.maxHp;
+  stats.maxMp = Math.round(stats.maxMp * 1.1);
+  stats.mp = stats.maxMp;
+  stats.minAttack = Math.round(stats.minAttack * 1.1);
+  stats.maxAttack = Math.round(stats.maxAttack * 1.1);
+  stats.expToNext = Math.round(stats.expToNext * 1.2);
 
   updateMercStatsFromHero();
   spawnLevelUpText(scene);
@@ -462,22 +585,19 @@ function spawnLevelUpText(scene) {
 
 // ----- Лут -----
 
-function tryDropLoot() {
-  const roll = Math.random();
-  if (roll > LOOT_DROP_CHANCE) return null;
-  const idx = Math.floor(Math.random() * lootTable.length);
-  const baseName = lootTable[idx];
-  const loc = getCurrentLocation();
-  return baseName + " [" + loc.name + "]";
-}
-
-function spawnLootText(scene, lootName) {
+// Дроп с моба (новая система)
+function spawnLootText(scene, lootName, isQuestItem, isMaterial) {
   if (!hero) return;
+  
+  let color = "#ffd700"; // обычный лут
+  if (isQuestItem) color = "#ff69b4"; // квестовый
+  if (isMaterial) color = "#87ceeb"; // материал
+  
   const text = scene.add
-    .text(hero.x, hero.y + 80, "+ Лут: " + lootName, {
+    .text(hero.x, hero.y + 80, "+ " + lootName, {
       fontFamily: "Arial",
       fontSize: "20px",
-      color: "#ffd700",
+      color: color,
       stroke: "#000000",
       strokeThickness: 3,
     })
@@ -490,4 +610,14 @@ function spawnLootText(scene, lootName) {
     ease: "Power1",
     onComplete: () => text.destroy(),
   });
+}
+
+// Старая функция дропа (fallback)
+function tryDropLoot() {
+  const roll = Math.random();
+  if (roll > LOOT_DROP_CHANCE) return null;
+  const idx = Math.floor(Math.random() * LOOT_TABLE.length);
+  const baseName = LOOT_TABLE[idx];
+  const loc = getCurrentLocation();
+  return baseName + " [" + loc.name + "]";
 }

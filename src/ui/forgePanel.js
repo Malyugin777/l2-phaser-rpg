@@ -22,6 +22,7 @@ function updateForgePanel() {
     "Точим случайный предмет из инвентаря.",
     "Успех: предмет получает +1.",
     "Провал: предмет ломается.",
+    "  (D-grade → кристаллы)",
     "",
     "Шанс успеха:",
     "  +0–+2: 80%",
@@ -29,12 +30,14 @@ function updateForgePanel() {
     "  +6–+9: 30%",
     "  +10+: 10%",
     "",
+    "Кристаллы: " + wallet.crystals,
+    "",
     "Предметы:",
   ];
-  if (inventoryItems.length === 0) {
+  if (inventory.length === 0) {
     lines.push("   (нет предметов)");
   } else {
-    inventoryItems.forEach((item, idx) => {
+    inventory.forEach((item, idx) => {
       lines.push("  " + (idx + 1) + ". " + item);
     });
   }

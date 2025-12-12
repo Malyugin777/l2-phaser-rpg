@@ -11,11 +11,11 @@ function arenaCalcDamage(attacker, defender) {
 }
 
 function runArenaBattle(scene) {
-  const baseHp = heroStats.maxHp;
+  const baseHp = stats.maxHp;
   const effMinAtk = getEffectiveMinAttack();
   const effMaxAtk = getEffectiveMaxAttack();
   const effCrit = getEffectiveCritChance();
-  const baseCritMult = heroStats.critMultiplier;
+  const baseCritMult = stats.critMultiplier;
 
   const shadowHpMul = Phaser.Math.FloatBetween(0.9, 1.1);
   const shadowAtkMul = Phaser.Math.FloatBetween(0.9, 1.1);
@@ -77,9 +77,9 @@ function runArenaBattle(scene) {
     ratingDelta = 0;
   }
 
-  heroGold += rewardGold;
+  wallet.gold += rewardGold;
   if (rewardExp > 0) gainExp(rewardExp, scene);
-  heroArenaRating += ratingDelta;
+  progress.arenaRating += ratingDelta;
 
   checkQuestCompletion(scene);
   updateHeroUI();
@@ -112,7 +112,7 @@ function runArenaBattle(scene) {
       (rewardExp > 0 ? ", +" + rewardExp + " EXP" : ""),
     "  Рейтинг: " +
       (ratingDelta > 0 ? "+" + ratingDelta : ratingDelta.toString()),
-    "  Текущий рейтинг: " + heroArenaRating,
+    "  Текущий рейтинг: " + progress.arenaRating,
     "",
     shadowPowerText,
     "",

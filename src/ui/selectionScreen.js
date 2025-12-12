@@ -1,20 +1,91 @@
 "use strict";
 
+// ================== ВАЙП АККАУНТА ==================
+
+function wipeAccount() {
+  // Сбрасываем всё в памяти
+  profile.race = null;
+  profile.archetype = null;
+  profile.profession = null;
+  
+  stats.level = 1;
+  stats.exp = 0;
+  stats.expToNext = 100;
+  stats.sp = 0;
+  stats.maxHp = 100;
+  stats.hp = 100;
+  stats.maxMp = 50;
+  stats.mp = 50;
+  stats.minAttack = 10;
+  stats.maxAttack = 20;
+  stats.critChance = 0.25;
+  stats.critMultiplier = 2.0;
+  
+  wallet.gold = 0;
+  wallet.ether = 50;
+  wallet.crystals = 0;
+  
+  progress.kills = 0;
+  progress.eliteKills = 0;
+  progress.arenaRating = 0;
+  
+  consumables.hpPotions = 5;
+  consumables.mpPotions = 3;
+  consumables.pAtkScrolls = 2;
+  consumables.mAtkScrolls = 2;
+  
+  inventory.length = 0;
+  
+  quests.killQuestDone = false;
+  quests.goldQuestDone = false;
+  quests.eliteQuestDone = false;
+  
+  equipment.weapon = null;
+  equipment.armor = null;
+  equipment.jewelry1 = null;
+  equipment.jewelry2 = null;
+  
+  skills.learned = [];
+  skills.slots.slot1 = null;
+  skills.slots.slot2 = null;
+  
+  pet.obtained = false;
+  pet.active = false;
+  pet.name = "";
+  pet.level = 1;
+  
+  mercenary.active = false;
+  
+  buffs.pAtkActive = false;
+  buffs.mAtkActive = false;
+  buffs.soulshotsOn = false;
+  buffs.spiritshotsOn = false;
+  buffs.isResting = false;
+  
+  currentLocationIndex = 0;
+  
+  // Очищаем localStorage
+  localStorage.removeItem("l2rpg_save");
+  
+  // Перезагружаем
+  location.reload();
+}
+
 // ================== ВЫБОР РАСЫ/КЛАССА ==================
 
 function openSelectionPanelIfNeeded(scene) {
-  if (heroMeta.race && heroMeta.heroClass) return;
+  if (profile.race && profile.archetype) return;
 
   const hasProgress =
-    heroStats.level > 1 ||
-    heroStats.exp > 0 ||
-    heroGold > 0 ||
-    heroKills > 0;
+    stats.level > 1 ||
+    stats.exp > 0 ||
+    wallet.gold > 0 ||
+    progress.kills > 0;
 
   // если уже есть прогресс — автоназначаем дефолт и не показываем окно
   if (hasProgress) {
-    if (!heroMeta.race) heroMeta.race = "human";
-    if (!heroMeta.heroClass) heroMeta.heroClass = "knight";
+    if (!profile.race) profile.race = "human";
+    if (!profile.archetype) profile.archetype = "fighter";
     return;
   }
 
@@ -35,7 +106,7 @@ function createSelectionUI(scene) {
   selectionPanel.setDepth(50);
 
   selectionText = scene.add
-    .text(w / 2, h / 2 - 140, "Создание героя\nВыбери расу и класс", {
+    .text(w / 2, h / 2 - 140, "Создание героя\nВыбери расу и архетип", {
       fontFamily: "Arial",
       fontSize: "22px",
       color: "#ffffff",
@@ -51,29 +122,38 @@ function createSelectionUI(scene) {
 
   RACES.forEach((race, index) => {
     const x = raceStartX + raceGapX * index;
+    const isLocked = race.id !== "human";
     const rect = scene.add
-      .rectangle(x, raceY, 160, 50, 0x333333)
-      .setStrokeStyle(2, 0xffffff)
-      .setInteractive({ useHandCursor: true })
+      .rectangle(x, raceY, 160, 50, isLocked ? 0x222222 : 0x333333)
+      .setStrokeStyle(2, isLocked ? 0x555555 : 0xffffff)
       .setDepth(50);
+    
+    if (!isLocked) {
+      rect.setInteractive({ useHandCursor: true });
+    }
+    
+    const label = isLocked ? race.label + " 🔒" : race.label;
     const txt = scene.add
-      .text(x, raceY, race.label, {
+      .text(x, raceY, label, {
         fontFamily: "Arial",
         fontSize: "18px",
-        color: "#ffffff",
+        color: isLocked ? "#666666" : "#ffffff",
       })
       .setOrigin(0.5)
       .setDepth(51);
-    rect.on("pointerdown", () => setRaceSelection(race.id));
+    
+    if (!isLocked) {
+      rect.on("pointerdown", () => setRaceSelection(race.id));
+    }
     raceButtons.push({ id: race.id, rect, txt });
   });
 
   const classY = h / 2 + 40;
-  const classStartX = w / 2 - 200;
+  const classStartX = w / 2 - 100;
   const classGapX = 200;
   classButtons = [];
 
-  CLASSES.forEach((cls, index) => {
+  ARCHETYPES.forEach((arch, index) => {
     const x = classStartX + classGapX * index;
     const rect = scene.add
       .rectangle(x, classY, 160, 50, 0x333333)
@@ -81,15 +161,15 @@ function createSelectionUI(scene) {
       .setInteractive({ useHandCursor: true })
       .setDepth(50);
     const txt = scene.add
-      .text(x, classY, cls.label, {
+      .text(x, classY, arch.label, {
         fontFamily: "Arial",
         fontSize: "18px",
         color: "#ffffff",
       })
       .setOrigin(0.5)
       .setDepth(51);
-    rect.on("pointerdown", () => setClassSelection(cls.id));
-    classButtons.push({ id: cls.id, rect, txt });
+    rect.on("pointerdown", () => setClassSelection(arch.id));
+    classButtons.push({ id: arch.id, rect, txt });
   });
 
   confirmButton = scene.add
@@ -127,7 +207,7 @@ function confirmRaceClassSelection(scene) {
   if (!selectedRaceId || !selectedClassId) {
     spawnForgeResultText(
       scene,
-      "Сначала выбери расу и класс",
+      "Сначала выбери расу и архетип",
       false,
       true
     );
@@ -167,13 +247,14 @@ function confirmRaceClassSelection(scene) {
   saveGame();
 }
 
-function applyHeroPreset(raceId, classId) {
-  heroMeta.race = raceId;
-  heroMeta.heroClass = classId;
+function applyHeroPreset(raceId, archetypeId) {
+  profile.race = raceId;
+  profile.archetype = archetypeId;
+  profile.profession = null;
 
   let baseHp, baseMp, baseMinAtk, baseMaxAtk, baseCrit, baseCritMult;
-  switch (classId) {
-    case "knight":
+  switch (archetypeId) {
+    case "fighter":
       baseHp = 140;
       baseMp = 40;
       baseMinAtk = 12;
@@ -181,21 +262,13 @@ function applyHeroPreset(raceId, classId) {
       baseCrit = 0.15;
       baseCritMult = 1.8;
       break;
-    case "mage":
+    case "mystic":
       baseHp = 80;
       baseMp = 110;
       baseMinAtk = 18;
       baseMaxAtk = 26;
       baseCrit = 0.2;
       baseCritMult = 2.0;
-      break;
-    case "rogue":
-      baseHp = 100;
-      baseMp = 60;
-      baseMinAtk = 14;
-      baseMaxAtk = 30;
-      baseCrit = 0.35;
-      baseCritMult = 2.2;
       break;
     default:
       baseHp = 100;
@@ -234,37 +307,45 @@ function applyHeroPreset(raceId, classId) {
   const finalMaxAtk = Math.round(baseMaxAtk * atkMul);
   const finalCrit = Math.min(0.6, baseCrit * critMul);
 
-  heroStats.level = 1;
-  heroStats.exp = 0;
-  heroStats.expToNext = 100;
-  heroStats.maxHp = finalHp;
-  heroStats.hp = finalHp;
-  heroStats.maxMp = finalMp;
-  heroStats.mp = finalMp;
-  heroStats.minAttack = finalMinAtk;
-  heroStats.maxAttack = finalMaxAtk;
-  heroStats.critChance = finalCrit;
-  heroStats.critMultiplier = baseCritMult;
+  stats.level = 1;
+  stats.exp = 0;
+  stats.expToNext = 100;
+  stats.sp = 0;
+  stats.maxHp = finalHp;
+  stats.hp = finalHp;
+  stats.maxMp = finalMp;
+  stats.mp = finalMp;
+  stats.minAttack = finalMinAtk;
+  stats.maxAttack = finalMaxAtk;
+  stats.critChance = finalCrit;
+  stats.critMultiplier = baseCritMult;
 
-  heroGold = 0;
-  heroKills = 0;
-  heroEliteKills = 0;
-  heroEther = 50;
-  heroHpPotions = 5;
-  heroMpPotions = 3;
-  heroPAtkScrolls = 2;
-  heroMAtkScrolls = 2;
-  inventoryItems = [];
-  heroArenaRating = 0;
+  wallet.gold = 0;
+  wallet.ether = 50;
 
-  questKillCompleted = false;
-  questGoldCompleted = false;
-  questEliteCompleted = false;
+  progress.kills = 0;
+  progress.eliteKills = 0;
+  progress.arenaRating = 0;
 
-  equippedWeapon = null;
-  equippedArmor = null;
-  equippedJewelry1 = null;
-  equippedJewelry2 = null;
+  consumables.hpPotions = 5;
+  consumables.mpPotions = 3;
+  consumables.pAtkScrolls = 2;
+  consumables.mAtkScrolls = 2;
+
+  inventory = [];
+
+  quests.killQuestDone = false;
+  quests.goldQuestDone = false;
+  quests.eliteQuestDone = false;
+
+  equipment.weapon = null;
+  equipment.armor = null;
+  equipment.jewelry1 = null;
+  equipment.jewelry2 = null;
+
+  skills.learned = [];
+  skills.slots.slot1 = null;
+  skills.slots.slot2 = null;
 
   updateMercStatsFromHero();
 }

@@ -3,13 +3,20 @@ function showStatsPanel() {
   isStatsOpen = true;
   statsPanel.setVisible(true);
   statsPanelText.setVisible(true);
+  if (statsSkillsButton) statsSkillsButton.setVisible(true);
+  if (statsSkillsButtonText) statsSkillsButtonText.setVisible(true);
   updateStatsPanel();
+  updateProfessionButton();
 }
 
 function hideStatsPanel() {
   isStatsOpen = false;
-  statsPanel.setVisible(false);
-  statsPanelText.setVisible(false);
+  if (statsPanel) statsPanel.setVisible(false);
+  if (statsPanelText) statsPanelText.setVisible(false);
+  if (statsSkillsButton) statsSkillsButton.setVisible(false);
+  if (statsSkillsButtonText) statsSkillsButtonText.setVisible(false);
+  if (typeof hideProfessionPanel === "function") hideProfessionPanel();
+  if (typeof updateProfessionButton === "function") updateProfessionButton();
 }
 
 function updateStatsPanel() {
@@ -20,49 +27,52 @@ function updateStatsPanel() {
   const lines = [
     "СТАТЫ ГЕРОЯ",
     "----------------------",
-    "Раса: " + (heroMeta.race || "не выбрана"),
-    "Класс: " + (heroMeta.heroClass || "не выбран"),
+    "Раса: " + (profile.race || "не выбрана"),
+    "Архетип: " + (profile.archetype || "не выбран"),
+    "Профессия: " + (profile.profession || "нет"),
     "",
-    "Уровень: " + heroStats.level,
-    "Опыт: " + heroStats.exp + " / " + heroStats.expToNext,
+    "Уровень: " + stats.level,
+    "Опыт: " + stats.exp + " / " + stats.expToNext,
+    "SP: " + stats.sp,
     "",
-    "HP: " + heroStats.hp + " / " + heroStats.maxHp,
-    "MP: " + heroStats.mp + " / " + heroStats.maxMp,
-    "Атака (база): " + heroStats.minAttack + "-" + heroStats.maxAttack,
+    "HP: " + stats.hp + " / " + stats.maxHp,
+    "MP: " + stats.mp + " / " + stats.maxMp,
+    "Атака (база): " + stats.minAttack + "-" + stats.maxAttack,
     "Атака (снаряжение): " + effMin + "-" + effMax,
     "Крит (база): " +
-      Math.round(heroStats.critChance * 100) +
+      Math.round(stats.critChance * 100) +
       "% x" +
-      heroStats.critMultiplier,
+      stats.critMultiplier,
     "Крит (снаряжение): " +
       Math.round(effCrit * 100) +
       "% x" +
-      heroStats.critMultiplier,
+      stats.critMultiplier,
     "",
     "Экипировка:",
-    "  Оружие: " + (equippedWeapon || "нет"),
-    "  Броня: " + (equippedArmor || "нет"),
-    "  Украшение 1: " + (equippedJewelry1 || "нет"),
-    "  Украшение 2: " + (equippedJewelry2 || "нет"),
+    "  Оружие: " + (equipment.weapon || "нет"),
+    "  Броня: " + (equipment.armor || "нет"),
+    "  Украшение 1: " + (equipment.jewelry1 || "нет"),
+    "  Украшение 2: " + (equipment.jewelry2 || "нет"),
     "",
-    "Адена: " + heroGold,
-    "Эфир: " + heroEther,
+    "Адена: " + wallet.gold,
+    "Эфир: " + wallet.ether,
+    "Кристаллы: " + wallet.crystals,
     "",
-    "Убийств всего: " + heroKills,
-    "Элитных убийств: " + heroEliteKills,
+    "Убийств всего: " + progress.kills,
+    "Элитных убийств: " + progress.eliteKills,
     "",
     "Бафы:",
-    "  +P.ATK: " + (buffPActive ? "активен" : "нет"),
-    "  +M.ATK: " + (buffMActive ? "активен" : "нет"),
+    "  +P.ATK: " + (buffs.pAtkActive ? "активен" : "нет"),
+    "  +M.ATK: " + (buffs.mAtkActive ? "активен" : "нет"),
     "",
     "Банки / Свитки:",
-    "  HP банки: " + heroHpPotions,
-    "  MP банки: " + heroMpPotions,
-    "  Свитки +P.ATK: " + heroPAtkScrolls,
-    "  Свитки +M.ATK: " + heroMAtkScrolls,
+    "  HP банки: " + consumables.hpPotions,
+    "  MP банки: " + consumables.mpPotions,
+    "  Свитки +P.ATK: " + consumables.pAtkScrolls,
+    "  Свитки +M.ATK: " + consumables.mAtkScrolls,
     "",
-    "Рейтинг Арены: " + heroArenaRating,
-    "Наёмник: " + (mercActive ? "с тобой" : "нет"),
+    "Рейтинг Арены: " + progress.arenaRating,
+    "Наёмник: " + (mercenary.active ? "с тобой" : "нет"),
   ];
 
   statsPanelText.setText(lines.join("\n"));

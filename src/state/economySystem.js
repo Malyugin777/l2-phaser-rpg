@@ -38,13 +38,13 @@ function performEnchant(scene) {
     spawnForgeResultText(scene, "Точить можно только в городе", false, true);
     return;
   }
-  if (inventoryItems.length === 0) {
+  if (inventory.length === 0) {
     spawnForgeResultText(scene, "Нет предметов для заточки", false, true);
     return;
   }
 
-  const idx = Math.floor(Math.random() * inventoryItems.length);
-  const originalName = inventoryItems[idx];
+  const idx = Math.floor(Math.random() * inventory.length);
+  const originalName = inventory[idx];
   const parsed = parseItemName(originalName);
   const chance = getEnchantChance(parsed.enchant);
   const roll = Math.random();
@@ -56,16 +56,30 @@ function performEnchant(scene) {
       parsed.locationTag,
       newEnchant
     );
-    inventoryItems[idx] = newName;
+    inventory[idx] = newName;
     spawnForgeResultText(scene, "Успех: " + newName, true, false);
   } else {
-    inventoryItems.splice(idx, 1);
-    spawnForgeResultText(
-      scene,
-      "Провал: " + originalName + " сломан",
-      false,
-      false
-    );
+    inventory.splice(idx, 1);
+    
+    // Кристаллизация D-grade предметов (с локации Orc Barracks)
+    const isDGrade = parsed.locationTag && parsed.locationTag.includes("Orc");
+    if (isDGrade) {
+      const crystalsGain = 5 + parsed.enchant * 2; // 5-15 кристаллов
+      wallet.crystals += crystalsGain;
+      spawnForgeResultText(
+        scene,
+        "Сломан: " + originalName + " → +" + crystalsGain + " кристаллов",
+        false,
+        false
+      );
+    } else {
+      spawnForgeResultText(
+        scene,
+        "Провал: " + originalName + " сломан",
+        false,
+        false
+      );
+    }
   }
 
   updateInventoryPanel();
@@ -75,14 +89,14 @@ function performEnchant(scene) {
 // ----- Магазин: стартовый набор -----
 function buyStarterPack(scene) {
   const price = 50;
-  if (heroGold < price) {
+  if (wallet.gold < price) {
     spawnForgeResultText(scene, "Недостаточно адены для покупки", false, true);
     return;
   }
-  heroGold -= price;
-  heroHpPotions += 2;
-  heroMpPotions += 2;
-  heroEther += 5;
+  wallet.gold -= price;
+  consumables.hpPotions += 2;
+  consumables.mpPotions += 2;
+  wallet.ether += 5;
 
   spawnForgeResultText(scene, "Набор новичка куплен", true, true);
   updateHeroUI();
@@ -94,20 +108,16 @@ function buyStarterPack(scene) {
 function teleportToCurrentLocation(scene) {
   const loc = getCurrentLocation();
   const cost = loc.teleportCost || 0;
-  if (heroGold < cost) {
-    spawnForgeResultText(
-      scene,
-      "Недостаточно адены для телепорта",
-      false,
-      true
-    );
+  if (wallet.gold < cost) {
+    spawnForgeResultText(scene, "Недостаточно адены (" + cost + ")", false, true);
     return;
   }
-  heroGold -= cost;
+  wallet.gold -= cost;
   hideMapPanel();
   updateHeroUI();
   saveGame();
-  spawnForgeResultText(scene, "Телепорт в " + loc.name, true, true);
+  spawnForgeResultText(scene, "Телепорт в " + loc.name + " (-" + cost + " адены)", true, true);
+  enterLocation(scene);
 }
 
 // ----- Квесты: проверка выполнения -----
@@ -117,17 +127,17 @@ function checkQuestCompletion(scene) {
   const eliteQuestTarget = 5;
   let changed = false;
 
-  if (!questKillCompleted && heroKills >= killQuestTarget) {
-    questKillCompleted = true;
+  if (!quests.killQuestDone && progress.kills >= killQuestTarget) {
+    quests.killQuestDone = true;
     const rewardGold = 100;
     const rewardEther = 10;
     const rewardHp = 3;
     const rewardMp = 3;
 
-    heroGold += rewardGold;
-    heroEther += rewardEther;
-    heroHpPotions += rewardHp;
-    heroMpPotions += rewardMp;
+    wallet.gold += rewardGold;
+    wallet.ether += rewardEther;
+    consumables.hpPotions += rewardHp;
+    consumables.mpPotions += rewardMp;
 
     showQuestRewardPopup(scene, "Квест выполнен: Охота в Глудио", [
       "Награда:",
@@ -140,12 +150,12 @@ function checkQuestCompletion(scene) {
     changed = true;
   }
 
-  if (!questGoldCompleted && heroGold >= goldQuestTarget) {
-    questGoldCompleted = true;
+  if (!quests.goldQuestDone && wallet.gold >= goldQuestTarget) {
+    quests.goldQuestDone = true;
     const rewardGold = 50;
     const rewardEther = 5;
-    heroGold += rewardGold;
-    heroEther += rewardEther;
+    wallet.gold += rewardGold;
+    wallet.ether += rewardEther;
 
     showQuestRewardPopup(scene, "Квест выполнен: Поднять капитал", [
       "Награда:",
@@ -156,17 +166,17 @@ function checkQuestCompletion(scene) {
     changed = true;
   }
 
-  if (!questEliteCompleted && heroEliteKills >= eliteQuestTarget) {
-    questEliteCompleted = true;
+  if (!quests.eliteQuestDone && progress.eliteKills >= eliteQuestTarget) {
+    quests.eliteQuestDone = true;
     const rewardGold = 150;
     const rewardEther = 15;
     const rewardHp = 3;
     const rewardMp = 3;
 
-    heroGold += rewardGold;
-    heroEther += rewardEther;
-    heroHpPotions += rewardHp;
-    heroMpPotions += rewardMp;
+    wallet.gold += rewardGold;
+    wallet.ether += rewardEther;
+    consumables.hpPotions += rewardHp;
+    consumables.mpPotions += rewardMp;
 
     showQuestRewardPopup(scene, "Квест выполнен: Элитный охотник", [
       "Награда:",

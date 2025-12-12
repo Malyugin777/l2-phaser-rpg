@@ -110,7 +110,7 @@ function getAllEquipmentBonuses() {
   let totalMax = 0;
   let totalCrit = 0;
 
-  [equippedWeapon, equippedArmor, equippedJewelry1, equippedJewelry2].forEach(
+  [equipment.weapon, equipment.armor, equipment.jewelry1, equipment.jewelry2].forEach(
     (itemName) => {
       if (!itemName) return;
       const bonus = getItemEffectiveBonus(itemName);
@@ -129,17 +129,17 @@ function getAllEquipmentBonuses() {
 
 function getEffectiveMinAttack() {
   const b = getAllEquipmentBonuses();
-  return Math.max(1, heroStats.minAttack + b.attackMinBonus);
+  return Math.max(1, stats.minAttack + b.attackMinBonus);
 }
 
 function getEffectiveMaxAttack() {
   const b = getAllEquipmentBonuses();
-  return Math.max(1, heroStats.maxAttack + b.attackMaxBonus);
+  return Math.max(1, stats.maxAttack + b.attackMaxBonus);
 }
 
 function getEffectiveCritChance() {
   const b = getAllEquipmentBonuses();
-  let crit = heroStats.critChance + b.critChanceBonus;
+  let crit = stats.critChance + b.critChanceBonus;
   if (crit < 0) crit = 0;
   if (crit > 0.9) crit = 0.9;
   return crit;
@@ -149,11 +149,11 @@ function getEffectiveCritChance() {
 
 function autoEquipBestItems() {
   // собрать все предметы (инвентарь + надетые)
-  const allItems = inventoryItems.slice();
-  if (equippedWeapon) allItems.push(equippedWeapon);
-  if (equippedArmor) allItems.push(equippedArmor);
-  if (equippedJewelry1) allItems.push(equippedJewelry1);
-  if (equippedJewelry2) allItems.push(equippedJewelry2);
+  const allItems = inventory.slice();
+  if (equipment.weapon) allItems.push(equipment.weapon);
+  if (equipment.armor) allItems.push(equipment.armor);
+  if (equipment.jewelry1) allItems.push(equipment.jewelry1);
+  if (equipment.jewelry2) allItems.push(equipment.jewelry2);
 
   let bestWeapon = null;
   let bestWeaponScore = -Infinity;
@@ -214,24 +214,24 @@ function autoEquipBestItems() {
   removeFromInventoryByName(bestJewelry1);
   removeFromInventoryByName(bestJewelry2);
 
-  equippedWeapon = bestWeapon;
-  equippedArmor = bestArmor;
-  equippedJewelry1 = bestJewelry1;
-  equippedJewelry2 = bestJewelry2;
-  inventoryItems = newInventory;
+  equipment.weapon = bestWeapon;
+  equipment.armor = bestArmor;
+  equipment.jewelry1 = bestJewelry1;
+  equipment.jewelry2 = bestJewelry2;
+  inventory = newInventory;
 }
 
 function unequipAllItems() {
   const toReturn = [];
-  if (equippedWeapon) toReturn.push(equippedWeapon);
-  if (equippedArmor) toReturn.push(equippedArmor);
-  if (equippedJewelry1) toReturn.push(equippedJewelry1);
-  if (equippedJewelry2) toReturn.push(equippedJewelry2);
+  if (equipment.weapon) toReturn.push(equipment.weapon);
+  if (equipment.armor) toReturn.push(equipment.armor);
+  if (equipment.jewelry1) toReturn.push(equipment.jewelry1);
+  if (equipment.jewelry2) toReturn.push(equipment.jewelry2);
 
-  inventoryItems = inventoryItems.concat(toReturn);
+  inventory = inventory.concat(toReturn);
 
-  equippedWeapon = null;
-  equippedArmor = null;
-  equippedJewelry1 = null;
-  equippedJewelry2 = null;
+  equipment.weapon = null;
+  equipment.armor = null;
+  equipment.jewelry1 = null;
+  equipment.jewelry2 = null;
 }

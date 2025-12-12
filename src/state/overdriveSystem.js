@@ -19,7 +19,7 @@ function activateOverdrive(scene) {
     spawnForgeResultText(scene, "Перегрузка уже активна", false, true);
     return;
   }
-  if (heroEther < OVERDRIVE_ETHER_COST) {
+  if (wallet.ether < OVERDRIVE_ETHER_COST) {
     spawnForgeResultText(
       scene,
       "Недостаточно Эфира для Перегрузки",
@@ -29,8 +29,8 @@ function activateOverdrive(scene) {
     return;
   }
 
-  heroEther -= OVERDRIVE_ETHER_COST;
-  if (heroEther < 0) heroEther = 0;
+  wallet.ether -= OVERDRIVE_ETHER_COST;
+  if (wallet.ether < 0) wallet.ether = 0;
 
   isOverdriveActive = true;
   if (hero) hero.fillColor = 0xffff00;

@@ -17,7 +17,7 @@ function updateLocationLabel() {
   if (!locationText) return;
   const loc = getCurrentLocation();
   if (mode === "city") {
-    locationText.setText("Город: Глудин-хаб | Локация: " + loc.name);
+    locationText.setText("Город: Talking Island Village");
   } else {
     if (isDungeonRun) {
       locationText.setText(
@@ -44,9 +44,18 @@ function updateLocationLabel() {
 // Смена фона под текущую локацию
 function updateLocationBackgroundTexture() {
   if (!locationBg) return;
-  let key = "bg_gludio";
-  if (currentLocationIndex === 1) key = "bg_dion";
-  else if (currentLocationIndex === 2) key = "bg_dragon";
+  const loc = getCurrentLocation();
+  
+  // Используем bgKey из локации если есть
+  let key = loc.bgKey || "obelisk_of_victory";
+  
+  // Fallback для старых локаций
+  if (!loc.bgKey) {
+    if (currentLocationIndex === 1) key = "northern_territory";
+    else if (currentLocationIndex === 2) key = "elven_ruins";
+    else if (currentLocationIndex >= 3) key = "orc_barracks";
+  }
+  
   locationBg.setTexture(key);
 }
 
@@ -146,6 +155,11 @@ function enterCity(scene) {
   endOverdrive(scene);
   stopEnemyAttack();
   stopMercAttack();
+  
+  // Скрываем кнопки отдыха и shots
+  stopRest();
+  hideRestAndShotsUI();
+  hidePet();
 
   if (cityHero) cityHero.setVisible(true);
   if (hero) {
@@ -159,33 +173,47 @@ function enterCity(scene) {
   if (autoButton) autoButton.setVisible(false);
   if (autoButtonText) autoButtonText.setVisible(false);
 
-  if (locationPrevButton) locationPrevButton.setVisible(true);
-  if (locationPrevText) locationPrevText.setVisible(true);
-  if (locationNextButton) locationNextButton.setVisible(true);
-  if (locationNextText) locationNextText.setVisible(true);
+  // Старые стрелки навигации скрыты — телепорт через карту
+  if (locationPrevButton) locationPrevButton.setVisible(false);
+  if (locationPrevText) locationPrevText.setVisible(false);
+  if (locationNextButton) locationNextButton.setVisible(false);
+  if (locationNextText) locationNextText.setVisible(false);
 
   if (modeButtonText) modeButtonText.setText("В локацию");
 
-  if (npcSmithRect) npcSmithRect.setVisible(true);
-  if (npcSmithText) npcSmithText.setVisible(true);
-  if (npcMapRect) npcMapRect.setVisible(true);
-  if (npcMapText) npcMapText.setVisible(true);
-  if (npcShopRect) npcShopRect.setVisible(true);
-  if (npcShopText) npcShopText.setVisible(true);
-  if (npcArenaRect) npcArenaRect.setVisible(true);
-  if (npcArenaText) npcArenaText.setVisible(true);
-  if (npcMercRect) npcMercRect.setVisible(true);
-  if (npcMercText) npcMercText.setVisible(true);
-  if (npcDungeonRect) npcDungeonRect.setVisible(true);
-  if (npcDungeonText) npcDungeonText.setVisible(true);
+  // Старые NPC скрыты — используем новый UI
+  if (npcSmithRect) npcSmithRect.setVisible(false);
+  if (npcSmithText) npcSmithText.setVisible(false);
+  if (npcMapRect) npcMapRect.setVisible(false);
+  if (npcMapText) npcMapText.setVisible(false);
+  if (npcShopRect) npcShopRect.setVisible(false);
+  if (npcShopText) npcShopText.setVisible(false);
+  if (npcArenaRect) npcArenaRect.setVisible(false);
+  if (npcArenaText) npcArenaText.setVisible(false);
+  if (npcMercRect) npcMercRect.setVisible(false);
+  if (npcMercText) npcMercText.setVisible(false);
+  if (npcDungeonRect) npcDungeonRect.setVisible(false);
+  if (npcDungeonText) npcDungeonText.setVisible(false);
 
   updateLocationLabel();
   updateHeroUI();
+
+  // Обновляем новый UI для города
+  if (typeof updateUIForMode === "function") {
+    updateUIForMode("city");
+  }
+
+  // Хук для tickSystem: сброс боя, meters
+  if (typeof onEnterCity === "function") {
+    onEnterCity();
+  }
 }
 
 // Вход в боевую локацию
 function enterLocation(scene) {
+  console.log("[Location] Entering location, previous mode:", mode);
   mode = "location";
+  console.log("[Location] Mode set to:", mode);
 
   startMusicForMode("location");
 
@@ -203,13 +231,22 @@ function enterLocation(scene) {
   hideMapPanel();
   hideArenaPanel();
   hideDungeonPanel();
+  
+  // Сбрасываем отдых при входе в локацию
+  stopRest();
+  showRestAndShotsUI();
+  
+  // Сбрасываем флаг атаки
+  isAttacking = false;
+  
+  // Показываем питомца
+  showPetInLocation();
 
-  const loc = getCurrentLocation();
-  enemyStats.maxHp = loc.enemyMaxHp;
-  enemyStats.defense = loc.enemyDefense;
-  enemyStats.hp = enemyStats.maxHp;
-  enemyStats.minAttack = loc.enemyMinAttack;
-  enemyStats.maxAttack = loc.enemyMaxAttack;
+  // ============================================
+  // НОВАЯ СИСТЕМА: выбираем случайного моба
+  // ============================================
+  const mob = selectRandomMob();
+  applyMobToEnemy(mob);
   enemyAlive = true;
 
   if (cityHero) cityHero.setVisible(false);
@@ -232,7 +269,7 @@ function enterLocation(scene) {
   }
 
   if (merc) {
-    if (mercActive) {
+    if (mercenary.active) {
       merc.setVisible(true);
       merc.x = heroStartX - 80;
       merc.y = heroStartY;
@@ -275,26 +312,41 @@ function enterLocation(scene) {
     callback: function () {
       if (mode !== "location") return;
       if (!enemyAlive) return;
-      if (heroStats.hp <= 0) return;
+      if (stats.hp <= 0) return;
       enemyAttackHero(scene);
     },
   });
 
   stopMercAttack();
-  if (mercActive) {
+  if (mercenary.active) {
     mercAttackEvent = scene.time.addEvent({
       delay: 1500,
       loop: true,
       callback: function () {
-        if (!mercActive) return;
+        if (!mercenary.active) return;
         if (mode !== "location") return;
         if (!enemyAlive) return;
-        if (heroStats.hp <= 0) return;
+        if (stats.hp <= 0) return;
         mercAttackEnemy(scene);
       },
     });
   }
 
+  // Запускаем атаку питомца
+  startPetAttack(scene);
+
   updateLocationLabel();
   updateHeroUI();
+  
+  console.log("[Location] Entry complete! hero:", !!hero, "enemy:", !!enemy, "enemyAlive:", enemyAlive, "isAttacking:", isAttacking);
+  
+  // Обновляем новый UI для локации
+  if (typeof updateUIForMode === "function") {
+    updateUIForMode("location");
+  }
+
+  // Хук для tickSystem: сброс stance, meters
+  if (typeof onEnterLocation === "function") {
+    onEnterLocation();
+  }
 }

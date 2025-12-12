@@ -1,14 +1,4 @@
 // ================== ПАНЕЛЬ: ИНВЕНТАРЬ ==================
-//
-// Здесь лежат только функции управления UI-инвентаря.
-// Они используют глобальные переменные из game.js:
-// isInventoryOpen, inventoryPanel, inventoryPanelText,
-// inventoryEquipBestButton, inventoryEquipBestButtonText,
-// inventoryUnequipAllButton, inventoryUnequipAllButtonText,
-// heroMeta, equippedWeapon/Armor/Jewelry, heroGold, heroEther,
-// heroHpPotions, heroMpPotions, heroPAtkScrolls, heroMAtkScrolls,
-// inventoryItems.
-//
 
 function showInventoryPanel() {
   isInventoryOpen = true;
@@ -39,30 +29,30 @@ function updateInventoryPanel() {
   const lines = [
     "ИНВЕНТАРЬ",
     "----------------------",
-    "Раса: " + (heroMeta.race || "не выбрана"),
-    "Класс: " + (heroMeta.heroClass || "не выбран"),
+    "Раса: " + (profile.race || "не выбрана"),
+    "Архетип: " + (profile.archetype || "не выбран"),
     "",
     "Экипировка:",
-    "  Оружие: " + (equippedWeapon || "нет"),
-    "  Броня: " + (equippedArmor || "нет"),
-    "  Украшение 1: " + (equippedJewelry1 || "нет"),
-    "  Украшение 2: " + (equippedJewelry2 || "нет"),
+    "  Оружие: " + (equipment.weapon || "нет"),
+    "  Броня: " + (equipment.armor || "нет"),
+    "  Украшение 1: " + (equipment.jewelry1 || "нет"),
+    "  Украшение 2: " + (equipment.jewelry2 || "нет"),
     "",
-    "Адена: " + heroGold,
-    "Эфир: " + heroEther,
+    "Адена: " + (wallet.gold || 0),
+    "Эфир: " + wallet.ether,
     "",
     "Банки / Свитки:",
-    "  HP банки: " + heroHpPotions,
-    "  MP банки: " + heroMpPotions,
-    "  Свитки +P.ATK: " + heroPAtkScrolls,
-    "  Свитки +M.ATK: " + heroMAtkScrolls,
+    "  HP банки: " + consumables.hpPotions,
+    "  MP банки: " + consumables.mpPotions,
+    "  Свитки +P.ATK: " + consumables.pAtkScrolls,
+    "  Свитки +M.ATK: " + consumables.mAtkScrolls,
     "",
     "ПРЕДМЕТЫ В РЮКЗАКЕ:",
   ];
-  if (inventoryItems.length === 0) {
+  if (inventory.length === 0) {
     lines.push("Пока что у тебя нет предметов.");
   } else {
-    inventoryItems.forEach((item, idx) => {
+    inventory.forEach((item, idx) => {
       lines.push(idx + 1 + ". " + item);
     });
   }

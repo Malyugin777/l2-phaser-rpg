@@ -7,24 +7,53 @@ let autoHuntEvent = null;
 let autoHuntSessionTimer = null;
 const AUTO_HP_THRESHOLD = 0.3;
 const AUTO_MP_THRESHOLD = 0.2;
+const AUTO_REST_HP_LOW = 0.3;   // Садимся при HP < 30%
+const AUTO_REST_HP_HIGH = 0.8;  // Встаём при HP > 80%
 
 // Авто-использование банок во время авто-охоты
 function autoPotionsDuringHunt(scene) {
   if (!autoHuntEnabled) return;
-  if (heroStats.hp <= 0) return;
+  if (stats.hp <= 0) return;
 
-  const hpRatio = heroStats.hp / heroStats.maxHp;
-  const mpRatio = heroStats.mp / heroStats.maxMp;
+  const hpRatio = stats.hp / stats.maxHp;
+  const mpRatio = stats.mp / stats.maxMp;
 
-  if (hpRatio < AUTO_HP_THRESHOLD && heroHpPotions > 0) useHpPotion(scene);
-  if (mpRatio < AUTO_MP_THRESHOLD && heroMpPotions > 0) useMpPotion(scene);
+  if (hpRatio < AUTO_HP_THRESHOLD && consumables.hpPotions > 0) useHpPotion(scene);
+  if (mpRatio < AUTO_MP_THRESHOLD && consumables.mpPotions > 0) useMpPotion(scene);
+}
+
+// Автоматический отдых во время авто-охоты
+function autoRestDuringHunt(scene) {
+  if (!autoHuntEnabled) return;
+  if (stats.hp <= 0) return;
+  
+  const hpRatio = stats.hp / stats.maxHp;
+  
+  // Если HP низкий и нет банок — садимся
+  if (hpRatio < AUTO_REST_HP_LOW && consumables.hpPotions === 0) {
+    if (!buffs.isResting) {
+      startRest();
+    }
+  }
+  
+  // Если HP восстановился — встаём
+  if (hpRatio > AUTO_REST_HP_HIGH && buffs.isResting) {
+    stopRest();
+  }
 }
 
 // Включить авто-охоту
 function enableAutoHunt(scene) {
-  if (mode !== "location") return;
-  if (heroStats.hp <= 0) return;
+  if (mode !== "location") {
+    console.log("[AutoHunt] mode !== location, mode =", mode);
+    return;
+  }
+  if (stats.hp <= 0) {
+    console.log("[AutoHunt] stats.hp <= 0");
+    return;
+  }
 
+  console.log("[AutoHunt] Enabled!");
   autoHuntEnabled = true;
   saveGame();
 
@@ -44,12 +73,40 @@ function enableAutoHunt(scene) {
     delay: 1200,
     loop: true,
     callback: function () {
-      if (!autoHuntEnabled) return;
-      if (mode !== "location") return;
-      if (heroStats.hp <= 0) return;
+      if (!autoHuntEnabled) {
+        console.log("[AutoHunt] Disabled in callback");
+        return;
+      }
+      if (mode !== "location") {
+        console.log("[AutoHunt] Wrong mode:", mode);
+        return;
+      }
+      if (stats.hp <= 0) {
+        console.log("[AutoHunt] HP <= 0");
+        return;
+      }
+      
+      // Сначала проверяем отдых
+      autoRestDuringHunt(scene);
+      
+      // Потом банки
       autoPotionsDuringHunt(scene);
-      if (isAttacking) return;
-      if (!enemyAlive) return;
+      
+      // Если отдыхаем — не атакуем
+      if (buffs.isResting) {
+        console.log("[AutoHunt] Resting");
+        return;
+      }
+      
+      if (isAttacking) {
+        console.log("[AutoHunt] Already attacking");
+        return;
+      }
+      if (!enemyAlive) {
+        console.log("[AutoHunt] Enemy not alive");
+        return;
+      }
+      console.log("[AutoHunt] Starting attack!");
       startHeroAttack(scene);
     },
   });

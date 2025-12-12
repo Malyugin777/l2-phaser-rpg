@@ -1,99 +1,206 @@
 "use strict";
 
-// ----- ГЕРОЙ: ГЛОБАЛЬНЫЕ СТАТЫ -----
-const heroStats = {
+// ============================================================
+//  heroState.js — ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ДЛЯ ДАННЫХ ГЕРОЯ
+// ============================================================
+
+const SAVE_VERSION = 3;
+
+// ----- БОЕВЫЕ ХАРАКТЕРИСТИКИ -----
+const stats = {
   level: 1,
   exp: 0,
   expToNext: 100,
   sp: 0,
-  maxHp: 100,
-  hp: 100,
-  maxMp: 50,
-  mp: 50,
 
-  // Боевые статы
-  minAttack: 10,
-  maxAttack: 20,
-  critChance: 0.25,
+  // Derived stats (рассчитываются через statSystem)
+  maxHp: 80,
+  hp: 80,
+  maxMp: 30,
+  mp: 30,
+
+  pAtk: 4,
+  mAtk: 2,
+  pDef: 40,
+  mDef: 25,
+  atkSpd: 300,
+  castSpd: 200,
+
+  critChance: 0.05,
   critMultiplier: 2.0,
 
-  // Skill Points (SP)
-  sp: 0,
-
-  // Под будущее (cast/atk speed, вес и т.п.)
-  castSpeed: 100,
+  // Legacy (для совместимости)
+  minAttack: 10,
+  maxAttack: 20,
   atkSpeed: 100,
+  castSpeed: 100,
   weight: 0,
   maxWeight: 1000,
 };
 
-// ----- МЕТА: РАСА / КЛАСС -----
-const heroMeta = {
-  race: null,        // "human", "elf", "darkelf"
-  heroClass: null,   // "knight", "mage", "rogue"
-
-  // Архетип и профа под GDD
-  archetype: null,   // "fighter" / "mystic"
-  profession: null,  // "knight" / "rogue" / "wizard" (после 20 лвл)
+// ----- ПРОФИЛЬ ПЕРСОНАЖА -----
+const profile = {
+  race: null,
+  archetype: null,
+  profession: null,
 };
 
-// ----- СПРАВОЧНИКИ -----
+// ----- МОДИФИКАТОРЫ СТАТОВ -----
+const heroModifiers = {
+  tattoo: {
+    str: 0, dex: 0, con: 0,
+    int: 0, wit: 0, men: 0
+  },
+  set: {
+    str: 0, dex: 0, con: 0,
+    int: 0, wit: 0, men: 0
+  }
+};
+
+// ----- КОШЕЛЁК -----
+const wallet = {
+  gold: 0,
+  ether: 50,
+  crystals: 0,
+};
+
+// ----- РАСХОДНИКИ -----
+const consumables = {
+  hpPotions: 5,
+  mpPotions: 3,
+  pAtkScrolls: 2,
+  mAtkScrolls: 2,
+};
+
+// ----- ПРОГРЕСС -----
+const progress = {
+  kills: 0,
+  eliteKills: 0,
+  arenaRating: 0,
+  lastSessionTime: 0,
+};
+
+// ----- ЭКИПИРОВКА -----
+const equipment = {
+  weapon: null,
+  armor: null,
+  jewelry1: null,
+  jewelry2: null,
+};
+
+// ----- ИНВЕНТАРЬ -----
+let inventory = [];
+
+// ----- НАВЫКИ -----
+const skills = {
+  learned: [],
+  slots: {
+    slot1: null,
+    slot2: null,
+  },
+};
+
+// ----- БАФЫ -----
+const buffs = {
+  pAtkActive: false,
+  mAtkActive: false,
+  soulshotsOn: false,
+  spiritshotsOn: false,
+  isResting: false,
+};
+
+let buffPTimer = null;
+let buffMTimer = null;
+
+// ----- КВЕСТЫ -----
+const quests = {
+  killQuestDone: false,
+  goldQuestDone: false,
+  eliteQuestDone: false,
+};
+
+// ----- НАЁМНИК -----
+const mercenary = {
+  active: false,
+  maxHp: 80,
+  hp: 80,
+  minAttack: 8,
+  maxAttack: 15,
+  critChance: 0.15,
+  critMultiplier: 1.5,
+};
+
+// ----- ПЕТ -----
+const pet = {
+  obtained: false,
+  active: false,
+  name: "",
+  level: 1,
+  exp: 0,
+  minAttack: 5,
+  maxAttack: 10,
+};
+
+// ============================================================
+//  КОНСТАНТЫ
+// ============================================================
+
+const OVERDRIVE_ETHER_COST = 5;
+const OVERDRIVE_DURATION_MS = 10000;
+const AUTO_HUNT_DURATION_MS = 60000;
+const ETHER_KILL_DROP_CHANCE = 1.0;
+const ELITE_KILL_CHANCE = 0.2;
+const BUFF_DURATION_MS = 30000;
+
+const SKILL1_MP_COST = 10;
+const SKILL2_MP_COST = 15;
+const SKILL1_COOLDOWN_MS = 4000;
+const SKILL2_COOLDOWN_MS = 6000;
+
+let skill1Ready = true;
+let skill2Ready = true;
+
+let hpRegenAcc = 0;
+let mpRegenAcc = 0;
+const REGEN_TICKS_TO_FULL = 600;
+
+// ============================================================
+//  СПРАВОЧНИКИ
+// ============================================================
+
 const RACES = [
   { id: "human", label: "Человек" },
   { id: "elf", label: "Эльф" },
   { id: "darkelf", label: "Тёмный эльф" },
 ];
 
-const CLASSES = [
-  { id: "knight", label: "Рыцарь" },
-  { id: "mage", label: "Маг" },
-  { id: "rogue", label: "Рога" },
+const ARCHETYPES = [
+  { id: "fighter", label: "Воин" },
+  { id: "mystic", label: "Мистик" },
 ];
 
-// ----- РЕСУРСЫ ГЕРОЯ -----
-let heroGold = 0;
-let heroKills = 0;
-let heroEliteKills = 0;
+const PROFESSIONS = [
+  { id: "knight", label: "Рыцарь", archetype: "fighter" },
+  { id: "rogue", label: "Разбойник", archetype: "fighter" },
+  { id: "wizard", label: "Волшебник", archetype: "mystic" },
+];
 
-// ----- ЭФИР / ОВЕРДРАЙВ / АВТО-ОХОТА -----
-let heroEther = 50;
-const OVERDRIVE_ETHER_COST = 5;
-const OVERDRIVE_DURATION_MS = 10000;
-const AUTO_HUNT_DURATION_MS = 60000;
-const ETHER_KILL_DROP_CHANCE = 1.0; // сейчас всегда 1 эфир с моба
-const ELITE_KILL_CHANCE = 0.2;      // шанс, что убийство считается "элитным"
+const LOOT_TABLE = [
+  "Меч новичка",
+  "Кинжал охотника",
+  "Кольцо ученика",
+  "Серьга путешественника",
+  "Кольчуга гнома",
+  "Талисман ветра",
+];
 
-// ----- БАНКИ / БАФЫ -----
-let heroHpPotions = 5;
-let heroMpPotions = 3;
-let heroPAtkScrolls = 2;
-let heroMAtkScrolls = 2;
+const LOOT_DROP_CHANCE = 0.3;
 
-let buffPActive = false;
-let buffMActive = false;
-let buffPTimer = null;
-let buffMTimer = null;
-const BUFF_DURATION_MS = 30000;
+// ============================================================
+//  SKILL_DB — ЕДИНСТВЕННАЯ БАЗА НАВЫКОВ
+// ============================================================
 
-// ----- СКИЛЛЫ (кнопки 1/2) -----
-const SKILL1_MP_COST = 10;
-const SKILL2_MP_COST = 15;
-const SKILL1_COOLDOWN_MS = 4000;
-const SKILL2_COOLDOWN_MS = 6000;
-let skill1Ready = true;
-let skill2Ready = true;
-
-// ----- РЕГЕН -----
-let hpRegenAcc = 0;
-let mpRegenAcc = 0;
-const REGEN_TICKS_TO_FULL = 600; // 10 минут
-
-// ----- АРЕНА (СТАТ ГЕРОЯ) -----
-let heroArenaRating = 0;
-
-// ====== БАЗА СКИЛЛОВ (SKILL DB) ======
 const SKILL_DB = {
-  // --- 1 ПРОФА (FIGHTER) ---
   "Power Strike": {
     id: "power_strike",
     name: "Power Strike",
@@ -101,7 +208,8 @@ const SKILL_DB = {
     power: 1.5,
     mp: 10,
     cd: 4000,
-    spCost: 1, // стоит 1 SP
+    costSp: 5,
+    costGold: 100,
     desc: "Мощный удар x1.5",
   },
   "Mortal Blow": {
@@ -112,11 +220,10 @@ const SKILL_DB = {
     mp: 15,
     cd: 6000,
     chance: 0.7,
-    spCost: 1, // тоже дешёвый стартовый
+    costSp: 8,
+    costGold: 150,
     desc: "Летал x2.5 (Шанс 70%)",
   },
-
-  // --- 1 ПРОФА (MYSTIC) ---
   "Wind Strike": {
     id: "wind_strike",
     name: "Wind Strike",
@@ -125,7 +232,8 @@ const SKILL_DB = {
     mp: 12,
     cd: 3000,
     castTime: 1500,
-    spCost: 1, // базовый нук
+    costSp: 5,
+    costGold: 100,
     desc: "Нюк ветром x2.0",
   },
   "Vampiric Touch": {
@@ -137,11 +245,10 @@ const SKILL_DB = {
     cd: 8000,
     castTime: 1500,
     healPercent: 0.4,
-    spCost: 1, // стартовый дрейн
+    costSp: 10,
+    costGold: 200,
     desc: "Дрейн ХП (40%)",
   },
-
-  // --- 2 ПРОФА (KNIGHT - 20+) ---
   "Shield Stun": {
     id: "shield_stun",
     name: "Shield Stun",
@@ -150,7 +257,8 @@ const SKILL_DB = {
     mp: 20,
     cd: 8000,
     stun: true,
-    spCost: 3,
+    costSp: 15,
+    costGold: 400,
     desc: "Стан врага на 2 сек.",
   },
   "Ultimate Defense": {
@@ -161,11 +269,10 @@ const SKILL_DB = {
     cd: 60000,
     duration: 15000,
     effect: { pDef: 3.0 },
-    spCost: 3,
+    costSp: 20,
+    costGold: 500,
     desc: "P.Def x3 (УД)",
   },
-
-  // --- 2 ПРОФА (ROGUE - 20+) ---
   "Backstab": {
     id: "backstab",
     name: "Backstab",
@@ -174,7 +281,8 @@ const SKILL_DB = {
     mp: 30,
     cd: 10000,
     chance: 0.5,
-    spCost: 3,
+    costSp: 18,
+    costGold: 450,
     desc: "Удар в спину x4.0 (Шанс 50%)",
   },
   "Dash": {
@@ -185,11 +293,10 @@ const SKILL_DB = {
     cd: 30000,
     duration: 10000,
     effect: { atkSpeed: 1.3 },
-    spCost: 2,
+    costSp: 12,
+    costGold: 350,
     desc: "Скор. Атк +30%",
   },
-
-  // --- 2 ПРОФА (WIZARD - 20+) ---
   "Blaze": {
     id: "blaze",
     name: "Blaze",
@@ -198,7 +305,8 @@ const SKILL_DB = {
     mp: 25,
     cd: 4000,
     castTime: 2000,
-    spCost: 3,
+    costSp: 15,
+    costGold: 450,
     desc: "Огненный шар x3.0",
   },
   "Aura Flare": {
@@ -209,8 +317,93 @@ const SKILL_DB = {
     mp: 30,
     cd: 500,
     castTime: 500,
-    spCost: 4, // спам-нюк, пусть дороже
-    desc: "Быстрая вспышка (Спам)",
+    costSp: 18,
+    costGold: 500,
+    desc: "Быстрая вспышка (спам)",
   },
 };
 
+// ============================================================
+//  ХЕЛПЕРЫ ДЛЯ НАВЫКОВ
+// ============================================================
+
+function isSkillLearned(skillKey) {
+  if (!Array.isArray(skills.learned)) return false;
+  if (skills.learned.includes(skillKey)) return true;
+  if (SKILL_DB[skillKey] && SKILL_DB[skillKey].id) {
+    return skills.learned.includes(SKILL_DB[skillKey].id);
+  }
+  return false;
+}
+
+function addLearnedSkill(skillKey) {
+  if (!Array.isArray(skills.learned)) {
+    skills.learned = [];
+  }
+  if (!skills.learned.includes(skillKey)) {
+    skills.learned.push(skillKey);
+  }
+}
+
+function getAvailableSkills() {
+  const result = [];
+  for (const key in SKILL_DB) {
+    if (Object.prototype.hasOwnProperty.call(SKILL_DB, key)) {
+      if (isSkillVisibleForHero(key)) {
+        result.push(key);
+      }
+    }
+  }
+  return result;
+}
+
+function isSkillVisibleForHero(skillKey) {
+  const arch = profile.archetype;
+  const prof = profile.profession;
+
+  switch (skillKey) {
+    case "Power Strike":
+    case "Mortal Blow":
+      return arch === "fighter";
+    case "Wind Strike":
+    case "Vampiric Touch":
+      return arch === "mystic";
+    case "Shield Stun":
+    case "Ultimate Defense":
+      return prof === "knight";
+    case "Backstab":
+    case "Dash":
+      return prof === "rogue";
+    case "Blaze":
+    case "Aura Flare":
+      return prof === "wizard";
+    default:
+      return false;
+  }
+}
+
+function getSkillRequiredLevel(skillKey) {
+  switch (skillKey) {
+    case "Power Strike":
+    case "Mortal Blow":
+    case "Wind Strike":
+    case "Vampiric Touch":
+      return 1;
+    case "Shield Stun":
+    case "Ultimate Defense":
+    case "Backstab":
+    case "Dash":
+    case "Blaze":
+    case "Aura Flare":
+      return 20;
+    default:
+      return 1;
+  }
+}
+
+// ============================================================
+//  АЛИАСЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ
+// ============================================================
+
+const heroStats = stats;
+const heroMeta = profile;

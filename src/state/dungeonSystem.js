@@ -19,8 +19,8 @@ function endDungeonRun(scene) {
   const bonusGold = loc.goldReward * 5;
   const bonusEther = 5;
 
-  heroGold += bonusGold;
-  heroEther += bonusEther;
+  wallet.gold += bonusGold;
+  wallet.ether += bonusEther;
 
   updateHeroUI();
   saveGame();

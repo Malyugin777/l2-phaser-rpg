@@ -3,6 +3,12 @@ function showQuestsPanel() {
   isQuestsOpen = true;
   questsPanel.setVisible(true);
   questsPanelText.setVisible(true);
+  
+  // Авто-сдача квеста волка
+  if (canCompleteWolfQuest()) {
+    completeWolfQuest(window.gameScene);
+  }
+  
   updateQuestsPanel();
 }
 
@@ -17,19 +23,25 @@ function updateQuestsPanel() {
   const goldQuestTarget = 100;
   const eliteQuestTarget = 5;
 
-  const killProgress = Math.min(heroKills, killQuestTarget);
-  const goldProgress = Math.min(heroGold, goldQuestTarget);
-  const eliteProgress = Math.min(heroEliteKills, eliteQuestTarget);
+  const killProgress = Math.min(progress.kills, killQuestTarget);
+  const goldProgress = Math.min(wallet.gold, goldQuestTarget);
+  const eliteProgress = Math.min(progress.eliteKills, eliteQuestTarget);
 
-  const killStatus = questKillCompleted
+  const killStatus = quests.killQuestDone
     ? "   Статус: выполнен ✅"
     : "   Статус: в процессе";
-  const goldStatus = questGoldCompleted
+  const goldStatus = quests.goldQuestDone
     ? "   Статус: выполнен ✅"
     : "   Статус: в процессе";
-  const eliteStatus = questEliteCompleted
+  const eliteStatus = quests.eliteQuestDone
     ? "   Статус: выполнен ✅"
     : "   Статус: в процессе";
+
+  // Квест волка
+  const wolfFangs = countWolfFangs();
+  const wolfStatus = pet.obtained
+    ? "   Статус: выполнен 🐺"
+    : (wolfFangs >= 5 ? "   Статус: ГОТОВ К СДАЧЕ!" : "   Статус: в процессе");
 
   const lines = [
     "КВЕСТЫ / ДЕЙЛИКИ",
@@ -37,7 +49,7 @@ function updateQuestsPanel() {
     "1) Охота в Глудио",
     "   Задача: убей " + killQuestTarget + " мобов",
     "   Прогресс: " + killProgress + "/" + killQuestTarget,
-    "   Награда: +100 адены, +10 Эфира, +3 HP, +3 MP",
+    "   Награда: +100 адены, +10 Эфира",
     killStatus,
     "",
     "2) Поднять капитал",
@@ -49,11 +61,14 @@ function updateQuestsPanel() {
     "3) Элитный охотник",
     "   Задача: убей " + eliteQuestTarget + " элитных мобов",
     "   Прогресс: " + eliteProgress + "/" + eliteQuestTarget,
-    "   Награда: +150 адены, +15 Эфира, +3 HP, +3 MP",
+    "   Награда: +150 адены, +15 Эфира",
     eliteStatus,
     "",
-    "Квесты выполняются по одному разу,",
-    "награда сохраняется между сессиями.",
+    "4) 🐺 Приручи волка",
+    "   Задача: собери 5 Wolf Fang (Grey Wolf)",
+    "   Прогресс: " + wolfFangs + "/5",
+    "   Награда: питомец Волк",
+    wolfStatus,
   ];
   questsPanelText.setText(lines.join("\n"));
 }
