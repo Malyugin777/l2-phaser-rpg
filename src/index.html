@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <title>L2 Phaser RPG</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <link rel="stylesheet" href="preEntry.css">
 
     <style>
       html,
@@ -23,15 +27,24 @@
       #game-container {
         width: 100vw;
         height: 100vh;
+        max-width: 430px;
+        margin: 0 auto;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: radial-gradient(circle at top, #181830 0, #050510 60%);
+        background: #0a0a12;
+        overflow: hidden;
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
       }
 
       canvas {
-        border-radius: 8px;
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+        border-radius: 0;
+        box-shadow: none;
+        max-width: 100%;
+        max-height: 100%;
         image-rendering: pixelated;
       }
 
@@ -59,21 +72,43 @@
     </style>
   </head>
  <body>
+  <!-- Pre-Entry Overlay (Loader + Intro) -->
+  <div id="preEntry">
+    <div id="preLoader">
+      <div class="pre-logo">POCKET LINEAGE</div>
+      <div class="pre-decor-line"></div>
+      <div class="pre-progress-container">
+        <div class="pre-progress-bar">
+          <div class="pre-progress-fill"></div>
+        </div>
+      </div>
+      <div class="pre-loading-text">Загрузка...</div>
+    </div>
+    <div id="preIntro">
+      <div class="pre-intro-title">Ты стоишь у врат<br>Talking Island</div>
+      <button class="pre-intro-btn">НАЧАТЬ ПУТЬ</button>
+      <div class="pre-intro-hint">Прогресс сохраняется автоматически</div>
+    </div>
+  </div>
+
   <div id="game-container"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
 
+<!-- PRE-ENTRY -->
+<script src="preEntry.js"></script>
+
 <!-- STATE -->
 <script src="state/heroState.js"></script>
+<script src="state/itemSystem.js"></script>
+<script src="state/saveSystem.js"></script>
 <script src="state/statSystem.js"></script>
 <script src="state/tickSystem.js"></script>
 <script src="state/worldState.js"></script>
-
 <script src="state/mercenarySystem.js"></script>
 <script src="state/autoHuntSystem.js"></script>
 <script src="state/overdriveSystem.js"></script>
 <script src="state/economySystem.js"></script>
-<script src="state/itemSystem.js"></script>
 <script src="state/combatSystem.js"></script>
 <script src="state/progressionSystem.js"></script>
 <script src="state/arenaSystem.js"></script>
@@ -98,6 +133,7 @@
 <script src="ui/dungeonPanel.js"></script>
 <script src="ui/mapPanel.js"></script>
 <script src="ui/selectionScreen.js"></script>
+<script src="ui/skillsPanel.js"></script>
 
 <!-- MAIN -->
 <script src="game.js"></script>

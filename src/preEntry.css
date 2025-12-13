@@ -1,0 +1,156 @@
+/* Pre-Entry Overlay Styles - L2 Style */
+* { box-sizing: border-box; }
+
+#preEntry {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: url('assets/intro/bg.png') center/cover no-repeat,
+              linear-gradient(180deg, #0a0a12 0%, #1a1a2e 50%, #0a0a12 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #d4af37;
+  padding: 20px;
+  /* Safe area для TMA */
+  padding-top: max(20px, env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  transition: opacity 0.5s ease;
+}
+
+#preEntry.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#preEntry.removed {
+  display: none;
+}
+
+/* LOADER */
+#preLoader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+#preLoader.hidden {
+  display: none;
+}
+
+.pre-logo {
+  font-size: 32px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 2px 2px 4px #000;
+  letter-spacing: 6px;
+  margin-bottom: 60px;
+  text-transform: uppercase;
+}
+
+.pre-progress-container {
+  width: 280px;
+  max-width: 80vw;
+}
+
+.pre-progress-bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #d4af37;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+.pre-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #5c4a0a 0%, #8b6914 50%, #d4af37 100%);
+  border-radius: 4px;
+  transition: width 0.2s ease-out;
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.8);
+}
+
+.pre-loading-text {
+  margin-top: 24px;
+  font-size: 14px;
+  color: #a0a0a0;
+  min-height: 20px;
+  font-style: italic;
+}
+
+/* INTRO */
+#preIntro {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: fadeIn 0.8s ease;
+}
+
+#preIntro.visible {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pre-intro-title {
+  font-size: 24px;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 2px 2px 4px #000;
+  margin-bottom: 50px;
+  line-height: 1.4;
+}
+
+.pre-intro-btn {
+  padding: 18px 56px;
+  font-size: 18px;
+  font-family: 'Georgia', serif;
+  font-weight: bold;
+  letter-spacing: 2px;
+  background: linear-gradient(180deg, #8b6914 0%, #5c4a0a 100%);
+  border: 2px solid #d4af37;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 2px #000;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(212, 175, 55, 0.3);
+  transition: all 0.2s ease;
+}
+
+.pre-intro-btn:hover {
+  background: linear-gradient(180deg, #a07a18 0%, #6d5610 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(212, 175, 55, 0.5);
+}
+
+.pre-intro-btn:active {
+  transform: scale(0.98);
+}
+
+.pre-intro-hint {
+  position: absolute;
+  bottom: 40px;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Decorative elements */
+.pre-decor-line {
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #d4af37 50%, transparent 100%);
+  margin: 20px 0;
+}

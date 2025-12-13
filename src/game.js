@@ -43,22 +43,7 @@ let arenaPanel, arenaText, arenaFightButton, arenaFightButtonText;
 let arenaBackButton, arenaBackButtonText;
 let dungeonPanel, dungeonPanelText, dungeonStartButton, dungeonStartButtonText;
 
-// панель навыков
-let skillsPanel,
-  skillsPanelText,
-  skillsLearnButton,
-  skillsLearnButtonText,
-  skillsSlot1Button,
-  skillsSlot1ButtonText,
-  skillsSlot2Button,
-  skillsSlot2ButtonText,
-  skillsPrevButton,
-  skillsPrevButtonText,
-  skillsNextButton,
-  skillsNextButtonText,
-  skillsCloseButton,
-  skillsCloseButtonText;
-
+// панели состояние (skillsPanel переменные теперь в ui/skillsPanel.js)
 let isInventoryOpen = false;
 let isStatsOpen = false;
 let isForgeOpen = false;
@@ -67,11 +52,6 @@ let isShopOpen = false;
 let isMapOpen = false;
 let isArenaOpen = false;
 let isDungeonOpen = false;
-let isSkillsOpen = false;
-
-// состояние панели навыков
-let availableSkills = [];
-let currentSkillIndex = 0;
 
 // палатка (для автоохоты)
 let campTent = null;
@@ -117,16 +97,24 @@ let npcMercRect = null,
 let npcDungeonRect = null,
   npcDungeonText = null;
 
-// ----- PHASER КОНФИГ -----
+// ----- PHASER КОНФИГ (TMA портретный режим) -----
 const config = {
   type: Phaser.AUTO,
-  width: 1280,
-  height: 720,
+  width: 390,
+  height: 844,
   parent: "game-container",
-  backgroundColor: 0x000000,
+  backgroundColor: 0x0a0a12,
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    min: {
+      width: 360,
+      height: 640
+    },
+    max: {
+      width: 430,
+      height: 932
+    }
   },
   scene: {
     preload: preload,
@@ -136,6 +124,28 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+// ----- SAFE AREA для TMA -----
+const SAFE_AREA = {
+  top: 0.08,      // 8% сверху (~67px) — под шапку Telegram
+  bottom: 0.10,   // 10% снизу (~84px) — под жесты/кнопку
+  left: 0.04,     // 4% слева
+  right: 0.04     // 4% справа
+};
+
+// Рабочая зона (где размещать UI)
+function getSafeArea(scene) {
+  const w = scene.scale.width;
+  const h = scene.scale.height;
+  return {
+    x: w * SAFE_AREA.left,
+    y: h * SAFE_AREA.top,
+    width: w * (1 - SAFE_AREA.left - SAFE_AREA.right),
+    height: h * (1 - SAFE_AREA.top - SAFE_AREA.bottom),
+    centerX: w / 2,
+    centerY: h / 2
+  };
+}
 
 // ================== СПРАЙТ ГЕРОЯ (простой человечек) ==================
 
@@ -181,6 +191,13 @@ function createHeroSprite(scene, x, y, color) {
 // ================== PRELOAD / UPDATE ==================
 
 function preload() {
+  // Прогресс загрузки для preEntry
+  this.load.on('progress', function(value) {
+    if (window.preEntry) {
+      window.preEntry.setProgress(value);
+    }
+  });
+
   this.load.audio("city_theme", "assets/audio/city_theme.mp3");
   this.load.audio("battle_theme", "assets/audio/battle_theme.mp3");
 
@@ -1355,430 +1372,28 @@ function create() {
 
   // Реген теперь через tickSystem.js (processTick в update)
 
-  // оффлайн-прогресс и выбор расы/класса
+  // оффлайн-прогресс
   applyOfflineProgress(scene);
-  openSelectionPanelIfNeeded(scene);
-  updateHeroUI();
-}
 
-// ================== НАВЫКИ: СПИСОК, УСЛОВИЯ, UI ==================
-
-function openSkillsScreen(scene) {
-  hideInventoryPanel();
-  hideStatsPanel();
-  hideForgePanel();
-  hideQuestsPanel();
-  hideShopPanel();
-  hideMapPanel();
-  hideArenaPanel();
-  hideDungeonPanel();
-
-  rebuildAvailableSkillsList();
-  updateSkillsPanel();
-  showSkillsPanel();
-}
-
-function rebuildAvailableSkillsList() {
-  availableSkills = [];
-  if (typeof SKILL_DB === "undefined" || !SKILL_DB) return;
-
-  for (const key in SKILL_DB) {
-    if (!Object.prototype.hasOwnProperty.call(SKILL_DB, key)) continue;
-    if (isSkillVisibleForHero(key)) {
-      availableSkills.push(key);
+  // Интеграция с preEntry
+  if (!profile.race || !profile.archetype) {
+    // Новый игрок — показываем интро
+    if (window.preEntry) {
+      window.preEntry.showIntro(function() {
+        window.preEntry.hide();
+        openSelectionPanelIfNeeded(scene);
+      });
+    } else {
+      openSelectionPanelIfNeeded(scene);
+    }
+  } else {
+    // Уже играл — сразу в игру
+    if (window.preEntry) {
+      window.preEntry.skip();
     }
   }
-  if (availableSkills.length === 0) {
-    currentSkillIndex = 0;
-  } else if (currentSkillIndex >= availableSkills.length) {
-    currentSkillIndex = 0;
-  }
-}
-
-function learnCurrentSkill(scene) {
-  if (!availableSkills || availableSkills.length === 0) return;
-
-  const skillKey = availableSkills[currentSkillIndex];
-  const requiredLevel = getSkillRequiredLevel(skillKey);
-
-  if (isSkillLearned(skillKey)) {
-    spawnForgeResultText(scene, "Скилл уже выучен", false, true);
-    return;
-  }
-
-  if (stats.level < requiredLevel) {
-    spawnForgeResultText(
-      scene,
-      "Недостаточный уровень. Нужен " + requiredLevel + " лвл",
-      false,
-      true
-    );
-    return;
-  }
-
-  const cfg = SKILL_DB && SKILL_DB[skillKey] ? SKILL_DB[skillKey] : null;
-
-  let costSp = 0;
-  let costGold = 0;
-
-  if (cfg) {
-    if (typeof cfg.costSp === "number") costSp = cfg.costSp;
-    if (typeof cfg.costGold === "number") costGold = cfg.costGold;
-  }
-
-  const currentSp = typeof stats.sp === "number" ? stats.sp : 0;
-  const currentGold = typeof wallet.gold === "number" ? wallet.gold : 0;
-
-  if (currentSp < costSp) {
-    spawnForgeResultText(
-      scene,
-      "Не хватает SP. Нужно: " + costSp + ", у тебя: " + currentSp,
-      false,
-      true
-    );
-    return;
-  }
-
-  if (currentGold < costGold) {
-    spawnForgeResultText(
-      scene,
-      "Не хватает адены. Нужно: " + costGold + ", у тебя: " + currentGold,
-      false,
-      true
-    );
-    return;
-  }
-
-  stats.sp = currentSp - costSp;
-  wallet.gold = currentGold - costGold;
-
-  addLearnedSkill(skillKey);
-
-  // авто-назначение в свободный слот
-  if (skills.slots && !skills.slots.slot1) {
-    skills.slots.slot1 = skillKey;
-  } else if (skills.slots && !skills.slots.slot2) {
-    skills.slots.slot2 = skillKey;
-  }
-
-  spawnForgeResultText(
-    scene,
-    "Вы выучили: " + skillKey + " (-" + costSp + " SP, -" + costGold + " адены)",
-    true,
-    true
-  );
 
   updateHeroUI();
-  updateSkillsPanel();
-  updateSkillButtonsUI();
-  saveGame();
-}
-
-function assignCurrentSkillToSlot(scene, slotKey) {
-  if (!availableSkills || availableSkills.length === 0) return;
-  const skillKey = availableSkills[currentSkillIndex];
-
-  if (!isSkillLearned(skillKey)) {
-    spawnForgeResultText(scene, "Сначала выучите навык", false, true);
-    return;
-  }
-
-  if (!skills.slots || typeof skills.slots !== "object") {
-    skills.slots = { slot1: null, slot2: null };
-  }
-
-  skills.slots[slotKey] = skillKey;
-
-  const slotLabel = slotKey === "slot1" ? "1" : "2";
-  spawnForgeResultText(
-    scene,
-    'Скилл "' + skillKey + '" назначен в слот ' + slotLabel,
-    true,
-    true
-  );
-
-  updateSkillButtonsUI();
-  updateSkillsPanel();
-  saveGame();
-}
-
-function updateSkillsPanel() {
-  if (!skillsPanelText) return;
-
-  if (!availableSkills || availableSkills.length === 0) {
-    skillsPanelText.setText(
-      "Навыки\n\n" +
-        "Пока нет доступных навыков для вашего архетипа/профессии.\n" +
-        "Сначала выберите класс и/или возьмите 20 уровень."
-    );
-
-    if (skillsLearnButton) {
-      skillsLearnButton.setVisible(false);
-      skillsLearnButtonText.setVisible(false);
-    }
-    [
-      skillsSlot1Button,
-      skillsSlot1ButtonText,
-      skillsSlot2Button,
-      skillsSlot2ButtonText,
-    ].forEach((obj) => obj && obj.setVisible(false));
-    return;
-  }
-
-  const skillKey = availableSkills[currentSkillIndex];
-  const cfg = SKILL_DB && SKILL_DB[skillKey] ? SKILL_DB[skillKey] : null;
-  const requiredLevel = getSkillRequiredLevel(skillKey);
-  const learned = isSkillLearned(skillKey);
-
-  const slot1Name = skills.slots && skills.slots.slot1 ? skills.slots.slot1 : "пусто";
-  const slot2Name = skills.slots && skills.slots.slot2 ? skills.slots.slot2 : "пусто";
-
-  const costSp = cfg && typeof cfg.costSp === "number" ? cfg.costSp : 0;
-  const costGold = cfg && typeof cfg.costGold === "number" ? cfg.costGold : 0;
-
-  const currentSp = typeof stats.sp === "number" ? stats.sp : 0;
-  const currentGold = typeof wallet.gold === "number" ? wallet.gold : 0;
-
-  let text = "Навыки\n\n";
-  text += "Текущий навык: " + skillKey + "\n";
-
-  if (cfg) {
-    if (cfg.type) text += "Тип: " + cfg.type + "\n";
-    if (typeof cfg.power === "number")
-      text += "Множитель урона: x" + cfg.power + "\n";
-    if (typeof cfg.mp === "number") text += "MP: " + cfg.mp + "\n";
-    if (typeof cfg.cd === "number")
-      text += "Перезарядка: " + Math.round(cfg.cd / 1000) + " c\n";
-  }
-
-  text += "\nТребуемый уровень: " + requiredLevel + "\n";
-  text += "Статус: " + (learned ? "выучен" : "не выучен") + "\n";
-
-  text += "\nСтоимость изучения: " + costSp + " SP, " + costGold + " адены\n";
-  text += "У тебя сейчас: " + currentSp + " SP, " + currentGold + " адены\n";
-
-  text += "\nСлот 1: " + slot1Name + "\n";
-  text += "Слот 2: " + slot2Name + "\n";
-
-  skillsPanelText.setText(text);
-
-  const canLearn = !learned && stats.level >= requiredLevel;
-  if (skillsLearnButton) {
-    skillsLearnButton.setVisible(canLearn);
-    skillsLearnButtonText.setVisible(canLearn);
-  }
-
-  const assignVisible = learned;
-  [
-    skillsSlot1Button,
-    skillsSlot1ButtonText,
-    skillsSlot2Button,
-    skillsSlot2ButtonText,
-  ].forEach((obj) => obj && obj.setVisible(assignVisible));
-}
-
-function showSkillsPanel() {
-  isSkillsOpen = true;
-  [
-    skillsPanel,
-    skillsPanelText,
-    skillsPrevButton,
-    skillsPrevButtonText,
-    skillsNextButton,
-    skillsNextButtonText,
-    skillsLearnButton,
-    skillsLearnButtonText,
-    skillsSlot1Button,
-    skillsSlot1ButtonText,
-    skillsSlot2Button,
-    skillsSlot2ButtonText,
-    skillsCloseButton,
-    skillsCloseButtonText,
-  ].forEach((obj) => obj && obj.setVisible(true));
-}
-
-function hideSkillsPanel() {
-  isSkillsOpen = false;
-  [
-    skillsPanel,
-    skillsPanelText,
-    skillsPrevButton,
-    skillsPrevButtonText,
-    skillsNextButton,
-    skillsNextButtonText,
-    skillsLearnButton,
-    skillsLearnButtonText,
-    skillsSlot1Button,
-    skillsSlot1ButtonText,
-    skillsSlot2Button,
-    skillsSlot2ButtonText,
-    skillsCloseButton,
-    skillsCloseButtonText,
-  ].forEach((obj) => obj && obj.setVisible(false));
-}
-
-// ================== СОХРАНЕНИЕ / ЗАГРУЗКА ==================
-
-function saveGame() {
-  try {
-    const timestamp = Date.now();
-    progress.lastSessionTime = timestamp;
-
-    const data = {
-      v: SAVE_VERSION,
-
-      // Основные данные
-      stats: stats,
-      profile: profile,
-      wallet: wallet,
-      consumables: consumables,
-      progress: progress,
-      equipment: equipment,
-      inventory: inventory,
-      skills: skills,
-      buffs: buffs,
-      quests: quests,
-      mercenary: mercenary,
-      pet: pet,
-      heroModifiers: heroModifiers,
-
-      // Глобальные переменные
-      currentLocationIndex: typeof currentLocationIndex !== "undefined" ? currentLocationIndex : 0,
-      isDungeonRun: typeof isDungeonRun !== "undefined" ? isDungeonRun : false,
-      dungeonKills: typeof dungeonKills !== "undefined" ? dungeonKills : 0,
-      musicMuted: typeof musicMuted !== "undefined" ? musicMuted : false,
-    };
-
-    localStorage.setItem("pocketLineageSave", JSON.stringify(data));
-  } catch (e) {
-    console.warn("Save error", e);
-  }
-}
-
-function loadGame() {
-  try {
-    const raw = localStorage.getItem("pocketLineageSave");
-    if (!raw) return false;
-
-    const data = JSON.parse(raw);
-
-    // Проверка версии сейва
-    if (data.v !== SAVE_VERSION) {
-      console.warn("[Save] Version mismatch (got " + data.v + ", need " + SAVE_VERSION + "), resetting save");
-      localStorage.removeItem("pocketLineageSave");
-      return false;
-    }
-
-    // Загрузка данных
-    if (data.stats) Object.assign(stats, data.stats);
-    if (data.profile) Object.assign(profile, data.profile);
-    if (data.wallet) Object.assign(wallet, data.wallet);
-    if (data.consumables) Object.assign(consumables, data.consumables);
-    if (data.progress) Object.assign(progress, data.progress);
-    if (data.equipment) Object.assign(equipment, data.equipment);
-    if (data.skills) Object.assign(skills, data.skills);
-    if (data.buffs) Object.assign(buffs, data.buffs);
-    if (data.quests) Object.assign(quests, data.quests);
-    if (data.mercenary) Object.assign(mercenary, data.mercenary);
-    if (data.pet) Object.assign(pet, data.pet);
-    if (data.heroModifiers) Object.assign(heroModifiers, data.heroModifiers);
-    if (data.inventory && Array.isArray(data.inventory)) {
-      inventory.length = 0;
-      inventory.push(...data.inventory);
-    }
-
-    // Глобальные переменные
-    if (typeof data.currentLocationIndex === "number") {
-      currentLocationIndex = data.currentLocationIndex;
-    }
-    if (typeof data.isDungeonRun === "boolean") {
-      isDungeonRun = data.isDungeonRun;
-    }
-    if (typeof data.dungeonKills === "number") {
-      dungeonKills = data.dungeonKills;
-    }
-    if (typeof data.musicMuted === "boolean") {
-      musicMuted = data.musicMuted;
-    }
-
-    return true;
-  } catch (e) {
-    console.warn("Load error", e);
-    return false;
-  }
-}
-
-function migrateOldSave(data) {
-  console.log("Migrating old save to version 2...");
-
-  // stats
-  if (data.heroStats) Object.assign(stats, data.heroStats);
-
-  // profile
-  if (data.heroMeta) {
-    profile.race = data.heroMeta.race || null;
-    profile.archetype = data.heroMeta.archetype || null;
-    profile.profession = data.heroMeta.profession || null;
-  }
-
-  // wallet
-  if (typeof data.heroGold === "number") wallet.gold = data.heroGold;
-  if (typeof data.heroEther === "number") wallet.ether = data.heroEther;
-
-  // consumables
-  if (typeof data.heroHpPotions === "number") consumables.hpPotions = data.heroHpPotions;
-  if (typeof data.heroMpPotions === "number") consumables.mpPotions = data.heroMpPotions;
-  if (typeof data.heroPAtkScrolls === "number") consumables.pAtkScrolls = data.heroPAtkScrolls;
-  if (typeof data.heroMAtkScrolls === "number") consumables.mAtkScrolls = data.heroMAtkScrolls;
-
-  // progress
-  if (typeof data.heroKills === "number") progress.kills = data.heroKills;
-  if (typeof data.heroEliteKills === "number") progress.eliteKills = data.heroEliteKills;
-  if (typeof data.heroArenaRating === "number") progress.arenaRating = data.heroArenaRating;
-  if (typeof data.lastSessionTime === "number") progress.lastSessionTime = data.lastSessionTime;
-
-  // equipment
-  if (typeof data.equippedWeapon === "string") equipment.weapon = data.equippedWeapon;
-  if (typeof data.equippedArmor === "string") equipment.armor = data.equippedArmor;
-  if (typeof data.equippedJewelry1 === "string") equipment.jewelry1 = data.equippedJewelry1;
-  if (typeof data.equippedJewelry2 === "string") equipment.jewelry2 = data.equippedJewelry2;
-
-  // inventory
-  if (Array.isArray(data.inventoryItems)) inventory = data.inventoryItems;
-
-  // skills
-  if (Array.isArray(data.learnedSkills)) skills.learned = data.learnedSkills;
-  if (data.skillSlots) {
-    skills.slots.slot1 = data.skillSlots.slot1 || null;
-    skills.slots.slot2 = data.skillSlots.slot2 || null;
-  }
-
-  // quests
-  if (typeof data.questKillCompleted === "boolean") quests.killQuestDone = data.questKillCompleted;
-  if (typeof data.questGoldCompleted === "boolean") quests.goldQuestDone = data.questGoldCompleted;
-  if (typeof data.questEliteCompleted === "boolean") quests.eliteQuestDone = data.questEliteCompleted;
-
-  // mercenary
-  if (typeof data.mercActive === "boolean") mercenary.active = data.mercActive;
-  if (data.mercStats) Object.assign(mercenary, data.mercStats);
-
-  // globals
-  if (typeof data.currentLocationIndex === "number") {
-    currentLocationIndex = data.currentLocationIndex;
-  }
-  if (typeof data.isDungeonRun === "boolean") {
-    isDungeonRun = data.isDungeonRun;
-  }
-  if (typeof data.dungeonKills === "number") {
-    dungeonKills = data.dungeonKills;
-  }
-  if (typeof data.musicMuted === "boolean") {
-    musicMuted = data.musicMuted;
-  }
-
-  // Сохраняем в новом формате
-  saveGame();
-  console.log("Migration complete!");
 }
 
 // ================== UI-ХЕЛПЕРЫ ДЛЯ ТЕКСТА ==================
