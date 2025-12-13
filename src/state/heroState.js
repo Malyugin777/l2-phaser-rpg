@@ -64,6 +64,23 @@ const wallet = {
   crystals: 0,
 };
 
+// ----- РЕСУРСЫ ДЛЯ КУЗНИЦЫ -----
+const resources = {
+  // Base (падают с мобов)
+  ore: 100,       // тест: 100
+  coal: 50,       // тест: 50
+  thread: 100,    // тест: 100
+  leather: 50,    // тест: 50
+
+  // Refined (только крафт)
+  ironIngot: 0,
+  cloth: 0,
+  leatherSheet: 0,
+
+  // Catalyst
+  enchantDust: 20 // тест: 20
+};
+
 // ----- РАСХОДНИКИ -----
 const consumables = {
   hpPotions: 5,
@@ -78,6 +95,8 @@ const progress = {
   eliteKills: 0,
   arenaRating: 0,
   lastSessionTime: 0,
+  lastMode: "city",        // "city" | "location" — где был при выходе
+  lastLocationIndex: 0,    // индекс локации при выходе
 };
 
 // ----- ЭКИПИРОВКА -----

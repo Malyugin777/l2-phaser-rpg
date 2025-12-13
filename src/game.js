@@ -1068,7 +1068,12 @@ function create() {
   
   // создаём графическую карту
   createMapUI(this);
-  
+
+  // создаём UI кузницы
+  if (typeof createForgeUI === "function") {
+    createForgeUI(this);
+  }
+
   // инициализируем раннер (для тестирования)
   if (typeof initRunnerBattle === "function") {
     initRunnerBattle(this);

@@ -17,6 +17,7 @@ function saveGame() {
       stats: stats,
       profile: profile,
       wallet: wallet,
+      resources: resources,
       consumables: consumables,
       progress: progress,
       equipment: equipment,
@@ -59,6 +60,7 @@ function loadGame() {
     if (data.stats) Object.assign(stats, data.stats);
     if (data.profile) Object.assign(profile, data.profile);
     if (data.wallet) Object.assign(wallet, data.wallet);
+    if (data.resources) Object.assign(resources, data.resources);
     if (data.consumables) Object.assign(consumables, data.consumables);
     if (data.progress) Object.assign(progress, data.progress);
     if (data.equipment) Object.assign(equipment, data.equipment);

@@ -136,6 +136,7 @@ function stopEnemyAttack() {
 // Вход в город
 function enterCity(scene) {
   mode = "city";
+  progress.lastMode = "city";
   isDungeonRun = false;
   dungeonKills = 0;
 
@@ -213,6 +214,8 @@ function enterCity(scene) {
 function enterLocation(scene) {
   console.log("[Location] Entering location, previous mode:", mode);
   mode = "location";
+  progress.lastMode = "location";
+  progress.lastLocationIndex = currentLocationIndex;
   console.log("[Location] Mode set to:", mode);
 
   startMusicForMode("location");
