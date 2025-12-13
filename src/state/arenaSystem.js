@@ -4,6 +4,23 @@
 //  ARENA SYSTEM — PvE Арена (полноэкранный режим боя)
 // ============================================================
 
+// TMA Touch Fix — надёжные клики
+function addReliableClick(gameObject, callback) {
+  var wasPressed = false;
+
+  gameObject.on("pointerdown", function() {
+    wasPressed = true;
+    callback();
+  });
+
+  gameObject.on("pointerup", function() {
+    if (!wasPressed) {
+      callback(); // Fallback если pointerdown не сработал
+    }
+    wasPressed = false;
+  });
+}
+
 // ----- ЭНЕРГИЯ -----
 function applyArenaEnergyRegen() {
   var now = Date.now();
@@ -509,7 +526,11 @@ function showArenaResult(scene, result) {
     fontFamily: "Arial"
   }).setOrigin(0.5).setDepth(173);
 
-  arenaResultBtn.on("pointerdown", function() {
+  // TMA Touch Fix
+  var btnClicked = false;
+  addReliableClick(arenaResultBtn, function() {
+    if (btnClicked) return;
+    btnClicked = true;
     exitArenaMode(scene);
   });
 }
