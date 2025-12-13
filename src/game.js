@@ -209,7 +209,10 @@ function preload() {
   
   // UI карта мира
   this.load.image("map_world", "assets/ui/map_world.png");
-  
+
+  // Экран регистрации
+  this.load.image("registration_bg", "assets/intro/registration.png");
+
   // Для раннера (пока используем существующие как заглушки)
   // bg_far и bg_near - будут tileSprite
 }
@@ -1386,10 +1389,16 @@ function create() {
     if (window.preEntry) {
       window.preEntry.showIntro(function() {
         window.preEntry.hide();
-        openSelectionPanelIfNeeded(scene);
+        // Новый полноэкранный экран создания персонажа
+        if (window.characterCreation) {
+          window.characterCreation.show(scene);
+        }
       });
     } else {
-      openSelectionPanelIfNeeded(scene);
+      // Новый полноэкранный экран создания персонажа
+      if (window.characterCreation) {
+        window.characterCreation.show(scene);
+      }
     }
   } else {
     // Уже играл — сразу в игру
