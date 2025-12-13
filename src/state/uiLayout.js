@@ -31,84 +31,98 @@ const UI_COLORS = {
   textGray: "#aaaaaa",
 };
 
-// ----- ПОЗИЦИИ (относительно экрана) -----
+// ----- ПОЗИЦИИ (с учётом Safe Area для TMA) -----
 function getUIPositions(w, h) {
+  // Используем константы из uiConstants.js
+  var safeTop = typeof SAFE_TOP !== "undefined" ? SAFE_TOP : 67;
+  var safeBottom = typeof SAFE_BOTTOM !== "undefined" ? SAFE_BOTTOM : 84;
+  var safeLeft = typeof SAFE_LEFT !== "undefined" ? SAFE_LEFT : 16;
+  var centerX = w / 2;
+
+  // Игровая область
+  var gameAreaTop = safeTop + 50;
+  var gameAreaBottom = h - safeBottom - 20;
+  var gameAreaCenterY = (gameAreaTop + gameAreaBottom) / 2;
+
   return {
     // === ВЕРХНИЙ ЛЕВЫЙ: HP/MP бары ===
-    hpBar: { x: UI_PADDING, y: UI_PADDING, w: BAR_WIDTH, h: BAR_HEIGHT },
-    mpBar: { x: UI_PADDING, y: UI_PADDING + BAR_HEIGHT + 4, w: BAR_WIDTH, h: BAR_HEIGHT },
-    
+    hpBar: { x: safeLeft, y: safeTop, w: BAR_WIDTH, h: BAR_HEIGHT },
+    mpBar: { x: safeLeft, y: safeTop + BAR_HEIGHT + 4, w: BAR_WIDTH, h: BAR_HEIGHT },
+
     // === ВЕРХНИЙ ЦЕНТР: Валюта ===
-    currency: { x: w / 2, y: UI_PADDING + 10 },
-    
+    currency: { x: centerX, y: safeTop + 10 },
+
     // === ВЕРХНИЙ ПРАВЫЙ: Меню иконки ===
     menuIcons: {
-      startX: w - UI_PADDING - ICON_SIZE,
-      y: UI_PADDING,
-      gap: ICON_SIZE + 6,
-      icons: ["≡", "⚙", "📦", "📋"]  // Меню, Статы, Инвентарь, Квесты
+      startX: w - safeLeft - ICON_SIZE / 2,
+      y: safeTop,
+      gap: ICON_SIZE + 4,
+      icons: ["⚙", "📦", "📋"]  // Статы, Инвентарь, Квесты (убрал меню)
     },
-    
+
     // === КНОПКА ГОРОДА (в бою) ===
-    cityButton: { x: w - UI_PADDING - ICON_SIZE, y: UI_PADDING + ICON_SIZE + 60 },
-    
+    cityButton: { x: w - safeLeft - ICON_SIZE / 2, y: safeTop + ICON_SIZE + 10 },
+
     // === ЛЕВЫЙ НИЗ: Уровень, EXP ===
-    levelBox: { x: UI_PADDING, y: h - 70 },
-    expBar: { x: UI_PADDING, y: h - 35, w: 120, h: 12 },
-    
+    levelBox: { x: safeLeft, y: h - safeBottom - 60 },
+    expBar: { x: safeLeft, y: h - safeBottom - 25, w: 100, h: 10 },
+
     // === ЦЕНТР НИЗ: Банки + Сесть ===
     potions: {
-      x: w / 2 - 80,
-      y: h - 60,
-      gap: 70
+      x: centerX - 50,
+      y: h - safeBottom - 45,
+      gap: 55
     },
-    sitButton: { x: w / 2 + 60, y: h - 60, w: 50, h: 50 }, // Справа от банок
-    
+    sitButton: { x: centerX + 50, y: h - safeBottom - 45, w: 44, h: 44 },
+
     // === ПРАВЫЙ НИЗ: Скиллы + Shots + Auto + Атака ===
     skills: {
-      skill1: { x: w - 200, y: h - 110 },
-      skill2: { x: w - 200, y: h - 50 },
-      shots: { x: w - 140, y: h - 110 },   // Рядом с S1
-      auto: { x: w - 140, y: h - 50 },     // Рядом с S2
-      attack: { x: w - 60, y: h - 80, size: 70 }
+      skill1: { x: w - 130, y: h - safeBottom - 90 },
+      skill2: { x: w - 130, y: h - safeBottom - 35 },
+      shots: { x: w - 75, y: h - safeBottom - 90 },
+      auto: { x: w - 75, y: h - safeBottom - 35 },
+      attack: { x: w - 40, y: h - safeBottom - 62, size: 60 }
     },
-    
+
     // === ЦЕНТР: Название локации ===
-    locationLabel: { x: w / 2, y: UI_PADDING + 50 },
-    
-    // === ГОРОД: NPC кнопки (иконки внизу по центру) ===
+    locationLabel: { x: centerX, y: safeTop + 45 },
+
+    // === ГОРОД: NPC кнопки (2 ряда по 3) ===
     npcButtons: {
-      y: h - 100,
-      centerX: w / 2,
-      gap: 70,
+      row1Y: h - safeBottom - 130,
+      row2Y: h - safeBottom - 70,
+      centerX: centerX,
+      gap: 60,
       npcs: [
-        { icon: "🗺️", label: "Карта" },
-        { icon: "🔨", label: "Кузнец" },
-        { icon: "🛒", label: "Магазин" },
-        { icon: "⚔️", label: "Арена" },
-        { icon: "🏰", label: "Данж" },
-        { icon: "👤", label: "Наёмник" }
+        // Ряд 1
+        { icon: "🗺️", label: "Карта", row: 1 },
+        { icon: "🔨", label: "Кузнец", row: 1 },
+        { icon: "🛒", label: "Магазин", row: 1 },
+        // Ряд 2
+        { icon: "⚔️", label: "Арена", row: 2 },
+        { icon: "🏰", label: "Данж", row: 2 },
+        { icon: "👤", label: "Наёмник", row: 2 }
       ]
     },
-    
+
     // === ЛОКАЦИЯ: Выбор локации ===
     locationNav: {
-      prev: { x: w / 2 - 120, y: h - 30 },
-      next: { x: w / 2 + 120, y: h - 30 },
-      label: { x: w / 2, y: h - 30 }
+      prev: { x: centerX - 100, y: h - safeBottom - 20 },
+      next: { x: centerX + 100, y: h - safeBottom - 20 },
+      label: { x: centerX, y: h - safeBottom - 20 }
     },
-    
+
     // === ВРАГ ===
     enemy: {
-      sprite: { x: w / 2 + 80, y: h / 2 - 20 },
-      hpBar: { x: w / 2 + 80, y: h / 2 - 80, w: 100, h: 12 },
-      name: { x: w / 2 + 80, y: h / 2 - 100 }
+      sprite: { x: centerX + 60, y: gameAreaCenterY },
+      hpBar: { x: centerX + 60, y: gameAreaCenterY - 60, w: 80, h: 10 },
+      name: { x: centerX + 60, y: gameAreaCenterY - 80 }
     },
-    
+
     // === ГЕРОЙ ===
     hero: {
-      city: { x: w / 2 - 100, y: h / 2 + 30 },
-      location: { x: w / 2 - 80, y: h / 2 }
+      city: { x: centerX - 60, y: gameAreaCenterY + 20 },
+      location: { x: centerX - 60, y: gameAreaCenterY }
     }
   };
 }
@@ -269,40 +283,40 @@ function createTopCenterUI(scene, pos) {
 
 // ----- ВЕРХНИЙ ПРАВЫЙ: Меню иконки -----
 function createTopRightUI(scene, pos) {
-  const icons = pos.menuIcons.icons;
-  const actions = ["openMainMenu", "openStats", "openInventory", "openQuests"];
-  
+  var icons = pos.menuIcons.icons;
+  var actions = ["openStats", "openInventory", "openQuests"]; // 3 действия
+
   uiElements.menuButtons = [];
-  
-  icons.forEach((icon, i) => {
-    const x = pos.menuIcons.startX - (i * pos.menuIcons.gap);
-    const btn = scene.add.rectangle(x, pos.menuIcons.y + ICON_SIZE / 2, ICON_SIZE, ICON_SIZE, UI_COLORS.buttonBg)
+
+  icons.forEach(function(icon, i) {
+    var x = pos.menuIcons.startX - (i * pos.menuIcons.gap);
+    var btn = scene.add.rectangle(x, pos.menuIcons.y + ICON_SIZE / 2, ICON_SIZE - 4, ICON_SIZE - 4, UI_COLORS.buttonBg)
       .setStrokeStyle(2, UI_COLORS.buttonBorder)
       .setInteractive({ useHandCursor: true })
       .setDepth(20);
-    
-    const txt = scene.add.text(x, pos.menuIcons.y + ICON_SIZE / 2, icon, {
+
+    var txt = scene.add.text(x, pos.menuIcons.y + ICON_SIZE / 2, icon, {
       fontFamily: "Arial",
-      fontSize: "20px",
+      fontSize: "18px",
       color: UI_COLORS.textWhite
     }).setOrigin(0.5).setDepth(21);
-    
-    uiElements.menuButtons.push({ btn, txt, action: actions[i] });
+
+    uiElements.menuButtons.push({ btn: btn, icon: txt, action: actions[i] });
   });
-  
+
   // Кнопка "В город" (видна только в локации)
   uiElements.cityBtn = scene.add.rectangle(
     pos.cityButton.x, pos.cityButton.y,
-    ICON_SIZE, ICON_SIZE, 0x1a5c1a
+    ICON_SIZE - 4, ICON_SIZE - 4, 0x1a5c1a
   ).setStrokeStyle(2, 0x33aa33)
    .setInteractive({ useHandCursor: true })
    .setDepth(20);
-  
-  uiElements.cityText = scene.add.text(
+
+  uiElements.cityBtnLabel = scene.add.text(
     pos.cityButton.x, pos.cityButton.y,
     "🏠", {
       fontFamily: "Arial",
-      fontSize: "22px",
+      fontSize: "20px",
       color: UI_COLORS.textWhite
     }
   ).setOrigin(0.5).setDepth(21);
@@ -509,42 +523,77 @@ function createCenterUI(scene, pos) {
   ).setOrigin(0.5).setDepth(20);
 }
 
-// ----- NPC КНОПКИ (город) -----
+// ----- NPC КНОПКИ (город, 2 ряда по 3) -----
 function createNPCButtons(scene, pos) {
-  const npcs = pos.npcButtons.npcs;
-  const actions = ["openMap", "openForge", "openShop", "openArena", "openDungeon", "openMerc"];
-  
+  var npcs = pos.npcButtons.npcs;
+  var actions = ["openMap", "openForge", "openShop", "openArena", "openDungeon", "openMerc"];
+
   uiElements.npcButtons = [];
-  
-  const totalWidth = (npcs.length - 1) * pos.npcButtons.gap;
-  const startX = pos.npcButtons.centerX - totalWidth / 2;
-  
-  npcs.forEach((npc, i) => {
-    const x = startX + (i * pos.npcButtons.gap);
-    
-    // Круглая кнопка
-    const btn = scene.add.circle(x, pos.npcButtons.y, 28, UI_COLORS.buttonBg)
+
+  // Группируем по рядам
+  var row1 = npcs.filter(function(n) { return n.row === 1; });
+  var row2 = npcs.filter(function(n) { return n.row === 2; });
+
+  // Ряд 1 (3 кнопки)
+  var row1Width = (row1.length - 1) * pos.npcButtons.gap;
+  var row1StartX = pos.npcButtons.centerX - row1Width / 2;
+
+  row1.forEach(function(npc, i) {
+    var x = row1StartX + (i * pos.npcButtons.gap);
+    var y = pos.npcButtons.row1Y;
+    var actionIndex = i; // 0, 1, 2
+
+    var btn = scene.add.circle(x, y, 24, UI_COLORS.buttonBg)
       .setStrokeStyle(2, UI_COLORS.buttonBorder)
       .setInteractive({ useHandCursor: true })
       .setDepth(20);
-    
-    // Иконка
-    const icon = scene.add.text(x, pos.npcButtons.y - 2, npc.icon, {
+
+    var icon = scene.add.text(x, y - 2, npc.icon, {
       fontFamily: "Arial",
-      fontSize: "22px",
+      fontSize: "18px",
       color: UI_COLORS.textWhite
     }).setOrigin(0.5).setDepth(21);
-    
-    // Подпись под кнопкой
-    const txt = scene.add.text(x, pos.npcButtons.y + 38, npc.label, {
+
+    var label = scene.add.text(x, y + 32, npc.label, {
       fontFamily: "Arial",
-      fontSize: "11px",
+      fontSize: "10px",
       color: UI_COLORS.textGray,
       stroke: "#000000",
       strokeThickness: 2
     }).setOrigin(0.5).setDepth(21);
-    
-    uiElements.npcButtons.push({ btn, icon, txt, action: actions[i] });
+
+    uiElements.npcButtons.push({ btn: btn, icon: icon, label: label, action: actions[actionIndex] });
+  });
+
+  // Ряд 2 (3 кнопки)
+  var row2Width = (row2.length - 1) * pos.npcButtons.gap;
+  var row2StartX = pos.npcButtons.centerX - row2Width / 2;
+
+  row2.forEach(function(npc, i) {
+    var x = row2StartX + (i * pos.npcButtons.gap);
+    var y = pos.npcButtons.row2Y;
+    var actionIndex = 3 + i; // 3, 4, 5
+
+    var btn = scene.add.circle(x, y, 24, UI_COLORS.buttonBg)
+      .setStrokeStyle(2, UI_COLORS.buttonBorder)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(20);
+
+    var icon = scene.add.text(x, y - 2, npc.icon, {
+      fontFamily: "Arial",
+      fontSize: "18px",
+      color: UI_COLORS.textWhite
+    }).setOrigin(0.5).setDepth(21);
+
+    var label = scene.add.text(x, y + 32, npc.label, {
+      fontFamily: "Arial",
+      fontSize: "10px",
+      color: UI_COLORS.textGray,
+      stroke: "#000000",
+      strokeThickness: 2
+    }).setOrigin(0.5).setDepth(21);
+
+    uiElements.npcButtons.push({ btn: btn, icon: icon, label: label, action: actions[actionIndex] });
   });
 }
 
@@ -597,19 +646,19 @@ function updateUIBars() {
 
 function updateUIForMode(currentMode) {
   const isCity = currentMode === "city";
-  
+
   // NPC кнопки — только в городе
   uiElements.npcButtons.forEach(npc => {
     npc.btn.setVisible(isCity);
     if (npc.icon) npc.icon.setVisible(isCity);
-    npc.txt.setVisible(isCity);
+    if (npc.label) npc.label.setVisible(isCity);
   });
-  
+
   // Навигация локаций — СКРЫТА (телепорт через карту)
   uiElements.locPrevBtn.setVisible(false);
   uiElements.locNextBtn.setVisible(false);
   uiElements.locNavLabel.setVisible(false);
-  
+
   // Боевые кнопки — только в локации
   const inBattle = !isCity;
   uiElements.attackBtn.setVisible(inBattle);
@@ -624,16 +673,16 @@ function updateUIForMode(currentMode) {
   uiElements.autoText.setVisible(inBattle);
   uiElements.sitButton.setVisible(inBattle);
   uiElements.sitButtonText.setVisible(inBattle);
-  
+
   // Банки — только в локации
   uiElements.hpPotionBtn.setVisible(inBattle);
   uiElements.hpPotionText.setVisible(inBattle);
   uiElements.mpPotionBtn.setVisible(inBattle);
   uiElements.mpPotionText.setVisible(inBattle);
-  
+
   // Кнопка города — только в локации
   if (uiElements.cityBtn) uiElements.cityBtn.setVisible(inBattle);
-  if (uiElements.cityText) uiElements.cityText.setVisible(inBattle);
+  if (uiElements.cityBtnLabel) uiElements.cityBtnLabel.setVisible(inBattle);
   
   // EXP бар — только в локации, но уровень ВСЕГДА
   uiElements.expBarBg.setVisible(inBattle);
