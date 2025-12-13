@@ -1560,16 +1560,10 @@ function setupNewUIHandlers(scene) {
           showShopPanel();
         }
       } else if (item.action === "openArena") {
-        // ТЕСТ: Запуск раннера вместо арены
-        if (typeof enterRunnerMode === "function") {
-          hideAllPanels();
-          enterRunnerMode(scene);
-        } else {
-          if (isArenaOpen) hideArenaPanel();
-          else {
-            hideAllPanels();
-            showArenaPanel();
-          }
+        // PvE Арена — полноэкранный режим боя
+        hideAllPanels();
+        if (typeof onArenaButtonClick === "function") {
+          onArenaButtonClick(scene);
         }
       } else if (item.action === "openDungeon") {
         if (isDungeonOpen) hideDungeonPanel();

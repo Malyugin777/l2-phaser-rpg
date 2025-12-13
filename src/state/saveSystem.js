@@ -28,6 +28,7 @@ function saveGame() {
       mercenary: mercenary,
       pet: pet,
       heroModifiers: heroModifiers,
+      arenaState: arenaState,
 
       // Глобальные переменные
       currentLocationIndex: typeof currentLocationIndex !== "undefined" ? currentLocationIndex : 0,
@@ -70,6 +71,7 @@ function loadGame() {
     if (data.mercenary) Object.assign(mercenary, data.mercenary);
     if (data.pet) Object.assign(pet, data.pet);
     if (data.heroModifiers) Object.assign(heroModifiers, data.heroModifiers);
+    if (data.arenaState) Object.assign(arenaState, data.arenaState);
     if (data.inventory && Array.isArray(data.inventory)) {
       inventory.length = 0;
       inventory.push(...data.inventory);

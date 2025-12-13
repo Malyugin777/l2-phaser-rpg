@@ -160,9 +160,23 @@ const pet = {
   maxAttack: 10,
 };
 
+// ----- АРЕНА -----
+const arenaState = {
+  rating: 1000,
+  honor: 0,
+  wins: 0,
+  losses: 0,
+  energy: 30,
+  energyMax: 30,
+  lastEnergyTs: Date.now()
+};
+
 // ============================================================
 //  КОНСТАНТЫ
 // ============================================================
+
+const ARENA_ENERGY_COST = 5;
+const ARENA_ENERGY_REGEN_MS = 10 * 60 * 1000; // 10 минут
 
 const OVERDRIVE_ETHER_COST = 5;
 const OVERDRIVE_DURATION_MS = 10000;
