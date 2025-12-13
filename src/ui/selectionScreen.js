@@ -99,71 +99,101 @@ function createSelectionUI(scene) {
   selectedRaceId = null;
   selectedClassId = null;
 
+  // Полноэкранный overlay
   selectionPanel = scene.add
-    .rectangle(w / 2, h / 2, 600, 360, 0x000000, 0.92)
-    .setStrokeStyle(2, 0xffffff)
+    .rectangle(w / 2, h / 2, w, h, 0x000000, 0.85)
     .setInteractive();
   selectionPanel.setDepth(50);
 
+  // Заголовок
   selectionText = scene.add
-    .text(w / 2, h / 2 - 140, "Создание героя\nВыбери расу и архетип", {
+    .text(w / 2, 120, "СОЗДАНИЕ ГЕРОЯ", {
       fontFamily: "Arial",
-      fontSize: "22px",
+      fontSize: "24px",
+      color: "#d4af37",
+      align: "center",
+    })
+    .setOrigin(0.5)
+    .setDepth(51);
+
+  // Подзаголовок "Выбери расу"
+  scene.add
+    .text(w / 2, 180, "Выбери расу", {
+      fontFamily: "Arial",
+      fontSize: "16px",
       color: "#ffffff",
       align: "center",
     })
     .setOrigin(0.5)
     .setDepth(51);
 
-  const raceY = h / 2 - 40;
-  const raceStartX = w / 2 - 200;
-  const raceGapX = 200;
+  // Кнопки рас — 3 в ряд
+  const raceY = 260;
+  const raceBtnW = 100;
+  const raceBtnH = 50;
+  const raceGapX = 110;
+  const raceStartX = w / 2 - raceGapX;
   raceButtons = [];
 
   RACES.forEach((race, index) => {
     const x = raceStartX + raceGapX * index;
     const isLocked = race.id !== "human";
     const rect = scene.add
-      .rectangle(x, raceY, 160, 50, isLocked ? 0x222222 : 0x333333)
-      .setStrokeStyle(2, isLocked ? 0x555555 : 0xffffff)
+      .rectangle(x, raceY, raceBtnW, raceBtnH, isLocked ? 0x222222 : 0x333333)
+      .setStrokeStyle(2, isLocked ? 0x555555 : 0xd4af37)
       .setDepth(50);
-    
+
     if (!isLocked) {
       rect.setInteractive({ useHandCursor: true });
     }
-    
-    const label = isLocked ? race.label + " 🔒" : race.label;
+
+    const label = isLocked ? race.label + "\n(скоро)" : race.label;
     const txt = scene.add
       .text(x, raceY, label, {
         fontFamily: "Arial",
-        fontSize: "18px",
+        fontSize: "14px",
         color: isLocked ? "#666666" : "#ffffff",
+        align: "center",
       })
       .setOrigin(0.5)
       .setDepth(51);
-    
+
     if (!isLocked) {
       rect.on("pointerdown", () => setRaceSelection(race.id));
     }
     raceButtons.push({ id: race.id, rect, txt });
   });
 
-  const classY = h / 2 + 40;
-  const classStartX = w / 2 - 100;
-  const classGapX = 200;
+  // Подзаголовок "Выбери класс"
+  scene.add
+    .text(w / 2, 340, "Выбери класс", {
+      fontFamily: "Arial",
+      fontSize: "16px",
+      color: "#ffffff",
+      align: "center",
+    })
+    .setOrigin(0.5)
+    .setDepth(51);
+
+  // Кнопки классов — 2 кнопки
+  const classY = 410;
+  const classBtnW = 130;
+  const classBtnH = 50;
+  const classGapX = 140;
+  const classStartX = w / 2 - classGapX / 2;
   classButtons = [];
 
   ARCHETYPES.forEach((arch, index) => {
     const x = classStartX + classGapX * index;
     const rect = scene.add
-      .rectangle(x, classY, 160, 50, 0x333333)
-      .setStrokeStyle(2, 0xffffff)
+      .rectangle(x, classY, classBtnW, classBtnH, 0x333333)
+      .setStrokeStyle(2, 0xd4af37)
       .setInteractive({ useHandCursor: true })
       .setDepth(50);
     const txt = scene.add
       .text(x, classY, arch.label, {
         fontFamily: "Arial",
-        fontSize: "18px",
+        fontSize: "16px",
         color: "#ffffff",
       })
       .setOrigin(0.5)
@@ -172,16 +202,17 @@ function createSelectionUI(scene) {
     classButtons.push({ id: arch.id, rect, txt });
   });
 
+  // Кнопка подтверждения
   confirmButton = scene.add
-    .rectangle(w / 2, h / 2 + 130, 200, 44, 0x555555)
-    .setStrokeStyle(2, 0xffffff)
+    .rectangle(w / 2, 520, 180, 50, 0x333333)
+    .setStrokeStyle(2, 0xd4af37)
     .setInteractive({ useHandCursor: true })
     .setDepth(50);
   confirmButtonText = scene.add
-    .text(w / 2, h / 2 + 130, "Играть", {
+    .text(w / 2, 520, "Играть", {
       fontFamily: "Arial",
       fontSize: "20px",
-      color: "#ffffff",
+      color: "#d4af37",
     })
     .setOrigin(0.5)
     .setDepth(51);
@@ -192,14 +223,19 @@ function createSelectionUI(scene) {
 function setRaceSelection(raceId) {
   selectedRaceId = raceId;
   raceButtons.forEach((btn) => {
-    btn.rect.fillColor = btn.id === raceId ? 0x1e7f1e : 0x333333;
+    const isLocked = btn.id !== "human";
+    if (!isLocked) {
+      btn.rect.fillColor = btn.id === raceId ? 0x4a3a1a : 0x333333;
+      btn.rect.setStrokeStyle(2, btn.id === raceId ? 0xffd700 : 0xd4af37);
+    }
   });
 }
 
 function setClassSelection(classId) {
   selectedClassId = classId;
   classButtons.forEach((btn) => {
-    btn.rect.fillColor = btn.id === classId ? 0x1e7f1e : 0x333333;
+    btn.rect.fillColor = btn.id === classId ? 0x4a3a1a : 0x333333;
+    btn.rect.setStrokeStyle(2, btn.id === classId ? 0xffd700 : 0xd4af37);
   });
 }
 
