@@ -254,7 +254,7 @@ function preload() {
   this.load.image("registration_bg", "assets/intro/registration.png");
 
   // Spine анимация героя
-  this.load.spine('hero', 'assets/spine/hero-pro.json', 'assets/spine/hero.atlas');
+  this.load.spine('hero', 'assets/spine/hero.json', 'assets/spine/hero.atlas');
 
   // Для раннера (пока используем существующие как заглушки)
   // bg_far и bg_near - будут tileSprite
