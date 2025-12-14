@@ -319,23 +319,26 @@ function create() {
   // герой/враг для локации
   heroStartX = this.scale.width * 0.2;
   heroStartY = centerY;
-  
-  // Создаём спрайт героя (простой человечек)
-  hero = createHeroSprite(this, heroStartX, heroStartY, 0x3366cc);
 
-  // Spine анимация героя (если доступна)
-  if (this.spine && this.cache.custom.spine) {
+  // Создаём героя: Spine если загружен, иначе fallback
+  var spineLoaded = this.spine && this.cache.custom.spine && this.cache.custom.spine.has('hero');
+
+  if (spineLoaded) {
     try {
       spineHero = this.add.spine(heroStartX, heroStartY + 40, 'hero', 'idle', true);
       spineHero.setScale(0.3);
       spineHero.setDepth(5);
       window.spineHero = spineHero;
+      hero = spineHero; // Используем Spine как основной спрайт
       console.log("[Spine] Hero created successfully");
-      // Скрываем простой спрайт, показываем Spine
-      hero.setVisible(false);
     } catch (e) {
-      console.warn("[Spine] Failed to create hero:", e.message);
+      console.warn("[Spine] Failed:", e.message, "- using fallback");
+      hero = createHeroSprite(this, heroStartX, heroStartY, 0x3366cc);
     }
+  } else {
+    // Fallback: простой спрайт
+    hero = createHeroSprite(this, heroStartX, heroStartY, 0x3366cc);
+    console.log("[Hero] Using fallback sprite");
   }
 
   const enemyX = this.scale.width * 0.8;
@@ -1146,8 +1149,8 @@ function create() {
   hideSkillsPanel();
   hideProfessionPanel();
   
-  // скрываем старый UI (только если legacy включён)
-  if (ENABLE_LEGACY_UI) hideOldUI();
+  // скрываем старый UI когда используем новый UI
+  if (!ENABLE_LEGACY_UI) hideOldUI();
 
   // первые обновления UI
   updateHeroUI();
