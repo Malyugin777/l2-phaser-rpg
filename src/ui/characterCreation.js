@@ -458,15 +458,15 @@
     if (confirmBtn) confirmBtn.destroy();
     if (confirmBtnText) confirmBtnText.destroy();
 
-    confirmBtn = scene.add.rectangle(w / 2, h * 0.75, 180, 50, 0x2a4a2a, 0.9)
-      .setStrokeStyle(2, 0x4a8a4a)
+    confirmBtn = scene.add.rectangle(w / 2, h * 0.75, 180, 50, 0x1a1a2e, 0.9)
+      .setStrokeStyle(2, 0xd4af37)
       .setInteractive({ useHandCursor: true })
       .setDepth(101);
 
     confirmBtnText = scene.add.text(w / 2, h * 0.75, "Далее", {
       fontFamily: "Arial",
       fontSize: "20px",
-      color: "#a0ffa0"
+      color: "#d4af37"
     }).setOrigin(0.5).setDepth(102);
 
     confirmBtn.on("pointerdown", () => {
@@ -491,8 +491,8 @@
     selectedRace = raceId;
     raceButtons.forEach(btn => {
       if (btn.isLocked) return;
-      btn.rect.fillColor = btn.id === raceId ? 0x2a4a2a : 0x1a1a2e;
-      btn.rect.setStrokeStyle(2, btn.id === raceId ? 0x4a8a4a : 0x4a4a6a);
+      btn.rect.fillColor = btn.id === raceId ? 0x2a2a1e : 0x1a1a2e;
+      btn.rect.setStrokeStyle(2, btn.id === raceId ? 0xffd700 : 0x4a4a6a);
     });
   }
 
@@ -553,15 +553,15 @@
     if (confirmBtn) confirmBtn.destroy();
     if (confirmBtnText) confirmBtnText.destroy();
 
-    confirmBtn = scene.add.rectangle(w / 2, h * 0.75, 180, 50, 0x2a4a2a, 0.9)
-      .setStrokeStyle(2, 0x4a8a4a)
+    confirmBtn = scene.add.rectangle(w / 2, h * 0.75, 180, 50, 0x1a1a2e, 0.9)
+      .setStrokeStyle(2, 0xd4af37)
       .setInteractive({ useHandCursor: true })
       .setDepth(101);
 
     confirmBtnText = scene.add.text(w / 2, h * 0.75, "Играть", {
       fontFamily: "Arial",
       fontSize: "20px",
-      color: "#a0ffa0"
+      color: "#d4af37"
     }).setOrigin(0.5).setDepth(102);
 
     confirmBtn.on("pointerdown", () => {
@@ -604,8 +604,8 @@
   function selectArchetype(archId) {
     selectedArchetype = archId;
     archetypeButtons.forEach(btn => {
-      btn.rect.fillColor = btn.id === archId ? 0x2a4a2a : 0x1a1a2e;
-      btn.rect.setStrokeStyle(2, btn.id === archId ? 0x4a8a4a : 0x4a4a6a);
+      btn.rect.fillColor = btn.id === archId ? 0x2a2a1e : 0x1a1a2e;
+      btn.rect.setStrokeStyle(2, btn.id === archId ? 0xffd700 : 0x4a4a6a);
     });
   }
 
@@ -677,9 +677,12 @@
     // Скрываем игровой UI
     hideGameUI();
 
-    // Фон
+    // Фон (cover mode — без чёрных полос)
     bgImage = scene.add.image(w / 2, h / 2, "registration_bg");
-    bgImage.setDisplaySize(w, h);
+    var scaleX = w / bgImage.width;
+    var scaleY = h / bgImage.height;
+    var scale = Math.max(scaleX, scaleY);
+    bgImage.setScale(scale);
     bgImage.setDepth(100);
 
     // Затемнение

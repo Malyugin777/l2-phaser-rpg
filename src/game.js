@@ -147,6 +147,17 @@ function getSafeArea(scene) {
   };
 }
 
+// Масштабирование фона (cover, без чёрных полос)
+function fitBackground(bg, scene) {
+  if (!bg || !scene) return;
+  var scaleX = scene.scale.width / bg.width;
+  var scaleY = scene.scale.height / bg.height;
+  var scale = Math.max(scaleX, scaleY);
+  bg.setScale(scale);
+  bg.setPosition(scene.scale.width / 2, scene.scale.height / 2);
+  bg.setOrigin(0.5, 0.5);
+}
+
 // ================== СПРАЙТ ГЕРОЯ (простой человечек) ==================
 
 function createHeroSprite(scene, x, y, color) {
@@ -248,11 +259,11 @@ function create() {
 
   // фоны
   cityBg = this.add.image(w / 2, h / 2, "talkingisland_main");
-  cityBg.setDisplaySize(w, h);
+  fitBackground(cityBg, this);
   cityBg.setDepth(-5);
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
-  locationBg.setDisplaySize(w, h);
+  fitBackground(locationBg, this);
   locationBg.setDepth(-5);
   locationBg.setVisible(false);
 
@@ -1388,11 +1399,19 @@ function create() {
     // Новый игрок — показываем интро
     if (window.preEntry) {
       window.preEntry.showIntro(function() {
-        window.preEntry.hide();
-        // Новый полноэкранный экран создания персонажа
-        if (window.characterCreation) {
-          window.characterCreation.show(scene);
+        // Показать loading сразу после клика
+        if (window.preEntry.showLoading) {
+          window.preEntry.showLoading();
         }
+
+        // Небольшая задержка для визуального фидбэка
+        setTimeout(function() {
+          window.preEntry.hide();
+          // Новый полноэкранный экран создания персонажа
+          if (window.characterCreation) {
+            window.characterCreation.show(scene);
+          }
+        }, 300);
       });
     } else {
       // Новый полноэкранный экран создания персонажа

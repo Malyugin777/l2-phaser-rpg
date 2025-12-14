@@ -82,6 +82,13 @@
     hide();
   }
 
+  function showLoading() {
+    var textEl = document.querySelector('.pre-loading-text');
+    var progressContainer = document.querySelector('.pre-progress-container');
+    if (textEl) textEl.textContent = 'Подготовка мира...';
+    if (progressContainer) progressContainer.style.display = 'block';
+  }
+
   function init() {
     startPhraseRotation();
   }
@@ -97,6 +104,7 @@
   window.preEntry = {
     setProgress: setProgress,
     showIntro: showIntro,
+    showLoading: showLoading,
     hide: hide,
     skip: skip
   };
