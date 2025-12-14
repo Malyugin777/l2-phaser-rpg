@@ -8,6 +8,7 @@
 // ----- ОБЪЕКТЫ СЦЕНЫ -----
 let hero;
 let cityHero;
+let spineHero; // Spine анимация героя
 let heroStartX;
 let heroStartY;
 let isAttacking = false;
@@ -161,19 +162,26 @@ function getSafeArea(scene) {
 function safeOn(btn, event, callback) {
   if (btn && typeof btn.on === "function") {
     btn.on(event, callback);
-  } else {
-    console.warn("[UI] Missing button for:", event);
   }
+  // Silently ignore missing buttons (expected when ENABLE_LEGACY_UI=false)
 }
 
 // ----- SAFE RECALC (ждёт готовности itemSystem) -----
-function safeRecalc(scene) {
-  if (typeof getAllEquipmentStats !== "function") {
-    console.warn("[StatSystem] Retry in 50ms...");
-    scene.time.delayedCall(50, () => safeRecalc(scene));
+function safeRecalc(scene, attempts) {
+  attempts = attempts || 0;
+
+  if (attempts > 20) {
+    console.warn("[StatSystem] Gave up after 20 attempts");
     return;
   }
+
+  if (typeof getAllEquipmentStats !== "function") {
+    scene.time.delayedCall(50, () => safeRecalc(scene, attempts + 1));
+    return;
+  }
+
   recalculateHeroStats();
+  console.log("[StatSystem] Stats recalculated successfully");
 }
 
 // Масштабирование фона (cover, без чёрных полос)
@@ -314,6 +322,21 @@ function create() {
   
   // Создаём спрайт героя (простой человечек)
   hero = createHeroSprite(this, heroStartX, heroStartY, 0x3366cc);
+
+  // Spine анимация героя (если доступна)
+  if (this.spine && this.cache.custom.spine) {
+    try {
+      spineHero = this.add.spine(heroStartX, heroStartY + 40, 'hero', 'idle', true);
+      spineHero.setScale(0.3);
+      spineHero.setDepth(5);
+      window.spineHero = spineHero;
+      console.log("[Spine] Hero created successfully");
+      // Скрываем простой спрайт, показываем Spine
+      hero.setVisible(false);
+    } catch (e) {
+      console.warn("[Spine] Failed to create hero:", e.message);
+    }
+  }
 
   const enemyX = this.scale.width * 0.8;
   const enemyY = centerY;
