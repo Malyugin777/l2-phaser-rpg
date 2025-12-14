@@ -11,20 +11,20 @@ function showDungeonPanel() {
   hideMapPanel();
   hideArenaPanel();
 
-  dungeonPanel.setVisible(true);
-  dungeonPanelText.setVisible(true);
-  dungeonStartButton.setVisible(true);
-  dungeonStartButtonText.setVisible(true);
+  if (dungeonPanel) dungeonPanel.setVisible(true);
+  if (dungeonPanelText) dungeonPanelText.setVisible(true);
+  if (dungeonStartButton) dungeonStartButton.setVisible(true);
+  if (dungeonStartButtonText) dungeonStartButtonText.setVisible(true);
 
   updateDungeonPanel();
 }
 
 function hideDungeonPanel() {
   isDungeonOpen = false;
-  dungeonPanel.setVisible(false);
-  dungeonPanelText.setVisible(false);
-  dungeonStartButton.setVisible(false);
-  dungeonStartButtonText.setVisible(false);
+  if (dungeonPanel) dungeonPanel.setVisible(false);
+  if (dungeonPanelText) dungeonPanelText.setVisible(false);
+  if (dungeonStartButton) dungeonStartButton.setVisible(false);
+  if (dungeonStartButtonText) dungeonStartButtonText.setVisible(false);
 }
 
 function updateDungeonPanel() {

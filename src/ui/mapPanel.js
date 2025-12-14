@@ -28,7 +28,7 @@ function showMapPanel() {
   hideArenaPanel();
   hideDungeonPanel();
   
-  mapPanel.setVisible(true);
+  if (mapPanel) mapPanel.setVisible(true);
   if (mapImage) mapImage.setVisible(true);
   if (mapCloseButton) mapCloseButton.setVisible(true);
   if (mapCloseButtonText) mapCloseButtonText.setVisible(true);
@@ -51,7 +51,7 @@ function showMapPanel() {
 
 function hideMapPanel() {
   isMapOpen = false;
-  mapPanel.setVisible(false);
+  if (mapPanel) mapPanel.setVisible(false);
   if (mapImage) mapImage.setVisible(false);
   if (mapCloseButton) mapCloseButton.setVisible(false);
   if (mapCloseButtonText) mapCloseButtonText.setVisible(false);

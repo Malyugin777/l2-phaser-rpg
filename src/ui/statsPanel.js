@@ -1,8 +1,8 @@
 // ----- Панель: Статы -----
 function showStatsPanel() {
   isStatsOpen = true;
-  statsPanel.setVisible(true);
-  statsPanelText.setVisible(true);
+  if (statsPanel) statsPanel.setVisible(true);
+  if (statsPanelText) statsPanelText.setVisible(true);
   if (statsSkillsButton) statsSkillsButton.setVisible(true);
   if (statsSkillsButtonText) statsSkillsButtonText.setVisible(true);
   updateStatsPanel();

@@ -11,20 +11,20 @@ function showShopPanel() {
   hideArenaPanel();
   hideDungeonPanel();
 
-  shopPanel.setVisible(true);
-  shopPanelText.setVisible(true);
-  shopBuyButton.setVisible(true);
-  shopBuyButtonText.setVisible(true);
+  if (shopPanel) shopPanel.setVisible(true);
+  if (shopPanelText) shopPanelText.setVisible(true);
+  if (shopBuyButton) shopBuyButton.setVisible(true);
+  if (shopBuyButtonText) shopBuyButtonText.setVisible(true);
 
   updateShopPanel();
 }
 
 function hideShopPanel() {
   isShopOpen = false;
-  shopPanel.setVisible(false);
-  shopPanelText.setVisible(false);
-  shopBuyButton.setVisible(false);
-  shopBuyButtonText.setVisible(false);
+  if (shopPanel) shopPanel.setVisible(false);
+  if (shopPanelText) shopPanelText.setVisible(false);
+  if (shopBuyButton) shopBuyButton.setVisible(false);
+  if (shopBuyButtonText) shopBuyButtonText.setVisible(false);
 }
 
 function updateShopPanel() {

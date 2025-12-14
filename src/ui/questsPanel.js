@@ -1,21 +1,21 @@
 // ----- Панель: Квесты -----
 function showQuestsPanel() {
   isQuestsOpen = true;
-  questsPanel.setVisible(true);
-  questsPanelText.setVisible(true);
-  
+  if (questsPanel) questsPanel.setVisible(true);
+  if (questsPanelText) questsPanelText.setVisible(true);
+
   // Авто-сдача квеста волка
   if (canCompleteWolfQuest()) {
     completeWolfQuest(window.gameScene);
   }
-  
+
   updateQuestsPanel();
 }
 
 function hideQuestsPanel() {
   isQuestsOpen = false;
-  questsPanel.setVisible(false);
-  questsPanelText.setVisible(false);
+  if (questsPanel) questsPanel.setVisible(false);
+  if (questsPanelText) questsPanelText.setVisible(false);
 }
 
 function updateQuestsPanel() {

@@ -2,8 +2,8 @@
 
 function showInventoryPanel() {
   isInventoryOpen = true;
-  inventoryPanel.setVisible(true);
-  inventoryPanelText.setVisible(true);
+  if (inventoryPanel) inventoryPanel.setVisible(true);
+  if (inventoryPanelText) inventoryPanelText.setVisible(true);
   if (inventoryEquipBestButton) inventoryEquipBestButton.setVisible(true);
   if (inventoryEquipBestButtonText)
     inventoryEquipBestButtonText.setVisible(true);
@@ -15,8 +15,8 @@ function showInventoryPanel() {
 
 function hideInventoryPanel() {
   isInventoryOpen = false;
-  inventoryPanel.setVisible(false);
-  inventoryPanelText.setVisible(false);
+  if (inventoryPanel) inventoryPanel.setVisible(false);
+  if (inventoryPanelText) inventoryPanelText.setVisible(false);
   if (inventoryEquipBestButton) inventoryEquipBestButton.setVisible(false);
   if (inventoryEquipBestButtonText)
     inventoryEquipBestButtonText.setVisible(false);
