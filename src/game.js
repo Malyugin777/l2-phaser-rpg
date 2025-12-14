@@ -13,6 +13,9 @@ let heroStartX;
 let heroStartY;
 let isAttacking = false;
 
+// ----- UI ОВЕРЛЕИ -----
+let uiBottomPanel; // Нижняя панель поверх фона
+
 // ----- ВЕРХНИЙ UI -----
 let heroStatsText;
 let goldText;
@@ -367,14 +370,16 @@ function preload() {
   this.load.audio("city_theme", "assets/audio/city_theme.mp3");
   this.load.audio("battle_theme", "assets/audio/battle_theme.mp3");
 
-  this.load.image("talkingisland_main", "assets/backgrounds/talkingisland_main.png");
+  // Фоны (город - новый webp)
+  this.load.image("talkingisland_main", "assets/backgrounds/talking_island.webp");
   this.load.image("obelisk_of_victory", "assets/backgrounds/obelisk_of_victory.png");
   this.load.image("northern_territory", "assets/backgrounds/northern_territory.png");
   this.load.image("elven_ruins", "assets/backgrounds/elven_ruins.png");
   this.load.image("orc_barracks", "assets/backgrounds/orc_barracks.png");
-  
-  // UI карта мира
+
+  // UI
   this.load.image("map_world", "assets/ui/map_world.png");
+  this.load.image("ui_bottom_panel", "assets/ui/Bottom_panel.webp");
 
   // Экран регистрации
   this.load.image("registration_bg", "assets/intro/registration.png");
@@ -429,6 +434,14 @@ function create() {
   fitBackground(locationBg, this);
   locationBg.setDepth(-5);
   locationBg.setVisible(false);
+
+  // Нижняя UI панель (поверх фона, всегда видна)
+  uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
+  uiBottomPanel.setOrigin(0.5, 1); // Привязка к низу
+  var panelScale = w / uiBottomPanel.width; // Масштаб по ширине экрана
+  uiBottomPanel.setScale(panelScale);
+  uiBottomPanel.setDepth(100); // Поверх фона, но под UI кнопками
+  uiBottomPanel.setScrollFactor(0); // Не скроллится
 
   // музыка
   cityMusic = scene.sound.add("city_theme", { loop: true, volume: 0.6 });
