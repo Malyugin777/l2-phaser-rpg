@@ -121,6 +121,11 @@ const config = {
     create: create,
     update: update,
   },
+  plugins: {
+    scene: [
+      { key: 'SpinePlugin', plugin: window.SpinePlugin, mapping: 'spine' }
+    ]
+  }
 };
 
 const game = new Phaser.Game(config);
@@ -223,6 +228,9 @@ function preload() {
 
   // Экран регистрации
   this.load.image("registration_bg", "assets/intro/registration.png");
+
+  // Spine анимация героя
+  this.load.spine('hero', 'assets/spine/hero-pro.json', 'assets/spine/hero.atlas');
 
   // Для раннера (пока используем существующие как заглушки)
   // bg_far и bg_near - будут tileSprite
