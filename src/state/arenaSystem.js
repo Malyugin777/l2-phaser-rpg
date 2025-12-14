@@ -220,6 +220,7 @@ function hideGameUIForArena() {
   if (typeof enemy !== "undefined" && enemy) enemy.setVisible(false);
   if (typeof enemyHpText !== "undefined" && enemyHpText) enemyHpText.setVisible(false);
   if (typeof merc !== "undefined" && merc) merc.setVisible(false);
+  // Spine герой будет перемещён на арену, не скрываем его
 
   if (typeof uiElements !== "undefined" && uiElements) {
     if (uiElements.topBarBg) uiElements.topBarBg.setVisible(false);
@@ -342,7 +343,18 @@ function createArenaUI(scene) {
     fontFamily: "Arial"
   }).setOrigin(1, 0).setDepth(151);
 
-  arenaMyChar = scene.add.rectangle(100, h/2, 60, 100, 0x4488ff).setDepth(151);
+  // Герой на арене - используем Spine если доступен
+  if (window.spineHero) {
+    window.spineHero.setPosition(120, h/2 + 50);
+    window.spineHero.setVisible(true);
+    window.spineHero.setDepth(151);
+    if (typeof heroIdle === "function") heroIdle();
+    arenaMyChar = window.spineHero;
+  } else {
+    arenaMyChar = scene.add.rectangle(100, h/2, 60, 100, 0x4488ff).setDepth(151);
+  }
+
+  // Враг - квадрат
   arenaEnemyChar = scene.add.rectangle(w - 100, h/2, 60, 100, 0xff4444).setDepth(151);
 
   arenaBattleLog = scene.add.text(w/2, h - 100, "", {
@@ -412,6 +424,9 @@ function arenaBattleStep(scene) {
   }
 
   if (arenaMyTurn) {
+    // Мой ход - анимация атаки
+    if (typeof heroAttack === "function") heroAttack();
+
     var dmg = calcArenaDamage(arenaMyStats, arenaEnemy.stats);
     arenaEnemy.stats.hp -= dmg;
     showArenaDamage(scene, arenaEnemyChar, dmg, false);
@@ -422,12 +437,17 @@ function arenaBattleStep(scene) {
       return;
     }
   } else {
+    // Ход врага - анимация получения урона
+    if (typeof heroHit === "function") heroHit();
+
     var dmg = calcArenaDamage(arenaEnemy.stats, arenaMyStats);
     arenaMyStats.hp -= dmg;
     showArenaDamage(scene, arenaMyChar, dmg, true);
     updateArenaHpBars();
 
     if (arenaMyStats.hp <= 0) {
+      // Смерть героя
+      if (typeof heroDeath === "function") heroDeath();
       endArenaBattle(scene, false);
       return;
     }
@@ -544,7 +564,11 @@ function exitArenaMode(scene) {
   if (arenaEnemyHpBg) { arenaEnemyHpBg.destroy(); arenaEnemyHpBg = null; }
   if (arenaEnemyHpBar) { arenaEnemyHpBar.destroy(); arenaEnemyHpBar = null; }
   if (arenaEnemyLabel) { arenaEnemyLabel.destroy(); arenaEnemyLabel = null; }
-  if (arenaMyChar) { arenaMyChar.destroy(); arenaMyChar = null; }
+  // Не уничтожаем Spine героя
+  if (arenaMyChar && arenaMyChar !== window.spineHero) {
+    arenaMyChar.destroy();
+  }
+  arenaMyChar = null;
   if (arenaEnemyChar) { arenaEnemyChar.destroy(); arenaEnemyChar = null; }
   if (arenaCountText) { arenaCountText.destroy(); arenaCountText = null; }
   if (arenaBattleLog) { arenaBattleLog.destroy(); arenaBattleLog = null; }

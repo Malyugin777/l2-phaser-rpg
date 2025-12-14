@@ -32,6 +32,11 @@ const COMBAT_MULT = {
   outCombat: { hp: 1.0, mp: 1.0 }
 };
 
+// Случайные анимации в городе
+const CITY_ANIM_INTERVAL_MS = 5000;
+const CITY_ANIM_CHANCE = 0.1; // 10% шанс на head-turn
+let cityAnimAccumulator = 0;
+
 let regenAccumulator = 0;
 let actionAccumulator = 0;
 let tickCount = 0;
@@ -80,6 +85,17 @@ function processTick(delta) {
   // === COMBAT ===
   if (mode === "city" && inCombat) {
     exitCombat();
+  }
+
+  // === RANDOM CITY ANIMATIONS ===
+  if (mode === "city" && window.spineHero && currentStance === "standing") {
+    cityAnimAccumulator += delta;
+    if (cityAnimAccumulator >= CITY_ANIM_INTERVAL_MS) {
+      cityAnimAccumulator = 0;
+      if (Math.random() < CITY_ANIM_CHANCE) {
+        if (typeof heroHeadTurn === "function") heroHeadTurn();
+      }
+    }
   }
 
   if (inCombat && combatTimer > 0) {
@@ -198,6 +214,10 @@ function sitDown() {
 
   currentStance = "sitting";
   buffs.isResting = true;
+
+  // Spine анимация сидения
+  if (typeof heroCrouch === "function") heroCrouch();
+
   console.log("[Stance] Сел (HP x2, MP x1.5)");
   return true;
 }
@@ -206,6 +226,10 @@ function standUp() {
   if (currentStance === "standing") return;
   currentStance = "standing";
   buffs.isResting = false;
+
+  // Spine анимация вставания
+  if (typeof heroIdle === "function") heroIdle();
+
   console.log("[Stance] Встал");
 }
 
@@ -213,6 +237,10 @@ function forceStandUp() {
   if (currentStance === "sitting") {
     currentStance = "standing";
     buffs.isResting = false;
+
+    // Spine анимация вставания
+    if (typeof heroIdle === "function") heroIdle();
+
     console.log("[Stance] Принудительно встал");
   }
 }

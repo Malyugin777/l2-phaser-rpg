@@ -195,6 +195,124 @@ function fitBackground(bg, scene) {
   bg.setOrigin(0.5, 0.5);
 }
 
+// ================== SPINE АНИМАЦИИ ==================
+// Доступные анимации в hero.json:
+// attack, crouch, crouch-from fall, fall, head-turn,
+// idle, idle-from fall, jump, morningstar pose,
+// run, run-from fall, walk
+
+// Проиграть анимацию
+function playAnim(animName, loop) {
+  if (!window.spineHero) return false;
+  try {
+    window.spineHero.play(animName, loop);
+    return true;
+  } catch(e) {
+    console.warn("[Spine] Animation not found:", animName);
+    return false;
+  }
+}
+
+// Атака героя
+function heroAttack() {
+  if (!window.spineHero) return;
+  if (playAnim('attack', false)) {
+    setTimeout(function() { heroIdle(); }, 400);
+  }
+}
+
+// Герой получает урон (используем fall кратко)
+function heroHit() {
+  if (!window.spineHero) return;
+  // Нет отдельной анимации hit - делаем визуальный эффект
+  if (playAnim('fall', false)) {
+    setTimeout(function() { heroIdle(); }, 200);
+  }
+}
+
+// Герой умирает
+function heroDeath() {
+  if (!window.spineHero) return;
+  playAnim('fall', false);
+}
+
+// Герой бежит
+function heroRun() {
+  if (!window.spineHero) return;
+  playAnim('run', true);
+}
+
+// Герой идёт
+function heroWalk() {
+  if (!window.spineHero) return;
+  playAnim('walk', true);
+}
+
+// Герой в покое
+function heroIdle() {
+  if (!window.spineHero) return;
+  playAnim('idle', true);
+}
+
+// Герой сидит/отдыхает
+function heroCrouch() {
+  if (!window.spineHero) return;
+  playAnim('crouch', true);
+}
+
+// Герой прыгает
+function heroJump() {
+  if (!window.spineHero) return;
+  if (playAnim('jump', false)) {
+    setTimeout(function() { heroIdle(); }, 500);
+  }
+}
+
+// Критический удар (jump → attack → idle)
+function heroCriticalHit() {
+  if (!window.spineHero) return;
+  if (playAnim('jump', false)) {
+    setTimeout(function() {
+      if (playAnim('attack', false)) {
+        setTimeout(function() { heroIdle(); }, 400);
+      }
+    }, 300);
+  }
+}
+
+// Герой входит на локацию (run → idle)
+function heroEnterLocation() {
+  if (!window.spineHero) return;
+  playAnim('run', true);
+  setTimeout(function() { heroIdle(); }, 1000);
+}
+
+// Поворот головы (для города)
+function heroHeadTurn() {
+  if (!window.spineHero) return;
+  if (playAnim('head-turn', false)) {
+    setTimeout(function() { heroIdle(); }, 1500);
+  }
+}
+
+// Переместить героя
+function moveHeroTo(x, y, anim) {
+  if (window.spineHero) {
+    window.spineHero.setPosition(x, y);
+    window.spineHero.setVisible(true);
+    if (anim) {
+      playAnim(anim, true);
+    } else {
+      heroIdle();
+    }
+  }
+}
+
+// Скрыть героя
+function hideHero() {
+  if (window.spineHero) window.spineHero.setVisible(false);
+}
+
 // ================== СПРАЙТ ГЕРОЯ (простой человечек) ==================
 
 function createHeroSprite(scene, x, y, color) {

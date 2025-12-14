@@ -189,13 +189,20 @@ function damageEnemy(scene, useEtherShot) {
 
   // Проверяем shots (из restSystem.js)
   const shotResult = useShotIfEnabled();
-  
+
   const result = calculateDamage(stats, enemyStats);
   let damage = result.damage;
-  
+
   // Применяем множитель от shots
   if (shotResult.used) {
     damage = Math.round(damage * shotResult.multiplier);
+  }
+
+  // Spine анимация атаки (крит = jump → attack)
+  if (result.isCrit && typeof heroCriticalHit === "function") {
+    heroCriticalHit();
+  } else if (typeof heroAttack === "function") {
+    heroAttack();
   }
 
   enemyStats.hp -= damage;
@@ -232,6 +239,13 @@ function damageEnemyWithSkill(scene, multiplier, useEtherShot) {
   if (buffs.isResting) {
     spawnCannotAttackText(scene);
     return;
+  }
+
+  // Spine анимация скилла (всегда крит анимация)
+  if (typeof heroCriticalHit === "function") {
+    heroCriticalHit();
+  } else if (typeof heroAttack === "function") {
+    heroAttack();
   }
 
   // Проверяем shots
@@ -277,6 +291,9 @@ function enemyAttackHero(scene) {
   const damage = result.damage;
   stats.hp -= damage;
   if (stats.hp < 0) stats.hp = 0;
+
+  // Spine анимация получения урона героем
+  if (typeof heroHit === "function") heroHit();
 
   scene.tweens.add({
     targets: hero,
@@ -441,6 +458,9 @@ function onHeroDeath(scene) {
   stats.hp = 0;
   updateHeroUI();
 
+  // Spine анимация смерти героя
+  if (typeof heroDeath === "function") heroDeath();
+
   disableAutoHunt();
   hideCamp();
   endOverdrive(scene);
@@ -542,6 +562,11 @@ function levelUp(scene) {
 }
 
 function spawnExpText(scene, amount) {
+  scene = scene || window.gameScene;
+  if (!scene || !scene.add) {
+    console.warn('[Combat] spawnExpText: no scene');
+    return;
+  }
   if (!hero) return;
   const text = scene.add
     .text(hero.x, hero.y - 70, "+" + amount + " EXP", {

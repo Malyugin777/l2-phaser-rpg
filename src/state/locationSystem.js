@@ -135,6 +135,8 @@ function stopEnemyAttack() {
 
 // Вход в город
 function enterCity(scene) {
+  scene = scene || window.gameScene;
+
   mode = "city";
   progress.lastMode = "city";
   isDungeonRun = false;
@@ -156,17 +158,28 @@ function enterCity(scene) {
   endOverdrive(scene);
   stopEnemyAttack();
   stopMercAttack();
-  
+
   // Скрываем кнопки отдыха и shots
   stopRest();
   hideRestAndShotsUI();
   hidePet();
 
-  if (cityHero) cityHero.setVisible(true);
+  if (cityHero) cityHero.setVisible(false); // Скрываем старый спрайт
   if (hero) {
     hero.setVisible(false);
     hero.alpha = 1;
   }
+
+  // Spine герой в городе
+  if (window.spineHero) {
+    var w = scene && scene.scale ? scene.scale.width : 400;
+    var h = scene && scene.scale ? scene.scale.height : 700;
+    window.spineHero.setPosition(w * 0.25, h / 2 + 40);
+    window.spineHero.setVisible(true);
+    window.spineHero.setDepth(5);
+    if (typeof heroIdle === 'function') heroIdle();
+  }
+
   if (enemy) enemy.setVisible(false);
   if (enemyHpText) enemyHpText.setVisible(false);
   if (merc) merc.setVisible(false);
@@ -260,6 +273,17 @@ function enterLocation(scene) {
     hero.y = heroStartY;
     hero.alpha = 1;
     hero.fillColor = isOverdriveActive ? 0xffff00 : 0x0000ff;
+  }
+
+  // Spine герой в локации (run → idle)
+  if (window.spineHero) {
+    window.spineHero.setPosition(heroStartX, heroStartY + 40);
+    window.spineHero.setVisible(true);
+    if (typeof heroEnterLocation === 'function') {
+      heroEnterLocation();
+    } else if (typeof heroIdle === 'function') {
+      heroIdle();
+    }
   }
   if (enemy) {
     enemy.setVisible(true);
