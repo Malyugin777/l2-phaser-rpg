@@ -57,7 +57,7 @@ function updateHeroUI() {
 
   if (isInventoryOpen) updateInventoryPanel();
   if (isStatsOpen) updateStatsPanel();
-  if (isForgeOpen) updateForgePanel();
+  // updateForgePanel удалён — forgePanel.js обновляется через rebuildForgeContent
   if (isQuestsOpen) updateQuestsPanel();
   if (isShopOpen) updateShopPanel();
   if (isMapOpen) updateMapPanel();

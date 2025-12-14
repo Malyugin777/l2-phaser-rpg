@@ -35,7 +35,7 @@ let locationNextButton, locationNextText;
 let inventoryPanel, inventoryPanelText;
 let statsPanel, statsPanelText;
 let statsSkillsButton, statsSkillsButtonText;
-let forgePanel, forgePanelText, forgeDoButton, forgeDoButtonText;
+// forgePanel теперь в ui/forgePanel.js
 let questsPanel, questsPanelText;
 let shopPanel, shopPanelText, shopBuyButton, shopBuyButtonText;
 let mapPanel, mapPanelText, mapGoButton, mapGoButtonText;
@@ -743,28 +743,7 @@ function create() {
     })
     .setOrigin(0.5);
 
-  // --- Кузнец / Точка ---
-  forgePanel = this.add.rectangle(panelX, panelY, 420, 320, 0x000000, 0.9);
-  forgePanel.setStrokeStyle(2, 0xffffff);
-  forgePanelText = this.add
-    .text(panelX, panelY - 20, "", {
-      fontFamily: "Arial",
-      fontSize: "18px",
-      color: "#ffffff",
-      align: "left",
-      wordWrap: { width: 380 },
-    })
-    .setOrigin(0.5);
-  forgeDoButton = this.add.rectangle(panelX, panelY + 110, 180, 40, 0x555555);
-  forgeDoButton.setStrokeStyle(2, 0xffffff);
-  forgeDoButton.setInteractive({ useHandCursor: true });
-  forgeDoButtonText = this.add
-    .text(panelX, panelY + 110, "Точить", {
-      fontFamily: "Arial",
-      fontSize: "18px",
-      color: "#ffffff",
-    })
-    .setOrigin(0.5);
+  // --- Кузнец (UI теперь в forgePanel.js, вызывается через createForgeUI) ---
 
   // --- Квесты ---
   questsPanel = this.add.rectangle(panelX, panelY, 420, 260, 0x000000, 0.9);
@@ -1030,10 +1009,7 @@ function create() {
     statsPanelText,
     statsSkillsButton,
     statsSkillsButtonText,
-    forgePanel,
-    forgePanelText,
-    forgeDoButton,
-    forgeDoButtonText,
+    // forgePanel теперь в forgePanel.js
     questsPanel,
     questsPanelText,
     shopPanel,
@@ -1176,9 +1152,7 @@ function create() {
     }
   });
 
-  forgeDoButton.on("pointerdown", () => {
-    performEnchant(scene);
-  });
+  // forgeDoButton теперь в forgePanel.js
 
   modeButton.on("pointerdown", () => {
     if (mode === "city") enterLocation(scene);
@@ -1263,7 +1237,6 @@ function create() {
     hideDungeonPanel();
     hideSkillsPanel();
     showForgePanel();
-    updateForgePanel();
   });
 
   npcMapRect.on("pointerdown", () => {
