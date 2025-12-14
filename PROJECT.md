@@ -4,9 +4,9 @@
 
 **Жанр:** Idle RPG / Auto-battler в стиле Lineage 2
 **Платформа:** Telegram Mini App (TMA)
-**Движок:** Phaser 3.80.0
+**Движок:** Phaser 3.80.1 + SpinePlugin 4.1
 **Язык:** Vanilla JavaScript (ES6, strict mode, глобальные переменные)
-**Версия:** 1.0.0
+**Версия:** 1.1.0
 **GitHub:** https://github.com/Malyugin777/l2-phaser-rpg
 **GitHub Pages:** https://malyugin777.github.io/l2-phaser-rpg/src/
 **Telegram:** @Poketlineage_bot
@@ -25,15 +25,7 @@
 | SAFE_BOTTOM | 84px (10%) | Отступ под жесты/кнопку |
 | SAFE_LEFT/RIGHT | 16px (4%) | Боковые отступы |
 
-### Целевые устройства
-
-| Устройство | Размер | Приоритет |
-|------------|--------|-----------|
-| iPhone 12/13/14 | 390×844 | ⭐ Основной |
-| Android средний | 360×800 | ✅ Проверять |
-| Android большой | 412×915 | ✅ Проверять |
-
-### Phaser Config
+### Phaser Config (АКТУАЛЬНЫЙ!)
 
 ```javascript
 const config = {
@@ -42,113 +34,267 @@ const config = {
   height: 844,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
+  resolution: window.devicePixelRatio || 1,  // ВАЖНО для Retina!
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.ENVELOP,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     min: { width: 360, height: 640 },
     max: { width: 430, height: 932 }
+  },
+  scene: { preload, create, update },
+  plugins: {
+    scene: [
+      { key: 'SpinePlugin', plugin: window.SpinePlugin, mapping: 'spine' }
+    ]
   }
 };
 ```
 
-### UI Константы (state/uiConstants.js)
+### CSS для чёткого рендера (index.html)
 
-```javascript
-// Размеры
-var UI_WIDTH = 390;
-var UI_HEIGHT = 844;
-var CENTER_X = 195;
-var CENTER_Y = 422;
-
-// Safe Areas
-var SAFE_TOP = 67;
-var SAFE_BOTTOM = 84;
-var SAFE_LEFT = 16;
-var SAFE_RIGHT = 16;
-
-// Рабочие зоны
-var GAME_AREA_TOP = 147;
-var GAME_AREA_BOTTOM = 690;
-var GAME_AREA_HEIGHT = 543;
-var BOTTOM_DOCK_Y = 690;
-
-// Панели
-var PANEL_WIDTH = 350;
-var PANEL_HEIGHT = 400;
-```
-
-### Важные правила TMA
-
-1. **AudioContext** — музыку стартовать ТОЛЬКО после клика пользователя
-2. **Touch events** — использовать `pointerdown` + `pointerup` для надёжности
-3. **Viewport** — не доверять `100vh`, использовать фиксированные размеры
-4. **Safe Area** — ничего интерактивного в зонах SAFE_TOP и SAFE_BOTTOM
-
-### TMA Touch Fix
-
-```javascript
-function addReliableClick(gameObject, callback) {
-  var wasPressed = false;
-  gameObject.on("pointerdown", function() {
-    wasPressed = true;
-    callback();
-  });
-  gameObject.on("pointerup", function() {
-    if (!wasPressed) callback();
-    wasPressed = false;
-  });
-}
-```
-
-### fitBackground (cover mode)
-
-```javascript
-// Масштабирование фона без чёрных полос
-function fitBackground(bg, scene) {
-  if (!bg || !scene) return;
-  var scaleX = scene.scale.width / bg.width;
-  var scaleY = scene.scale.height / bg.height;
-  var scale = Math.max(scaleX, scaleY);
-  bg.setScale(scale);
-  bg.setPosition(scene.scale.width / 2, scene.scale.height / 2);
-  bg.setOrigin(0.5, 0.5);
+```css
+canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 ```
 
 ---
 
-## 🎨 UI Стиль (Золотая тема)
+## 🎭 Spine Анимации (НОВОЕ!)
 
-### Цветовая палитра
+### Доступные анимации в hero.json
 
-| Элемент | Цвет | HEX |
-|---------|------|-----|
-| Золото (акцент) | 🟡 | #d4af37 |
-| Золото яркое | 🟡 | #ffd700 |
-| Тёмный фон | ⚫ | #1a1a2e / #0a0a12 |
-| Кнопка обычная | ⬛ | #333333 |
-| Кнопка выделенная | 🟤 | #4a3a1a |
-| Текст белый | ⚪ | #ffffff |
-| Текст серый | 🔘 | #666666 |
-| HP красный | 🔴 | #cc3333 |
-| MP синий | 🔵 | #3366cc |
-| EXP жёлтый | 🟡 | #cccc33 |
+| Анимация | Loop | Использование |
+|----------|------|---------------|
+| `idle` | Yes | Стоит (город, локация) |
+| `attack` | No | Атака |
+| `fall` | No | Получение урона / смерть |
+| `crouch` | Yes | Сидит (отдых) |
+| `run` | Yes | Бежит |
+| `walk` | Yes | Идёт |
+| `jump` | No | Прыжок (крит) |
+| `head-turn` | No | Поворот головы (случайный в городе) |
 
-### Стиль кнопок
+### Функции анимаций (game.js)
 
 ```javascript
-// Обычная кнопка
-fillColor: 0x333333
-strokeColor: 0xd4af37
+// Базовая функция
+function playAnim(animName, loop) {
+  if (!window.spineHero) return false;
+  try {
+    window.spineHero.play(animName, loop);
+    return true;
+  } catch(e) { return false; }
+}
 
-// Выделенная кнопка
-fillColor: 0x4a3a1a
-strokeColor: 0xffd700
+// Готовые функции
+heroIdle()           // idle loop
+heroAttack()         // attack → idle (400ms)
+heroHit()            // fall → idle (200ms)
+heroDeath()          // fall (остаётся)
+heroRun()            // run loop
+heroWalk()           // walk loop
+heroCrouch()         // crouch loop (отдых)
+heroJump()           // jump → idle (500ms)
+heroCriticalHit()    // jump → attack → idle
+heroEnterLocation()  // run → idle (1000ms)
+heroHeadTurn()       // head-turn → idle (1500ms)
+```
 
-// Заблокированная кнопка
-fillColor: 0x222222
-strokeColor: 0x555555
-textColor: "#666666"
+### Интеграция анимаций
+
+| Файл | Событие | Анимация |
+|------|---------|----------|
+| combatSystem.js | Обычная атака | `heroAttack()` |
+| combatSystem.js | Критический удар | `heroCriticalHit()` |
+| combatSystem.js | Использование скилла | `heroCriticalHit()` |
+| combatSystem.js | Получение урона | `heroHit()` |
+| combatSystem.js | Смерть героя | `heroDeath()` |
+| tickSystem.js | Сесть (sitDown) | `heroCrouch()` |
+| tickSystem.js | Встать (standUp) | `heroIdle()` |
+| locationSystem.js | Вход в город | `heroIdle()` |
+| locationSystem.js | Вход в локацию | `heroEnterLocation()` |
+| arenaSystem.js | Атака на арене | `heroAttack()` |
+| arenaSystem.js | Урон на арене | `heroHit()` |
+
+### Случайные анимации в городе (tickSystem.js)
+
+```javascript
+// Каждые 5 сек, 10% шанс head-turn
+const CITY_ANIM_INTERVAL_MS = 5000;
+const CITY_ANIM_CHANCE = 0.1;
+```
+
+---
+
+## 🖼️ Ассеты
+
+### Backgrounds (src/assets/backgrounds/)
+
+| Файл | Формат | Размер | Использование |
+|------|--------|--------|---------------|
+| talking_island.webp | WebP | 1080×1935 | Город (cityBg) |
+| obelisk_of_victory.png | PNG | - | Локация 0 |
+| northern_territory.png | PNG | - | Локация 1 |
+| elven_ruins.png | PNG | - | Локация 2 |
+| orc_barracks.png | PNG | - | Локация 3 |
+
+### UI (src/assets/ui/)
+
+| Файл | Формат | Использование |
+|------|--------|---------------|
+| Bottom_panel.webp | WebP | Нижняя UI панель |
+| map_world.png | PNG | Карта телепорта |
+
+### Spine (src/assets/spine/)
+
+| Файл | Описание |
+|------|----------|
+| hero.json | Skeleton data |
+| hero.atlas | Atlas |
+| hero.png | Texture |
+
+### Загрузка ассетов (preload)
+
+```javascript
+// Фоны
+this.load.image("talkingisland_main", "assets/backgrounds/talking_island.webp");
+this.load.image("obelisk_of_victory", "assets/backgrounds/obelisk_of_victory.png");
+// ...
+
+// UI
+this.load.image("ui_bottom_panel", "assets/ui/Bottom_panel.webp");
+this.load.image("map_world", "assets/ui/map_world.png");
+
+// Spine
+this.load.spine('hero', 'assets/spine/hero.json', 'assets/spine/hero.atlas');
+```
+
+---
+
+## 🎨 UI Layout
+
+### Bottom Panel (create)
+
+```javascript
+uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
+uiBottomPanel.setOrigin(0.5, 1);           // Привязка к низу
+uiBottomPanel.setScale(w / uiBottomPanel.width); // Fit width
+uiBottomPanel.setDepth(100);               // Поверх фона
+uiBottomPanel.setScrollFactor(0);          // Фиксированная
+uiBottomPanel.setAlpha(0.92);              // Чуть прозрачнее
+```
+
+### fitBackground (cover mode)
+
+```javascript
+function fitBackground(bg, scene) {
+  if (!bg || !scene) return;
+  var w = scene.scale.width;
+  var h = scene.scale.height;
+  var scale = Math.max(w / bg.width, h / bg.height);
+  bg.setScale(scale);
+  bg.setPosition(w / 2, h / 2);
+  bg.setOrigin(0.5, 0.5);
+  bg.setScrollFactor(0);
+}
+```
+
+---
+
+## ⚔️ Combat System
+
+### Эфир и Soulshots (ВАЖНО!)
+
+**Правильная логика:**
+- Эфир тратится ТОЛЬКО на Soulshots
+- Soulshots — опциональное усиление (+100% fighter / +50% mystic)
+- Без эфира — обычные атаки работают
+- Бой НИКОГДА не останавливается из-за эфира
+
+```javascript
+// restSystem.js - useShotIfEnabled()
+function useShotIfEnabled() {
+  if (arch === "fighter" && buffs.soulshotsOn && wallet.ether > 0) {
+    wallet.ether -= 1;
+    return { used: true, multiplier: 2.0 };  // +100%
+  }
+  if (arch === "mystic" && buffs.spiritshotsOn && wallet.ether > 0) {
+    wallet.ether -= 1;
+    return { used: true, multiplier: 1.5 };  // +50%
+  }
+  return { used: false, multiplier: 1.0 };   // Обычная атака
+}
+```
+
+### Авто-охота
+
+- Сессия ограничена по времени (AUTO_HUNT_DURATION_MS)
+- По окончании показывается лагерь "Сессия окончена"
+- НЕ связано с эфиром!
+
+---
+
+## 🏟️ PvE Арена
+
+### Spine интеграция
+
+```javascript
+// createArenaUI() - Герой на арене
+if (window.spineHero) {
+  window.spineHero.setPosition(120, h/2 + 50);
+  window.spineHero.setVisible(true);
+  window.spineHero.setDepth(151);
+  heroIdle();
+  arenaMyChar = window.spineHero;
+}
+
+// arenaBattleStep() - Анимации боя
+if (arenaMyTurn) {
+  heroAttack();  // Мой ход
+} else {
+  heroHit();     // Враг бьёт меня
+}
+```
+
+---
+
+## 🐛 Debug
+
+### Проверка качества рендера (консоль)
+
+```javascript
+// Автоматически выводится при загрузке:
+[Render] DPR: 2
+[Render] Game resolution: 2
+[Render] Canvas real size: 780 x 1688
+[Render] BG original size: 1080 x 1935
+[Render] BG scale: 0.87
+[Render] Scale size: 390 x 844
+```
+
+**Если resolution = 1 при DPR > 1 — проблема с кэшем!**
+
+### Консольные команды
+
+```javascript
+// Сброс сейва
+localStorage.clear(); location.reload();
+
+// Тест профессий
+stats.level = 20; updateHeroUI();
+
+// Тест арены
+arenaState.energy = 30;
+
+// Дать ресурсы
+wallet.gold = 10000;
+wallet.ether = 100;
+resources.ore = 100;
+
+// Тест Spine
+window.spineHero.play('attack', false);
 ```
 
 ---
@@ -157,557 +303,34 @@ textColor: "#666666"
 
 ```
 src/
-├── index.html              # Точка входа
-├── preEntry.css            # Стили загрузочного экрана
-├── preEntry.js             # Loader + Intro overlay
-├── game.js                 # Phaser: preload(), create(), update()
+├── index.html              # Точка входа + CSS crisp-edges
+├── preEntry.css            # Loader стили
+├── preEntry.js             # Loader + Intro
+├── game.js                 # Phaser main + Spine анимации
 │
-├── state/                  # Данные и системы
-│   ├── uiConstants.js      # ⭐ UI константы (ПЕРВЫЙ!)
-│   ├── heroState.js        # ⭐ Данные героя (ВТОРОЙ!)
-│   ├── itemSystem.js       # Экипировка, getAllEquipmentStats
-│   ├── saveSystem.js       # save/load/migrate
-│   ├── statSystem.js       # recalculateHeroStats
-│   ├── tickSystem.js       # Реген тики
-│   ├── worldState.js       # Локации, мобы
-│   ├── combatSystem.js     # Бой, урон
-│   ├── locationSystem.js   # Город ↔ локация
-│   ├── progressionSystem.js# Офлайн-прогресс, levelUp
-│   ├── arenaSystem.js      # PvE арена (полноэкранный бой)
-│   ├── forgeSystem.js      # Кузница (ресурсы, крафт)
-│   ├── skillSystem.js      # Скиллы
-│   ├── professionSystem.js # Профессии 20 лвл
-│   ├── restSystem.js       # Отдых, soulshots
-│   ├── autoHuntSystem.js   # Авто-охота
-│   ├── petSystem.js        # Питомец
-│   ├── economySystem.js    # Банки, свитки
-│   ├── mercenarySystem.js  # Наёмник
-│   ├── dungeonSystem.js    # Данжи
-│   ├── overdriveSystem.js  # Перегрузка
-│   ├── spSystem.js         # SP система
-│   ├── uiSystem.js         # UI хелперы
-│   ├── uiLayout.js         # Лейаут (Lineage M стиль)
-│   └── runnerBattle.js     # Runner UI (эксперимент)
+├── state/
+│   ├── uiConstants.js      # UI константы
+│   ├── heroState.js        # Данные героя
+│   ├── combatSystem.js     # Бой + анимации атаки/урона
+│   ├── locationSystem.js   # Город ↔ локация + Spine позиция
+│   ├── tickSystem.js       # Реген + случайные анимации
+│   ├── restSystem.js       # Отдых + Soulshots
+│   ├── arenaSystem.js      # Арена + Spine интеграция
+│   └── ...
 │
-├── ui/                     # Панели интерфейса
-│   ├── selectionScreen.js  # Выбор расы/класса (мобильный)
-│   ├── characterCreation.js# Создание персонажа (fullscreen)
-│   ├── inventoryPanel.js   # Инвентарь
-│   ├── statsPanel.js       # Статы
-│   ├── forgePanel.js       # Кузница UI
-│   ├── questsPanel.js      # Квесты
-│   ├── shopPanel.js        # Магазин
-│   ├── arenaPanel.js       # Арена (старая панель)
-│   ├── dungeonPanel.js     # Данж
-│   ├── mapPanel.js         # Карта мира
-│   └── skillsPanel.js      # Панель навыков
+├── ui/
+│   └── ...
 │
 └── assets/
-    ├── intro/
-    │   └── registration.png # Фон создания персонажа
     ├── backgrounds/
-    │   ├── talkingisland_main.png
-    │   ├── obelisk_of_victory.png
-    │   ├── northern_territory.png
-    │   ├── elven_ruins.png
-    │   └── orc_barracks.png
+    │   └── talking_island.webp  # Новый город 1080×1935
     ├── ui/
-    │   └── map_world.png
-    └── audio/
-        ├── city_theme.mp3
-        └── battle_theme.mp3
+    │   └── Bottom_panel.webp    # Нижняя панель
+    └── spine/
+        ├── hero.json
+        ├── hero.atlas
+        └── hero.png
 ```
-
-### Порядок скриптов в index.html (КРИТИЧНО!)
-
-```html
-<!-- 1. Phaser -->
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
-
-<!-- 2. Pre-Entry -->
-<script src="preEntry.js"></script>
-
-<!-- 3. State (порядок важен!) -->
-<script src="state/uiConstants.js"></script>   <!-- ПЕРВЫЙ -->
-<script src="state/heroState.js"></script>      <!-- ВТОРОЙ -->
-<script src="state/itemSystem.js"></script>     <!-- ДО statSystem! -->
-<script src="state/saveSystem.js"></script>
-<script src="state/statSystem.js"></script>
-<!-- ... остальные state ... -->
-
-<!-- 4. UI Panels -->
-<script src="ui/inventoryPanel.js"></script>
-<script src="ui/selectionScreen.js"></script>
-<script src="ui/characterCreation.js"></script>
-<!-- ... остальные ui ... -->
-
-<!-- 5. Main -->
-<script src="game.js"></script>                 <!-- ПОСЛЕДНИЙ -->
-```
-
----
-
-## 📊 Структуры данных (heroState.js)
-
-### stats
-```javascript
-const stats = {
-  level: 1,
-  exp: 0,
-  expToNext: 100,
-  sp: 0,
-  maxHp: 140,
-  hp: 140,
-  maxMp: 40,
-  mp: 40,
-  minAttack: 12,
-  maxAttack: 20,
-  critChance: 0.15,
-  critMultiplier: 1.8,
-  atkSpeed: 1.0,
-  pDef: 10
-};
-```
-
-### profile
-```javascript
-const profile = {
-  race: "human" | null,           // elf, darkelf — заблокированы
-  archetype: "fighter" | null,    // mystic — доступен
-  profession: null                // knight, rogue, wizard — на 20 лвл
-};
-```
-
-### wallet
-```javascript
-const wallet = {
-  gold: 0,
-  ether: 50,
-  crystals: 0
-};
-```
-
-### resources (Кузница)
-```javascript
-const resources = {
-  // Base (падают с мобов)
-  ore: 0,
-  coal: 0,
-  thread: 0,
-  leather: 0,
-
-  // Refined (крафт 100%)
-  ironIngot: 0,
-  cloth: 0,
-  leatherSheet: 0,
-
-  // Catalyst
-  enchantDust: 0
-};
-```
-
-### equipment
-```javascript
-const equipment = {
-  weapon: null,
-  armor: null,
-  jewelry1: null,
-  jewelry2: null
-};
-```
-
-### arenaState
-```javascript
-const arenaState = {
-  rating: 1000,
-  honor: 0,
-  wins: 0,
-  losses: 0,
-  energy: 30,
-  energyMax: 30,
-  lastEnergyTs: Date.now()
-};
-
-const ARENA_ENERGY_COST = 5;
-const ARENA_ENERGY_REGEN_MS = 10 * 60 * 1000; // 10 минут
-```
-
-### progress
-```javascript
-const progress = {
-  kills: 0,
-  eliteKills: 0,
-  arenaRating: 0,
-  lastSessionTime: 0,
-  lastMode: "city",           // для офлайн-прогресса
-  lastLocationIndex: 0        // для офлайн-прогресса
-};
-```
-
-### buffs
-```javascript
-const buffs = {
-  pAtkActive: false,
-  mAtkActive: false,
-  soulshotsOn: false,
-  spiritshotsOn: false,
-  isResting: false
-};
-```
-
----
-
-## 🏟️ PvE Арена
-
-### Концепция
-- Полноэкранный режим боя
-- Авто-бой против бота (позже — слепки игроков)
-- Исход зависит от билда (статы, экипировка)
-
-### Энергия
-```
-energyMax = 30
-energyCostPerFight = 5
-energyRegenInterval = 10 минут (+1)
-```
-
-### Flow
-```
-Город → NPC "Арена" → onArenaButtonClick() →
-ArenaScene (fullscreen) → 3-2-1-FIGHT → Авто-бой →
-Результат (popup) → "В город"
-```
-
-### Награды
-| Результат | Награда |
-|-----------|---------|
-| Победа | +EXP, +Honor, +Rating (8-20), +Gold |
-| Поражение | +EXP (мало), -Rating, нет Gold |
-
-### Рейтинг (ELO-lite)
-```javascript
-base = 14;
-bonus = clamp(diff / 40, -6, +6);
-deltaWin = clamp(base + bonus, 8, 20);
-```
-
----
-
-## 🔨 Система кузницы
-
-### Ресурсы
-
-| Тип | Ресурсы | Источник |
-|-----|---------|----------|
-| Base | ore, coal, thread, leather | Дроп с мобов |
-| Refined | ironIngot, cloth, leatherSheet | Переплавка 100% |
-| Catalyst | enchantDust | Разбор экипировки |
-
-### Рецепты переплавки (100%)
-
-| Результат | Ингредиенты |
-|-----------|-------------|
-| Iron Ingot | 10 ore + 2 coal |
-| Cloth | 10 thread |
-| Leather Sheet | 5 leather |
-
-**Lucky x2:** 5% шанс получить x2 результата
-
-### Рецепты крафта (100%)
-
-| Предмет | Ингредиенты | Статы |
-|---------|-------------|-------|
-| Bastard Sword [D] | 10 ingot + 2 sheet + 3 dust | pAtk: 74 |
-| Apprentice Robe [D] | 10 cloth + 2 sheet + 3 dust | pDef: 45 |
-| Traveler Boots [D] | 4 sheet + 2 cloth + 2 dust | pDef: 20 |
-
-### Разбор (Crystallize)
-
-| Предмет | Enchant Dust |
-|---------|--------------|
-| Weapon D | 20-35 |
-| Armor D | 15-28 |
-| Boots D | 10-20 |
-
----
-
-## 🎮 Офлайн-прогресс v2
-
-### Правила
-
-| Режим | Награды |
-|-------|---------|
-| Город | ❌ Нет (герой отдыхал) |
-| Локация | ✅ 15% от онлайна |
-
-### Формула
-
-```javascript
-CAP_SECONDS = 3 * 3600;      // Макс 3 часа
-OFFLINE_MULT = 0.15;         // 15%
-AVG_KILL_TIME = 20;          // сек на моба
-
-effectiveSeconds = min(elapsed, CAP_SECONDS);
-kills = floor(effectiveSeconds / AVG_KILL_TIME);
-
-expGain = kills * avgExp * OFFLINE_MULT;
-goldGain = kills * avgGold * OFFLINE_MULT;
-spGain = kills * avgSp * OFFLINE_MULT;
-```
-
----
-
-## 🧑 Создание персонажа
-
-### Flow (preEntry → selectionScreen)
-
-```
-PreEntry (loader) → "НАЧАТЬ ПУТЬ" →
-selectionScreen (fullscreen overlay) →
-Выбор расы → Выбор класса → "Играть" → Город
-```
-
-### UI спецификация (selectionScreen.js)
-
-```javascript
-// Fullscreen overlay
-fillColor: 0x000000, alpha: 0.85
-
-// Координаты (фиксированные Y)
-title: Y = 120        // "СОЗДАНИЕ ГЕРОЯ"
-subtitle1: Y = 180    // "Выбери расу"
-races: Y = 260        // 3 кнопки в ряд
-subtitle2: Y = 340    // "Выбери класс"
-classes: Y = 410      // 2 кнопки в ряд
-confirm: Y = 520      // Кнопка "Играть"
-
-// Кнопки рас
-width: 100px, height: 50px, gap: 110px
-
-// Кнопки классов
-width: 130px, height: 50px, gap: 140px
-
-// Цвета
-border: #d4af37 (золото)
-highlight: #ffd700 (яркое золото)
-selected bg: #4a3a1a
-```
-
-### Расы (открыта только Human)
-
-| Раса | Статус | Множители |
-|------|--------|-----------|
-| Human | ✅ Открыта | Базовые |
-| Elf | 🔒 Скоро | HP×0.9, MP×1.15, Crit×1.1 |
-| Dark Elf | 🔒 Скоро | HP×1.05, ATK×1.15 |
-
-### Архетипы
-
-| Архетип | Статус | Базовые статы |
-|---------|--------|---------------|
-| Fighter | ✅ Открыт | HP: 140, MP: 40, ATK: 12-20 |
-| Mystic | ✅ Открыт | HP: 80, MP: 110, ATK: 18-26 |
-
----
-
-## ⚔️ SKILL_DB
-
-```javascript
-{
-  "Power Strike":     { type: "physical", power: 1.5, mp: 10, cd: 4000 },
-  "Mortal Blow":      { type: "physical", power: 2.5, mp: 15, cd: 6000, chance: 0.7 },
-  "Wind Strike":      { type: "magical", power: 2.0, mp: 12, cd: 3000, castTime: 1500 },
-  "Vampiric Touch":   { type: "magical", power: 1.2, mp: 20, cd: 8000, healPercent: 0.4 },
-  "Shield Stun":      { type: "physical", power: 1.2, mp: 20, cd: 8000, stun: true },
-  "Ultimate Defense": { type: "buff", mp: 50, cd: 60000, effect: { pDef: 3.0 } },
-  "Backstab":         { type: "physical", power: 3.0, mp: 18, cd: 5000 },
-  "Dash":             { type: "buff", mp: 10, cd: 15000, effect: { atkSpeed: 1.5 } },
-  "Blaze":            { type: "magical", power: 3.0, mp: 25, cd: 4000, castTime: 2000 },
-  "Aura Flare":       { type: "magical", power: 1.5, mp: 30, cd: 500, castTime: 500 }
-}
-```
-
----
-
-## 🗺️ Локации и мобы
-
-### Obelisk of Victory (lv 1-5)
-| Моб | Lv | HP | ATK | EXP | SP | Gold |
-|-----|----|----|-----|-----|----|------|
-| Young Keltir | 1 | 35 | 3-5 | 12 | 1 | 4-8 |
-| Keltir | 2 | 45 | 4-6 | 18 | 2 | 6-12 |
-| Grey Wolf | 3 | 60 | 5-8 | 25 | 3 | 8-15 |
-
-### Northern Territory (lv 5-10)
-| Моб | Lv | HP | ATK | EXP | SP | Gold |
-|-----|----|----|-----|-----|----|------|
-| Orc | 5 | 90 | 7-11 | 35 | 4 | 12-20 |
-| Orc Fighter | 7 | 120 | 9-14 | 45 | 5 | 15-25 |
-| Werewolf | 8 | 140 | 10-16 | 55 | 6 | 18-30 |
-
-### Elven Ruins (lv 10-18)
-| Моб | Lv | HP | ATK | EXP | SP | Gold |
-|-----|----|----|-----|-----|----|------|
-| Skeleton | 10 | 180 | 12-18 | 70 | 7 | 22-35 |
-| Skeleton Archer | 12 | 160 | 15-22 | 85 | 9 | 28-42 |
-| Giant Spider | 14 | 220 | 14-20 | 100 | 10 | 32-50 |
-| **Skeleton Lord** ⭐ | 16 | 300 | 18-26 | 130 | 13 | 40-60 |
-
-### Orc Barracks (lv 20+)
-| Моб | Lv | HP | ATK | EXP | SP | Gold |
-|-----|----|----|-----|-----|----|------|
-| Orc Raider | 20 | 400 | 22-32 | 180 | 18 | 50-80 |
-| **Orc Captain** ⭐ | 22 | 500 | 26-38 | 220 | 22 | 60-100 |
-| Orc Shaman | 21 | 350 | 30-45 | 200 | 25 | 55-90 |
-
-⭐ = Elite mob
-
----
-
-## 👤 Профессии (20 уровень)
-
-| Профессия | Архетип | Бонус | Скиллы |
-|-----------|---------|-------|--------|
-| Knight | fighter | +30% HP, +10 pDef | Shield Stun, Ultimate Defense |
-| Rogue | fighter | +15% крит, +20% ATK | Backstab, Dash |
-| Wizard | mystic | +50% MP, +30% ATK | Blaze, Aura Flare |
-
----
-
-## ✅ Статус разработки
-
-### Готово ✅
-- [x] Структура данных (heroState.js)
-- [x] Система мобов (4 локации, 13 мобов)
-- [x] Профессии на 20 лвл
-- [x] Скиллы в бою (SKILL_DB)
-- [x] Soulshots/Spiritshots
-- [x] Отдых (сесть, реген x5)
-- [x] Питомец-волк
-- [x] Авто-охота
-- [x] PreEntry (loader + intro)
-- [x] GitHub Pages deployment
-- [x] TMA адаптация (390×844)
-- [x] UI константы (uiConstants.js)
-- [x] UI золотая тема
-- [x] Экран выбора персонажа (мобильный fullscreen)
-- [x] uiLayout.js (Lineage M стиль, 2 ряда NPC)
-- [x] Кузница: Переплавка (с Lucky x2)
-- [x] Кузница: Крафт экипы
-- [x] Кузница: Разбор (crystallize)
-- [x] PvE Арена (полноэкранный режим боя)
-- [x] TMA Touch Fix (reliable clicks)
-- [x] Офлайн-прогресс v2 (город vs локация)
-
-### TODO 📋
-
-#### Приоритет 1 (MVP Polish)
-- [ ] Дроп ресурсов с мобов
-- [ ] Инвентарь с ресурсами
-- [ ] Баланс наград арены
-
-#### Приоритет 2 (Content)
-- [ ] Spine анимация персонажа
-- [ ] Больше локаций
-- [ ] Daily Quests
-- [ ] Данжи контент
-
-#### Приоритет 3 (Social)
-- [ ] PvP арена со слепками игроков
-- [ ] Лиги и рейтинг
-- [ ] Друзья (Supabase)
-
-#### Приоритет 4 (Monetization)
-- [ ] Реклама (Ad cap для офлайна)
-- [ ] Premium подписка
-
----
-
-## 📝 Важные правила кода
-
-### Глобальные переменные (НЕ ПЕРЕИМЕНОВЫВАТЬ!)
-```javascript
-stats, profile, wallet, consumables, progress
-equipment, inventory, skills, quests, resources
-mercenary, buffs, mode, pet, arenaState
-```
-
-### Работа с inventory
-```javascript
-// ❌ НЕПРАВИЛЬНО (убивает ссылку)
-inventory = [];
-
-// ✅ ПРАВИЛЬНО
-inventory.length = 0;
-inventory.push(...newItems);
-```
-
-### Безопасные проверки
-```javascript
-// Всегда проверять существование
-if (typeof someFunction === 'function') {
-  someFunction();
-}
-
-if (typeof someVar !== 'undefined' && someVar) {
-  // использовать someVar
-}
-```
-
-### Anti-double-tap (для модальных экранов)
-```javascript
-let isProcessing = false;
-
-button.on("pointerdown", () => {
-  if (isProcessing) return;
-  isProcessing = true;
-
-  // действие...
-
-  scene.time.delayedCall(100, () => {
-    isProcessing = false;
-  });
-});
-```
-
----
-
-## 🔧 Команды разработки
-
-```bash
-# Локальный запуск
-cd src && python -m http.server 5500
-# или VS Code Live Server
-
-# Деплой
-git add .
-git commit -m "message"
-git push
-# GitHub Pages auto-deploy
-
-# Сброс сейва
-localStorage.clear(); location.reload();
-
-# Тест профессий
-stats.level = 20; updateHeroUI();
-
-# Тест арены
-arenaState.energy = 30;
-
-# Дать золото
-wallet.gold = 10000; updateHeroUI();
-
-# Тест ресурсов
-resources.ore = 100; resources.coal = 50;
-```
-
----
-
-## 📝 Референсы
-
-- **Hamster Fight Club** (@hamster_fightclub_bot) — UI/UX, экипировка
-- **Lineage 2** — грейды, профессии, механики
-- **Spine** (esotericsoftware.com) — анимация персонажа
 
 ---
 
@@ -715,170 +338,57 @@ resources.ore = 100; resources.coal = 50;
 
 | Версия | Дата | Изменения |
 |--------|------|-----------|
-| 0.5.0 | - | Базовая игра |
-| 0.6.0 | - | Профессии, скиллы |
-| 0.7.0 | - | Vercel deploy |
-| 0.8.0 | 13.12.2024 | Кузница, preEntry, Character Creation |
-| 0.9.0 | 14.12.2024 | Мобильный UI 390×844, золотая тема |
-| 1.0.0 | 14.12.2024 | PvE Арена, TMA Touch Fix, UI рефакторинг |
-| 1.0.1 | 14.12.2024 | Loading state fix, fitBackground (no black bars), gold buttons |
-| 1.0.2 | 14.12.2024 | Safe de-monolith, Spine setup, SpinePlugin CDN fix |
+| 1.0.0 | 14.12.2024 | PvE Арена, TMA Touch Fix |
+| 1.0.1 | 14.12.2024 | fitBackground, gold buttons |
+| 1.0.2 | 14.12.2024 | Spine setup, SpinePlugin CDN |
+| 1.1.0 | 15.12.2024 | **Spine анимации полностью интегрированы** |
+| | | - Все анимации: idle, attack, hit, death, crouch, run, walk, jump |
+| | | - Интеграция в combat, arena, rest, location transitions |
+| | | - Случайный head-turn в городе |
+| | | - Новый фон talking_island.webp (1080×1935) |
+| | | - Bottom UI panel (Bottom_panel.webp) |
+| | | - resolution: devicePixelRatio для Retina |
+| | | - CSS crisp-edges |
+| | | - Fix эфир логики (бой не останавливается) |
 
 ---
 
-## 🔴 ТЕКУЩИЕ ПРОБЛЕМЫ (для отладки)
+## ✅ Готово
 
-### 1. Spine загружается, но игра падает
+- [x] Spine анимации (все 12 функций)
+- [x] Интеграция в бой (атака, крит, урон, смерть)
+- [x] Интеграция в арену (Spine вместо квадрата)
+- [x] Интеграция в отдых (crouch/idle)
+- [x] Случайные анимации в городе
+- [x] Новый фон города (WebP, 1080×1935)
+- [x] Bottom UI panel
+- [x] Retina support (devicePixelRatio)
+- [x] CSS crisp-edges
+- [x] Правильная логика эфира
 
-**Симптомы:**
-- SpinePlugin CDN загружается (Phaser v3.80.1 показывается)
-- Но после `create()` ошибки с undefined
+## 📋 TODO
 
-**Последняя консоль:**
-```
-[SP System] SP-хук включён. 10% EXP → SP.
-Phaser v3.80.1 (WebGL | Web Audio)
-[StatSystem] Cannot recalculate - getAllEquipmentStats not ready
-Runner battle system initialized
-Uncaught TypeError: Cannot read properties of undefined (reading 'setVisible')
-    at hideInventoryPanel (inventoryPanel.js:18:18)
-    at initialize.create (game.js:1091:3)
-```
-
-**Что сделано:**
-1. Добавлен `ENABLE_LEGACY_UI = false` флаг в game.js
-2. Обёрнут весь legacy UI код в `if (ENABLE_LEGACY_UI) {}`
-3. Добавлены null-проверки во все `show/hideXxxPanel()` функции
-
-**Файлы с null-проверками:**
-- inventoryPanel.js - `if (inventoryPanel) inventoryPanel.setVisible(...)`
-- statsPanel.js
-- questsPanel.js
-- shopPanel.js
-- mapPanel.js
-- arenaPanel.js
-- dungeonPanel.js
-- skillsPanel.js (уже был безопасный)
-
-### 2. Spine интеграция
-
-**Текущий код (game.js preload):**
-```javascript
-// Spine анимация героя
-this.load.spine('hero', 'assets/spine/hero-pro.json', 'assets/spine/hero.atlas');
-```
-
-**Config (game.js):**
-```javascript
-plugins: {
-  scene: [
-    { key: 'SpinePlugin', plugin: window.SpinePlugin, mapping: 'spine' }
-  ]
-}
-```
-
-**index.html:**
-```html
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/plugins/spine4.1/dist/SpinePlugin.js"></script>
-```
-
-**Файлы в src/assets/spine/:**
-- hero-pro.json (148 KB)
-- hero.atlas (937 B)
-- hero.png (89 KB)
-
-### 3. ENABLE_LEGACY_UI архитектура
-
-**game.js (строка 136):**
-```javascript
-const ENABLE_LEGACY_UI = false;
-```
-
-**Обёрнутый блок (строки 662-1054):**
-```javascript
-// ----- LEGACY PANELS (deprecated) -----
-if (ENABLE_LEGACY_UI) {
-  const panelX = this.scale.width / 2;
-  const panelY = this.scale.height / 2;
-
-  // --- Инвентарь ---
-  inventoryPanel = this.add.rectangle(...);
-  // ... все остальные панели ...
-
-  // setDepth для всех панелей
-  [inventoryPanel, inventoryPanelText, ...].forEach((obj) => obj && obj.setDepth(10));
-} // END ENABLE_LEGACY_UI
-```
-
-**Условный hideOldUI (строка 1103):**
-```javascript
-if (ENABLE_LEGACY_UI) hideOldUI();
-```
-
-### 4. Ожидаемое поведение vs Реальное
-
-**Ожидание:**
-- `ENABLE_LEGACY_UI = false` → legacy панели НЕ создаются
-- `hideInventoryPanel()` вызывается → `if (inventoryPanel)` false → ничего не делает
-- Новый UI из `uiLayout.js` работает нормально
-
-**Реальность:**
-- Ошибка `Cannot read properties of undefined`
-- Значит null-проверка не срабатывает или переменная объявлена но undefined
-
-### 5. Возможные причины
-
-1. **Переменные объявлены где-то ещё** — может быть `var inventoryPanel;` без присваивания
-2. **Порядок загрузки скриптов** — ui/*.js загружается ДО game.js
-3. **updateInventoryPanel()** внутри `showInventoryPanel()` может падать
-4. **Не все функции получили null-checks** — может быть ещё hideForgePanel, hideProfessionPanel и т.д.
-
-### 6. Порядок скриптов (index.html)
-
-```html
-<!-- STATE -->
-<script src="state/uiConstants.js"></script>
-<script src="state/heroState.js"></script>
-...
-<script src="state/uiLayout.js"></script>
-
-<!-- UI PANELS -->
-<script src="ui/inventoryPanel.js"></script>
-<script src="ui/statsPanel.js"></script>
-<script src="ui/forgePanel.js"></script>
-<script src="ui/questsPanel.js"></script>
-<script src="ui/shopPanel.js"></script>
-<script src="ui/arenaPanel.js"></script>
-<script src="ui/dungeonPanel.js"></script>
-<script src="ui/mapPanel.js"></script>
-<script src="ui/selectionScreen.js"></script>
-<script src="ui/characterCreation.js"></script>
-<script src="ui/skillsPanel.js"></script>
-
-<!-- MAIN -->
-<script src="game.js"></script>
-```
+- [ ] Пересохранить остальные фоны в WebP quality 90
+- [ ] Spine для врагов
+- [ ] Эффекты ударов (particles)
+- [ ] Звуки для анимаций
 
 ---
 
-## 🔍 ЧТО НУЖНО ПРОВЕРИТЬ
+## 🔴 ИЗВЕСТНЫЕ ПРОБЛЕМЫ
 
-1. **Найти ВСЕ объявления переменных панелей**
-   - Где `inventoryPanel` объявляется? (heroState.js? game.js?)
-   - Тип: `var`, `let`, `const`?
+### 1. Мыльная картинка
 
-2. **Проверить hideForgePanel() и hideProfessionPanel()**
-   - Они вызываются в create() но могут не иметь null-checks
+**Причина:** Кэш браузера/Telegram
 
-3. **Проверить updateXxxPanel() функции**
-   - Они вызываются из showXxxPanel()
-   - Могут падать на обращении к undefined переменным
+**Решение:**
+1. Очистить кэш браузера
+2. Закрыть и открыть Telegram
+3. Проверить консоль: `[Render] Game resolution: X` должен равняться DPR
 
-4. **Проверить что Spine не влияет**
-   - Временно закомментировать `this.load.spine(...)` и проверить
+### 2. Spine не загружается
 
-5. **Добавить console.log для отладки**
-```javascript
-console.log('inventoryPanel before hide:', typeof inventoryPanel, inventoryPanel);
-```
+**Проверить:**
+- SpinePlugin CDN: `phaser@3.80.1/plugins/spine4.1/dist/SpinePlugin.js`
+- Файлы в assets/spine/: hero.json, hero.atlas, hero.png
+- Консоль: `[Spine] Hero created successfully`
