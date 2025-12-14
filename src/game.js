@@ -500,7 +500,7 @@ function create() {
       color: "#ffffff",
     })
     .setOrigin(0.5);
-  musicToggleButton.on("pointerdown", () => {
+  safeOn(musicToggleButton, "pointerdown", () => {
     toggleMusicMute();
   });
   updateMusicToggleLabel();
@@ -1132,8 +1132,8 @@ function create() {
   updateSkillButtonsUI();
   updateMercStatsFromHero();
 
-  // обработчики
-  inventoryButton.on("pointerdown", () => {
+  // обработчики (legacy buttons — используем safeOn)
+  safeOn(inventoryButton, "pointerdown", () => {
     if (isInventoryOpen) hideInventoryPanel();
     else {
       hideStatsPanel();
@@ -1148,7 +1148,7 @@ function create() {
     }
   });
 
-  statsButton.on("pointerdown", () => {
+  safeOn(statsButton, "pointerdown", () => {
     if (isStatsOpen) hideStatsPanel();
     else {
       hideInventoryPanel();
@@ -1168,7 +1168,7 @@ function create() {
     openSkillsScreen(scene);
   });
 
-  questsButton.on("pointerdown", () => {
+  safeOn(questsButton, "pointerdown", () => {
     if (isQuestsOpen) hideQuestsPanel();
     else {
       hideInventoryPanel();
@@ -1185,34 +1185,34 @@ function create() {
 
   // forgeDoButton теперь в forgePanel.js
 
-  modeButton.on("pointerdown", () => {
+  safeOn(modeButton, "pointerdown", () => {
     if (mode === "city") enterLocation(scene);
     else enterCity(scene);
   });
 
-  autoButton.on("pointerdown", () => {
+  safeOn(autoButton, "pointerdown", () => {
     if (mode !== "location") return;
     if (autoHuntEnabled) disableAutoHunt();
     else enableAutoHunt(scene);
   });
 
-  overdriveButton.on("pointerdown", () => {
+  safeOn(overdriveButton, "pointerdown", () => {
     activateOverdrive(scene);
   });
 
-  locationPrevButton.on("pointerdown", () => {
+  safeOn(locationPrevButton, "pointerdown", () => {
     if (mode !== "city") return;
     changeLocation(-1);
     updateMapPanel();
   });
 
-  locationNextButton.on("pointerdown", () => {
+  safeOn(locationNextButton, "pointerdown", () => {
     if (mode !== "city") return;
     changeLocation(1);
     updateMapPanel();
   });
 
-  enemy.on("pointerdown", function () {
+  safeOn(enemy, "pointerdown", function () {
     if (mode !== "location") return;
     if (isAttacking) return;
     if (!enemyAlive) return;
@@ -1220,44 +1220,40 @@ function create() {
     startHeroAttack(scene);
   });
 
-  skill1Button.on("pointerdown", () => {
+  safeOn(skill1Button, "pointerdown", () => {
     useSkill1(scene);
   });
-  skill2Button.on("pointerdown", () => {
+  safeOn(skill2Button, "pointerdown", () => {
     useSkill2(scene);
   });
-  hpPotionButton.on("pointerdown", () => {
+  safeOn(hpPotionButton, "pointerdown", () => {
     useHpPotion(scene);
   });
-  mpPotionButton.on("pointerdown", () => {
+  safeOn(mpPotionButton, "pointerdown", () => {
     useMpPotion(scene);
   });
-  pBuffButton.on("pointerdown", () => {
+  safeOn(pBuffButton, "pointerdown", () => {
     usePAtkBuff(scene);
   });
-  mBuffButton.on("pointerdown", () => {
+  safeOn(mBuffButton, "pointerdown", () => {
     useMAtkBuff(scene);
   });
 
-  if (inventoryEquipBestButton) {
-    inventoryEquipBestButton.on("pointerdown", () => {
-      autoEquipBestItems();
-      updateHeroUI();
-      updateInventoryPanel();
-      saveGame();
-    });
-  }
+  safeOn(inventoryEquipBestButton, "pointerdown", () => {
+    autoEquipBestItems();
+    updateHeroUI();
+    updateInventoryPanel();
+    saveGame();
+  });
 
-  if (inventoryUnequipAllButton) {
-    inventoryUnequipAllButton.on("pointerdown", () => {
-      unequipAllItems();
-      updateHeroUI();
-      updateInventoryPanel();
-      saveGame();
-    });
-  }
+  safeOn(inventoryUnequipAllButton, "pointerdown", () => {
+    unequipAllItems();
+    updateHeroUI();
+    updateInventoryPanel();
+    saveGame();
+  });
 
-  npcSmithRect.on("pointerdown", () => {
+  safeOn(npcSmithRect, "pointerdown", () => {
     if (mode !== "city") return;
     hideInventoryPanel();
     hideStatsPanel();
@@ -1270,7 +1266,7 @@ function create() {
     showForgePanel();
   });
 
-  npcMapRect.on("pointerdown", () => {
+  safeOn(npcMapRect, "pointerdown", () => {
     if (mode !== "city") return;
     if (isMapOpen) {
       hideMapPanel();
@@ -1287,7 +1283,7 @@ function create() {
     }
   });
 
-  npcShopRect.on("pointerdown", () => {
+  safeOn(npcShopRect, "pointerdown", () => {
     if (mode !== "city") return;
     if (isShopOpen) {
       hideShopPanel();
@@ -1304,7 +1300,7 @@ function create() {
     }
   });
 
-  npcArenaRect.on("pointerdown", () => {
+  safeOn(npcArenaRect, "pointerdown", () => {
     if (mode !== "city") return;
     if (isArenaOpen) {
       hideArenaPanel();
@@ -1321,12 +1317,12 @@ function create() {
     }
   });
 
-  npcMercRect.on("pointerdown", () => {
+  safeOn(npcMercRect, "pointerdown", () => {
     if (mode !== "city") return;
     toggleMercenary(scene);
   });
 
-  npcDungeonRect.on("pointerdown", () => {
+  safeOn(npcDungeonRect, "pointerdown", () => {
     if (mode !== "city") return;
     if (isDungeonOpen) {
       hideDungeonPanel();
@@ -1609,48 +1605,46 @@ function setupNewUIHandlers(scene) {
   });
   
   // Навигация локаций
-  uiElements.locPrevBtn.on("pointerdown", () => {
+  safeOn(uiElements.locPrevBtn, "pointerdown", () => {
     if (mode !== "city") return;
     changeLocation(-1);
     updateMapPanel();
-    uiElements.locNavLabel.setText(getCurrentLocation().name);
+    if (uiElements.locNavLabel) uiElements.locNavLabel.setText(getCurrentLocation().name);
   });
-  
-  uiElements.locNextBtn.on("pointerdown", () => {
+
+  safeOn(uiElements.locNextBtn, "pointerdown", () => {
     if (mode !== "city") return;
     changeLocation(1);
     updateMapPanel();
-    uiElements.locNavLabel.setText(getCurrentLocation().name);
+    if (uiElements.locNavLabel) uiElements.locNavLabel.setText(getCurrentLocation().name);
   });
-  
+
   // Атака
-  uiElements.attackBtn.on("pointerdown", () => {
+  safeOn(uiElements.attackBtn, "pointerdown", () => {
     if (mode !== "location") return;
     if (isAttacking) return;
     if (!enemyAlive) return;
     if (stats.hp <= 0) return;
     startHeroAttack(scene);
   });
-  
+
   // Кнопка "В город"
-  if (uiElements.cityBtn) {
-    uiElements.cityBtn.on("pointerdown", () => {
-      if (mode !== "location") return;
-      enterCity(scene);
-    });
-  }
-  
+  safeOn(uiElements.cityBtn, "pointerdown", () => {
+    if (mode !== "location") return;
+    enterCity(scene);
+  });
+
   // Скиллы
-  uiElements.skill1Btn.on("pointerdown", () => {
+  safeOn(uiElements.skill1Btn, "pointerdown", () => {
     useSkill1(scene);
   });
-  
-  uiElements.skill2Btn.on("pointerdown", () => {
+
+  safeOn(uiElements.skill2Btn, "pointerdown", () => {
     useSkill2(scene);
   });
-  
+
   // Auto
-  uiElements.autoBtn.on("pointerdown", () => {
+  safeOn(uiElements.autoBtn, "pointerdown", () => {
     console.log("[UI] AUTO button clicked! mode =", mode, "autoHuntEnabled =", autoHuntEnabled);
     if (mode !== "location") {
       console.log("[UI] Not in location mode, ignoring");
@@ -1665,25 +1659,25 @@ function setupNewUIHandlers(scene) {
     }
     updateAutoButton(autoHuntEnabled);
   });
-  
+
   // Сесть
-  uiElements.sitButton.on("pointerdown", () => {
+  safeOn(uiElements.sitButton, "pointerdown", () => {
     toggleRest(scene);
     updateSitButton(buffs.isResting);
   });
-  
+
   // Shots
-  uiElements.shotsBtn.on("pointerdown", () => {
+  safeOn(uiElements.shotsBtn, "pointerdown", () => {
     toggleShots(scene);
     updateShotsButton(buffs.soulshotsOn || buffs.spiritshotsOn);
   });
-  
+
   // Банки
-  uiElements.hpPotionBtn.on("pointerdown", () => {
+  safeOn(uiElements.hpPotionBtn, "pointerdown", () => {
     useHpPotion(scene);
   });
-  
-  uiElements.mpPotionBtn.on("pointerdown", () => {
+
+  safeOn(uiElements.mpPotionBtn, "pointerdown", () => {
     useMpPotion(scene);
   });
 }
