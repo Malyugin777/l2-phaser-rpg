@@ -111,7 +111,7 @@ function showCamp(scene) {
 
   campTent = scene.add.rectangle(hero.x + 50, hero.y + 10, 40, 30, 0x8b4513);
   campText = scene.add
-    .text(hero.x + 50, hero.y - 40, "⛺ Отдых (нет Эфира)", {
+    .text(hero.x + 50, hero.y - 40, "⛺ Сессия окончена", {
       fontFamily: "Arial",
       fontSize: "16px",
       color: "#ffffff",
