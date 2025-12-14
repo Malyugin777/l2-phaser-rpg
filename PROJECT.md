@@ -722,3 +722,163 @@ resources.ore = 100; resources.coal = 50;
 | 0.9.0 | 14.12.2024 | Мобильный UI 390×844, золотая тема |
 | 1.0.0 | 14.12.2024 | PvE Арена, TMA Touch Fix, UI рефакторинг |
 | 1.0.1 | 14.12.2024 | Loading state fix, fitBackground (no black bars), gold buttons |
+| 1.0.2 | 14.12.2024 | Safe de-monolith, Spine setup, SpinePlugin CDN fix |
+
+---
+
+## 🔴 ТЕКУЩИЕ ПРОБЛЕМЫ (для отладки)
+
+### 1. Spine загружается, но игра падает
+
+**Симптомы:**
+- SpinePlugin CDN загружается (Phaser v3.80.1 показывается)
+- Но после `create()` ошибки с undefined
+
+**Последняя консоль:**
+```
+[SP System] SP-хук включён. 10% EXP → SP.
+Phaser v3.80.1 (WebGL | Web Audio)
+[StatSystem] Cannot recalculate - getAllEquipmentStats not ready
+Runner battle system initialized
+Uncaught TypeError: Cannot read properties of undefined (reading 'setVisible')
+    at hideInventoryPanel (inventoryPanel.js:18:18)
+    at initialize.create (game.js:1091:3)
+```
+
+**Что сделано:**
+1. Добавлен `ENABLE_LEGACY_UI = false` флаг в game.js
+2. Обёрнут весь legacy UI код в `if (ENABLE_LEGACY_UI) {}`
+3. Добавлены null-проверки во все `show/hideXxxPanel()` функции
+
+**Файлы с null-проверками:**
+- inventoryPanel.js - `if (inventoryPanel) inventoryPanel.setVisible(...)`
+- statsPanel.js
+- questsPanel.js
+- shopPanel.js
+- mapPanel.js
+- arenaPanel.js
+- dungeonPanel.js
+- skillsPanel.js (уже был безопасный)
+
+### 2. Spine интеграция
+
+**Текущий код (game.js preload):**
+```javascript
+// Spine анимация героя
+this.load.spine('hero', 'assets/spine/hero-pro.json', 'assets/spine/hero.atlas');
+```
+
+**Config (game.js):**
+```javascript
+plugins: {
+  scene: [
+    { key: 'SpinePlugin', plugin: window.SpinePlugin, mapping: 'spine' }
+  ]
+}
+```
+
+**index.html:**
+```html
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/plugins/spine4.1/dist/SpinePlugin.js"></script>
+```
+
+**Файлы в src/assets/spine/:**
+- hero-pro.json (148 KB)
+- hero.atlas (937 B)
+- hero.png (89 KB)
+
+### 3. ENABLE_LEGACY_UI архитектура
+
+**game.js (строка 136):**
+```javascript
+const ENABLE_LEGACY_UI = false;
+```
+
+**Обёрнутый блок (строки 662-1054):**
+```javascript
+// ----- LEGACY PANELS (deprecated) -----
+if (ENABLE_LEGACY_UI) {
+  const panelX = this.scale.width / 2;
+  const panelY = this.scale.height / 2;
+
+  // --- Инвентарь ---
+  inventoryPanel = this.add.rectangle(...);
+  // ... все остальные панели ...
+
+  // setDepth для всех панелей
+  [inventoryPanel, inventoryPanelText, ...].forEach((obj) => obj && obj.setDepth(10));
+} // END ENABLE_LEGACY_UI
+```
+
+**Условный hideOldUI (строка 1103):**
+```javascript
+if (ENABLE_LEGACY_UI) hideOldUI();
+```
+
+### 4. Ожидаемое поведение vs Реальное
+
+**Ожидание:**
+- `ENABLE_LEGACY_UI = false` → legacy панели НЕ создаются
+- `hideInventoryPanel()` вызывается → `if (inventoryPanel)` false → ничего не делает
+- Новый UI из `uiLayout.js` работает нормально
+
+**Реальность:**
+- Ошибка `Cannot read properties of undefined`
+- Значит null-проверка не срабатывает или переменная объявлена но undefined
+
+### 5. Возможные причины
+
+1. **Переменные объявлены где-то ещё** — может быть `var inventoryPanel;` без присваивания
+2. **Порядок загрузки скриптов** — ui/*.js загружается ДО game.js
+3. **updateInventoryPanel()** внутри `showInventoryPanel()` может падать
+4. **Не все функции получили null-checks** — может быть ещё hideForgePanel, hideProfessionPanel и т.д.
+
+### 6. Порядок скриптов (index.html)
+
+```html
+<!-- STATE -->
+<script src="state/uiConstants.js"></script>
+<script src="state/heroState.js"></script>
+...
+<script src="state/uiLayout.js"></script>
+
+<!-- UI PANELS -->
+<script src="ui/inventoryPanel.js"></script>
+<script src="ui/statsPanel.js"></script>
+<script src="ui/forgePanel.js"></script>
+<script src="ui/questsPanel.js"></script>
+<script src="ui/shopPanel.js"></script>
+<script src="ui/arenaPanel.js"></script>
+<script src="ui/dungeonPanel.js"></script>
+<script src="ui/mapPanel.js"></script>
+<script src="ui/selectionScreen.js"></script>
+<script src="ui/characterCreation.js"></script>
+<script src="ui/skillsPanel.js"></script>
+
+<!-- MAIN -->
+<script src="game.js"></script>
+```
+
+---
+
+## 🔍 ЧТО НУЖНО ПРОВЕРИТЬ
+
+1. **Найти ВСЕ объявления переменных панелей**
+   - Где `inventoryPanel` объявляется? (heroState.js? game.js?)
+   - Тип: `var`, `let`, `const`?
+
+2. **Проверить hideForgePanel() и hideProfessionPanel()**
+   - Они вызываются в create() но могут не иметь null-checks
+
+3. **Проверить updateXxxPanel() функции**
+   - Они вызываются из showXxxPanel()
+   - Могут падать на обращении к undefined переменным
+
+4. **Проверить что Spine не влияет**
+   - Временно закомментировать `this.load.spine(...)` и проверить
+
+5. **Добавить console.log для отладки**
+```javascript
+console.log('inventoryPanel before hide:', typeof inventoryPanel, inventoryPanel);
+```
