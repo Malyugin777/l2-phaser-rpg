@@ -157,6 +157,25 @@ function getSafeArea(scene) {
   };
 }
 
+// ----- SAFE EVENT HANDLER (для защиты от undefined кнопок) -----
+function safeOn(btn, event, callback) {
+  if (btn && typeof btn.on === "function") {
+    btn.on(event, callback);
+  } else {
+    console.warn("[UI] Missing button for:", event);
+  }
+}
+
+// ----- SAFE RECALC (ждёт готовности itemSystem) -----
+function safeRecalc(scene) {
+  if (typeof getAllEquipmentStats !== "function") {
+    console.warn("[StatSystem] Retry in 50ms...");
+    scene.time.delayedCall(50, () => safeRecalc(scene));
+    return;
+  }
+  recalculateHeroStats();
+}
+
 // Масштабирование фона (cover, без чёрных полос)
 function fitBackground(bg, scene) {
   if (!bg || !scene) return;
@@ -258,10 +277,8 @@ function update(time, delta) {
 function create() {
   loadGame();
 
-  // Пересчитываем статы после загрузки
-  if (typeof recalculateHeroStats === "function") {
-    recalculateHeroStats();
-  }
+  // Пересчитываем статы после загрузки (с retry)
+  safeRecalc(this);
 
   const scene = this;
   window.gameScene = this; // для доступа из панелей
@@ -269,6 +286,13 @@ function create() {
   const h = this.scale.height;
   const centerX = this.scale.width / 2;
   const w = this.scale.width;
+
+  // AudioContext fix для TMA (resume после первого клика)
+  this.input.once("pointerdown", () => {
+    if (this.sound && this.sound.context && this.sound.context.state === "suspended") {
+      this.sound.context.resume();
+    }
+  });
 
   // фоны
   cityBg = this.add.image(w / 2, h / 2, "talkingisland_main");
@@ -1140,7 +1164,7 @@ function create() {
   });
 
   // клик по кнопке "Навыки" в панели статов
-  statsSkillsButton.on("pointerdown", () => {
+  safeOn(statsSkillsButton, "pointerdown", () => {
     openSkillsScreen(scene);
   });
 
@@ -1319,53 +1343,53 @@ function create() {
     }
   });
 
-  shopBuyButton.on("pointerdown", () => {
+  safeOn(shopBuyButton, "pointerdown", () => {
     buyStarterPack(scene);
   });
 
-  mapGoButton.on("pointerdown", () => {
+  safeOn(mapGoButton, "pointerdown", () => {
     teleportToCurrentLocation(scene);
   });
 
-  arenaFightButton.on("pointerdown", () => {
+  safeOn(arenaFightButton, "pointerdown", () => {
     runArenaBattle(scene);
   });
 
-  arenaBackButton.on("pointerdown", () => {
+  safeOn(arenaBackButton, "pointerdown", () => {
     hideArenaPanel();
   });
 
-  dungeonStartButton.on("pointerdown", () => {
+  safeOn(dungeonStartButton, "pointerdown", () => {
     startDungeonRun(scene);
   });
 
   // навигация по панели навыков
-  skillsPrevButton.on("pointerdown", () => {
+  safeOn(skillsPrevButton, "pointerdown", () => {
     if (!isSkillsOpen || availableSkills.length === 0) return;
     currentSkillIndex =
       (currentSkillIndex - 1 + availableSkills.length) % availableSkills.length;
     updateSkillsPanel();
   });
 
-  skillsNextButton.on("pointerdown", () => {
+  safeOn(skillsNextButton, "pointerdown", () => {
     if (!isSkillsOpen || availableSkills.length === 0) return;
     currentSkillIndex = (currentSkillIndex + 1) % availableSkills.length;
     updateSkillsPanel();
   });
 
-  skillsLearnButton.on("pointerdown", () => {
+  safeOn(skillsLearnButton, "pointerdown", () => {
     learnCurrentSkill(scene);
   });
 
-  skillsSlot1Button.on("pointerdown", () => {
+  safeOn(skillsSlot1Button, "pointerdown", () => {
     assignCurrentSkillToSlot(scene, "slot1");
   });
 
-  skillsSlot2Button.on("pointerdown", () => {
+  safeOn(skillsSlot2Button, "pointerdown", () => {
     assignCurrentSkillToSlot(scene, "slot2");
   });
 
-  skillsCloseButton.on("pointerdown", () => {
+  safeOn(skillsCloseButton, "pointerdown", () => {
     hideSkillsPanel();
   });
 
