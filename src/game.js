@@ -130,6 +130,11 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// ----- LEGACY UI FLAG -----
+// false = используется новый UI из ui/*.js
+// true = старые панели из game.js (для отладки)
+const ENABLE_LEGACY_UI = false;
+
 // ----- SAFE AREA для TMA -----
 const SAFE_AREA = {
   top: 0.08,      // 8% сверху (~67px) — под шапку Telegram
@@ -653,7 +658,8 @@ function create() {
     })
     .setOrigin(0.5);
 
-  // панели
+  // ----- LEGACY PANELS (deprecated) -----
+  if (ENABLE_LEGACY_UI) {
   const panelX = this.scale.width / 2;
   const panelY = this.scale.height / 2;
 
@@ -1045,6 +1051,7 @@ function create() {
     skillsCloseButton,
     skillsCloseButtonText,
   ].forEach((obj) => obj && obj.setDepth && obj.setDepth(10));
+  } // END ENABLE_LEGACY_UI
 
   // создаём UI профессий (если функция существует)
   if (typeof createProfessionUI === "function") {
@@ -1092,8 +1099,8 @@ function create() {
   hideSkillsPanel();
   hideProfessionPanel();
   
-  // скрываем старый UI
-  hideOldUI();
+  // скрываем старый UI (только если legacy включён)
+  if (ENABLE_LEGACY_UI) hideOldUI();
 
   // первые обновления UI
   updateHeroUI();
