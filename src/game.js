@@ -108,6 +108,7 @@ const config = {
   height: 844,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
+  resolution: window.devicePixelRatio || 1, // Чёткий рендер на Retina
   scale: {
     mode: Phaser.Scale.ENVELOP,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -190,12 +191,13 @@ function safeRecalc(scene, attempts) {
 // Масштабирование фона (cover, без чёрных полос)
 function fitBackground(bg, scene) {
   if (!bg || !scene) return;
-  var scaleX = scene.scale.width / bg.width;
-  var scaleY = scene.scale.height / bg.height;
-  var scale = Math.max(scaleX, scaleY);
+  var w = scene.scale.width;
+  var h = scene.scale.height;
+  var scale = Math.max(w / bg.width, h / bg.height);
   bg.setScale(scale);
-  bg.setPosition(scene.scale.width / 2, scene.scale.height / 2);
+  bg.setPosition(w / 2, h / 2);
   bg.setOrigin(0.5, 0.5);
+  bg.setScrollFactor(0);
 }
 
 // ================== SPINE АНИМАЦИИ ==================
@@ -442,6 +444,7 @@ function create() {
   uiBottomPanel.setScale(panelScale);
   uiBottomPanel.setDepth(100); // Поверх фона, но под UI кнопками
   uiBottomPanel.setScrollFactor(0); // Не скроллится
+  uiBottomPanel.setAlpha(0.92); // Чуть прозрачнее
 
   // музыка
   cityMusic = scene.sound.add("city_theme", { loop: true, volume: 0.6 });
