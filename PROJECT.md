@@ -100,6 +100,21 @@ function addReliableClick(gameObject, callback) {
 }
 ```
 
+### fitBackground (cover mode)
+
+```javascript
+// Масштабирование фона без чёрных полос
+function fitBackground(bg, scene) {
+  if (!bg || !scene) return;
+  var scaleX = scene.scale.width / bg.width;
+  var scaleY = scene.scale.height / bg.height;
+  var scale = Math.max(scaleX, scaleY);
+  bg.setScale(scale);
+  bg.setPosition(scene.scale.width / 2, scene.scale.height / 2);
+  bg.setOrigin(0.5, 0.5);
+}
+```
+
 ---
 
 ## 🎨 UI Стиль (Золотая тема)
@@ -706,3 +721,4 @@ resources.ore = 100; resources.coal = 50;
 | 0.8.0 | 13.12.2024 | Кузница, preEntry, Character Creation |
 | 0.9.0 | 14.12.2024 | Мобильный UI 390×844, золотая тема |
 | 1.0.0 | 14.12.2024 | PvE Арена, TMA Touch Fix, UI рефакторинг |
+| 1.0.1 | 14.12.2024 | Loading state fix, fitBackground (no black bars), gold buttons |
