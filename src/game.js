@@ -320,25 +320,25 @@ function create() {
   heroStartX = this.scale.width * 0.2;
   heroStartY = centerY;
 
-  // Создаём героя: Spine если загружен, иначе fallback
-  var spineLoaded = this.spine && this.cache.custom.spine && this.cache.custom.spine.has('hero');
-
-  if (spineLoaded) {
+  // Создаём Spine героя (ГЛАВНЫЙ персонаж)
+  if (this.spine) {
     try {
       spineHero = this.add.spine(heroStartX, heroStartY + 40, 'hero', 'idle', true);
-      spineHero.setScale(0.3);
+      spineHero.setScale(0.5);
       spineHero.setDepth(5);
       window.spineHero = spineHero;
-      hero = spineHero; // Используем Spine как основной спрайт
+      hero = spineHero;
       console.log("[Spine] Hero created successfully");
     } catch (e) {
-      console.warn("[Spine] Failed:", e.message, "- using fallback");
+      console.warn("[Spine] Failed:", e.message);
+      // Fallback на заглушку
       hero = createHeroSprite(this, heroStartX, heroStartY, 0x3366cc);
+      console.log("[Hero] Fallback sprite created");
     }
   } else {
-    // Fallback: простой спрайт
+    // Spine плагин не загружен — fallback
     hero = createHeroSprite(this, heroStartX, heroStartY, 0x3366cc);
-    console.log("[Hero] Using fallback sprite");
+    console.log("[Hero] No Spine plugin, using fallback");
   }
 
   const enemyX = this.scale.width * 0.8;
@@ -360,8 +360,13 @@ function create() {
 
   enemyAlive = true;
 
-  // герой в городе
-  cityHero = createHeroSprite(this, this.scale.width * 0.25, centerY, 0x3366cc);
+  // герой в городе (используем Spine если есть)
+  if (window.spineHero) {
+    // В городе используем тот же Spine объект
+    cityHero = window.spineHero;
+  } else {
+    cityHero = createHeroSprite(this, this.scale.width * 0.25, centerY, 0x3366cc);
+  }
 
   // НАЁМНИК
   merc = createHeroSprite(this, heroStartX - 80, heroStartY, 0x6a0dad);
