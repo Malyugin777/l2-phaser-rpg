@@ -434,10 +434,11 @@ function create() {
 
   // DEBUG: проверка качества рендера
   console.log('[Render] DPR:', window.devicePixelRatio);
-  console.log('[Render] Config resolution:', this.game.config.resolution);
+  console.log('[Render] Game resolution:', this.game.renderer.resolution);
+  console.log('[Render] Canvas real size:', this.game.canvas.width, 'x', this.game.canvas.height);
   console.log('[Render] BG original size:', cityBg.width, 'x', cityBg.height);
   console.log('[Render] BG scale:', cityBg.scaleX.toFixed(2));
-  console.log('[Render] Canvas size:', this.scale.width, 'x', this.scale.height);
+  console.log('[Render] Scale size:', this.scale.width, 'x', this.scale.height);
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
