@@ -102,33 +102,37 @@ let npcDungeonRect = null,
   npcDungeonText = null;
 
 // ----- PHASER КОНФИГ (TMA портретный режим) -----
-var _dpr = window.devicePixelRatio || 1;
+const _dpr = window.devicePixelRatio || 1;
+
 const config = {
   type: Phaser.AUTO,
-  width: 390 * _dpr,
-  height: 844 * _dpr,
+  width: 390,
+  height: 844,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
+
+  resolution: _dpr, // ретина через resolution
+
   render: {
     antialias: true,
     pixelArt: false,
     roundPixels: false
   },
+
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    zoom: 1 / _dpr
+    autoCenter: Phaser.Scale.CENTER_BOTH
   },
+
   scene: {
-    preload: preload,
-    create: create,
-    update: update,
+    preload,
+    create,
+    update,
   },
+
   plugins: {
-    scene: [
-      { key: 'SpinePlugin', plugin: window.SpinePlugin, mapping: 'spine' }
-    ]
-  }
+    scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }],
+  },
 };
 
 const game = new Phaser.Game(config);
@@ -433,12 +437,9 @@ function create() {
   // DEBUG: проверка качества рендера
   console.log('[Render] DPR:', window.devicePixelRatio);
   console.log('[Render] Config size:', this.game.config.width, 'x', this.game.config.height);
+  console.log('[Render] Resolution:', this.game.config.resolution);
   console.log('[Render] Canvas size:', this.game.canvas.width, 'x', this.game.canvas.height);
-  console.log('[Render] Scale zoom:', this.scale.zoom);
-  console.log('[Render] Antialias:', this.game.config.render.antialias);
-  if (this.game.canvas.width !== this.game.config.width) {
-    console.warn('[Render] WARNING: Canvas size mismatch!');
-  }
+  console.log('[Render] Antialias:', this.game.config.render?.antialias ?? 'N/A');
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
