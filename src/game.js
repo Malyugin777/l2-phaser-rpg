@@ -446,7 +446,7 @@ function create() {
   if (window.UI_MODE === "CITY_CLEAN") {
     console.log("[UI] CITY_CLEAN: skipping UI init/handlers/panels");
 
-    // Hide enemy/location elements
+    // Hide location background (keep city bg visible)
     locationBg.setVisible(false);
 
     // Position hero in city
@@ -460,31 +460,27 @@ function create() {
     // Ensure bg is at bottom
     window.cityBg?.setDepth(-1000);
 
-    // NUKE any other objects that might have been created
-    const keep = new Set([window.cityBg, window.spineHero]);
-    const nukeUI = () => {
-      this.children.list.forEach((obj) => {
-        if (!obj) return;
-        if (keep.has(obj)) return;
-        obj.setVisible(false);
-        if (obj.disableInteractive) obj.disableInteractive();
-      });
-    };
-    nukeUI();
-    this.time.addEvent({
-      delay: 50,
-      repeat: 100,
-      callback: nukeUI,
-    });
+    // NUKE disabled - using diagnostics instead
+    console.log("[UI] CITY_CLEAN: NUKE disabled, diagnostics enabled");
 
-    console.log("[UI] NUKE mode: only bg + hero visible");
-
-    // HOTFIX D: hide preEntry overlay so the canvas is visible
+    // Hide preEntry overlay so the canvas is visible
     if (window.preEntry && typeof window.preEntry.skip === "function") {
       window.preEntry.skip();
     } else if (window.preEntry && typeof window.preEntry.hide === "function") {
       window.preEntry.hide();
     }
+
+    // STEP 6.2: Diagnostics - check what's visible after 50ms
+    const diagScene = this;
+    setTimeout(() => {
+      const keep = new Set([window.cityBg, window.locationBg, window.spineHero].filter(Boolean));
+      const visible = diagScene.children.list.filter(o => o && o.visible === true);
+      const extra = visible.filter(o => !keep.has(o) && o.texture?.key !== "talkingisland_main");
+      console.log("[CLEAN] visible:", visible.length, "extra:", extra.length);
+      extra.slice(0, 50).forEach((o, i) => {
+        console.log(`[CLEAN][extra ${i}]`, o.type, o.name, o.texture?.key, o);
+      });
+    }, 50);
 
     return; // EXIT EARLY - no UI init
   }
