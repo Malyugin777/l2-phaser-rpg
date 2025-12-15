@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-15-RETINA-FIX");
+console.log("GAMEJS BUILD: 2025-12-15-CITY-CLEAN-HOTFIX");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -19,11 +19,6 @@ let isAttacking = false;
 
 // ----- UI ОВЕРЛЕИ -----
 let uiBottomPanel; // Нижняя панель поверх фона
-
-// [LEGACY UI DECLARATIONS REMOVED]
-// heroStatsText, goldText, killsText, etherText, locationText
-// inventoryButton, statsButton, questsButton, overdriveButton, modeButton, autoButton
-// locationPrevButton, locationNextButton
 
 // ----- ПАНЕЛИ -----
 let inventoryPanel, inventoryPanelText;
@@ -51,7 +46,12 @@ let isDungeonOpen = false;
 let campTent = null;
 let campText = null;
 
-// [LEGACY] Inventory equipment buttons, skill/potion buttons removed
+// ----- FIX B: Restored globals expected by ui panel files -----
+// Expected by inventoryPanel.js
+let inventoryEquipBestButton = null;
+let inventoryEquipBestButtonText = null;
+let inventoryUnequipAllButton = null;
+let inventoryUnequipAllButtonText = null;
 
 // ----- АТАКИ МОБА -----
 let enemyAttackEvent = null;
@@ -66,8 +66,6 @@ let confirmButton = null;
 let confirmButtonText = null;
 let selectedRaceId = null;
 let selectedClassId = null;
-
-// [LEGACY] NPC rectangle declarations removed - using new UI from uiLayout.js
 
 // ----- PHASER КОНФИГ (TMA портретный режим) -----
 const _dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
@@ -103,8 +101,6 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// [LEGACY] ENABLE_LEGACY_UI flag removed - always using new UI
-
 // ----- SAFE AREA для TMA -----
 const SAFE_AREA = {
   top: 0.08,      // 8% сверху (~67px) — под шапку Telegram
@@ -132,7 +128,7 @@ function safeOn(btn, event, callback) {
   if (btn && typeof btn.on === "function") {
     btn.on(event, callback);
   }
-  // Silently ignore missing buttons (expected when ENABLE_LEGACY_UI=false)
+  // Silently ignore missing buttons
 }
 
 // ----- SAFE RECALC (ждёт готовности itemSystem) -----
@@ -194,7 +190,6 @@ function heroAttack() {
 // Герой получает урон (используем fall кратко)
 function heroHit() {
   if (!window.spineHero) return;
-  // Нет отдельной анимации hit - делаем визуальный эффект
   if (playAnim('fall', false)) {
     setTimeout(function() { heroIdle(); }, 200);
   }
@@ -287,40 +282,40 @@ function hideHero() {
 
 function createHeroSprite(scene, x, y, color) {
   const g = scene.add.graphics();
-  
+
   // Тело (туловище)
   g.fillStyle(color, 1);
   g.fillRect(-12, -15, 24, 30);
-  
+
   // Голова
   g.fillStyle(0xffcc99, 1); // цвет кожи
   g.fillCircle(0, -30, 14);
-  
+
   // Глаза
   g.fillStyle(0x000000, 1);
   g.fillCircle(-5, -32, 2);
   g.fillCircle(5, -32, 2);
-  
+
   // Ноги
   g.fillStyle(0x333333, 1);
   g.fillRect(-10, 15, 8, 25);
   g.fillRect(2, 15, 8, 25);
-  
+
   // Руки
   g.fillStyle(color, 1);
   g.fillRect(-20, -12, 8, 20);
   g.fillRect(12, -12, 8, 20);
-  
+
   // Меч (для воина)
   g.fillStyle(0xaaaaaa, 1);
   g.fillRect(20, -25, 4, 35);
   g.fillStyle(0x8b4513, 1);
   g.fillRect(18, 5, 8, 8);
-  
+
   // Создаём контейнер
   const container = scene.add.container(x, y, [g]);
   container.setSize(60, 80);
-  
+
   return container;
 }
 
@@ -353,9 +348,6 @@ function preload() {
 
   // Spine анимация героя
   this.load.spine('hero', 'assets/spine/hero.json', 'assets/spine/hero.atlas');
-
-  // Для раннера (пока используем существующие как заглушки)
-  // bg_far и bg_near - будут tileSprite
 }
 
 function update(time, delta) {
@@ -375,8 +367,10 @@ function update(time, delta) {
 function create() {
   loadGame();
 
-  // Пересчитываем статы после загрузки (с retry)
-  safeRecalc(this);
+  // FIX C: safeRecalc only in non-CITY_CLEAN mode
+  if (window.UI_MODE !== "CITY_CLEAN") {
+    safeRecalc(this);
+  }
 
   const scene = this;
   window.gameScene = this; // для доступа из панелей
@@ -416,19 +410,6 @@ function create() {
   locationBg.setDepth(-5);
   locationBg.setVisible(false);
 
-  // Нижняя UI панель (поверх фона, всегда видна)
-  uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
-  uiBottomPanel.setOrigin(0.5, 1); // Привязка к низу
-  var panelScale = w / uiBottomPanel.width; // Масштаб по ширине экрана
-  uiBottomPanel.setScale(panelScale);
-  uiBottomPanel.setDepth(100); // Поверх фона, но под UI кнопками
-  uiBottomPanel.setScrollFactor(0); // Не скроллится
-  uiBottomPanel.setAlpha(0.92); // Чуть прозрачнее
-
-  // музыка
-  cityMusic = scene.sound.add("city_theme", { loop: true, volume: 0.6 });
-  battleMusic = scene.sound.add("battle_theme", { loop: true, volume: 0.6 });
-
   // герой/враг для локации (логические координаты)
   heroStartX = w * 0.25;
   heroStartY = h * 0.65;
@@ -454,9 +435,72 @@ function create() {
     console.log("[Hero] No Spine plugin, using fallback");
   }
 
+  // герой в городе (используем Spine если есть)
+  if (window.spineHero) {
+    cityHero = window.spineHero;
+  } else {
+    cityHero = createHeroSprite(this, this.scale.width * 0.25, centerY, 0x3366cc);
+  }
+
+  // === CITY_CLEAN MODE: Only bg + hero, skip all UI ===
+  if (window.UI_MODE === "CITY_CLEAN") {
+    console.log("[UI] CITY_CLEAN: skipping UI init/handlers/panels");
+
+    // Hide enemy/location elements
+    locationBg.setVisible(false);
+
+    // Position hero in city
+    if (window.spineHero) {
+      window.spineHero.setPosition(w * 0.25, h / 2 + 40);
+      window.spineHero.setVisible(true);
+      window.spineHero.setDepth(1000);
+      heroIdle();
+    }
+
+    // Ensure bg is at bottom
+    window.cityBg?.setDepth(-1000);
+
+    // NUKE any other objects that might have been created
+    const keep = new Set([window.cityBg, window.spineHero]);
+    const nukeUI = () => {
+      this.children.list.forEach((obj) => {
+        if (!obj) return;
+        if (keep.has(obj)) return;
+        obj.setVisible(false);
+        if (obj.disableInteractive) obj.disableInteractive();
+      });
+    };
+    nukeUI();
+    this.time.addEvent({
+      delay: 50,
+      repeat: 100,
+      callback: nukeUI,
+    });
+
+    console.log("[UI] NUKE mode: only bg + hero visible");
+    return; // EXIT EARLY - no UI init
+  }
+
+  // ============================================================
+  // FIX A: All UI code below ONLY runs when NOT CITY_CLEAN
+  // ============================================================
+
+  // Нижняя UI панель (поверх фона, всегда видна)
+  uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
+  uiBottomPanel.setOrigin(0.5, 1);
+  var panelScale = w / uiBottomPanel.width;
+  uiBottomPanel.setScale(panelScale);
+  uiBottomPanel.setDepth(100);
+  uiBottomPanel.setScrollFactor(0);
+  uiBottomPanel.setAlpha(0.92);
+
+  // музыка
+  cityMusic = scene.sound.add("city_theme", { loop: true, volume: 0.6 });
+  battleMusic = scene.sound.add("battle_theme", { loop: true, volume: 0.6 });
+
   const enemyX = w * 0.75;
   const enemyY = h * 0.65;
-  
+
   // Враг тоже человечек (красный)
   enemy = createHeroSprite(this, enemyX, enemyY, 0xcc3333);
   enemy.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-30, -40, 60, 80), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
@@ -473,43 +517,29 @@ function create() {
 
   enemyAlive = true;
 
-  // герой в городе (используем Spine если есть)
-  if (window.spineHero) {
-    // В городе используем тот же Spine объект
-    cityHero = window.spineHero;
-  } else {
-    cityHero = createHeroSprite(this, this.scale.width * 0.25, centerY, 0x3366cc);
-  }
-
   // НАЁМНИК
   merc = createHeroSprite(this, heroStartX - 80, heroStartY, 0x6a0dad);
   merc.setVisible(false);
   merc.setScale(0.8);
 
-  // [LEGACY UI REMOVED - NPC rectangles, top UI, music toggle, location arrows]
-
-  // [LEGACY UI REMOVED - bottom buttons, skill buttons]
-
-  // [LEGACY PANELS REMOVED - ENABLE_LEGACY_UI block deleted]
-
   // создаём UI профессий (если функция существует)
   if (typeof createProfessionUI === "function") {
     createProfessionUI(this);
   }
-  
+
   // создаём UI отдыха и shots (если функция существует)
   if (typeof createRestAndShotsUI === "function") {
     createRestAndShotsUI(this);
   }
-  
+
   // создаём спрайт питомца (если функция существует)
   if (typeof createPetSprite === "function") {
     createPetSprite(this);
   }
-  
+
   // создаём новый UI (Lineage M стиль)
   createGameUI(this);
-  
+
   // создаём графическую карту
   createMapUI(this);
 
@@ -522,7 +552,7 @@ function create() {
   if (typeof initRunnerBattle === "function") {
     initRunnerBattle(this);
   }
-  
+
   // подключаем обработчики нового UI
   setupNewUIHandlers(scene);
 
@@ -537,8 +567,6 @@ function create() {
   hideDungeonPanel();
   hideSkillsPanel();
   hideProfessionPanel();
-  
-  // [LEGACY] hideOldUI() call removed
 
   // первые обновления UI
   updateHeroUI();
@@ -546,11 +574,7 @@ function create() {
   updateSkillButtonsUI();
   updateMercStatsFromHero();
 
-  // [LEGACY] Button handlers for inventoryButton, statsButton, questsButton,
-  // modeButton, autoButton, overdriveButton, locationPrev/NextButton removed
-  // These are now handled by setupNewUIHandlers() below
-
-  // Enemy click handler (still needed)
+  // Enemy click handler
   safeOn(enemy, "pointerdown", function () {
     if (mode !== "location") return;
     if (isAttacking) return;
@@ -558,11 +582,6 @@ function create() {
     if (stats.hp <= 0) return;
     startHeroAttack(scene);
   });
-
-  // [LEGACY] Removed handlers for: skill1/2Button, hpPotionButton, mpPotionButton,
-  // pBuffButton, mBuffButton, inventoryEquipBestButton, inventoryUnequipAllButton,
-  // npcSmithRect, npcMapRect, npcShopRect, npcArenaRect, npcMercRect, npcDungeonRect
-  // These are now handled by setupNewUIHandlers() and uiLayout.js
 
   safeOn(shopBuyButton, "pointerdown", () => {
     buyStarterPack(scene);
@@ -622,8 +641,6 @@ function create() {
     saveGame();
   });
 
-  // Реген теперь через tickSystem.js (processTick в update)
-
   // оффлайн-прогресс
   applyOfflineProgress(scene);
 
@@ -632,22 +649,17 @@ function create() {
     // Новый игрок — показываем интро
     if (window.preEntry) {
       window.preEntry.showIntro(function() {
-        // Показать loading сразу после клика
         if (window.preEntry.showLoading) {
           window.preEntry.showLoading();
         }
-
-        // Небольшая задержка для визуального фидбэка
         setTimeout(function() {
           window.preEntry.hide();
-          // Новый полноэкранный экран создания персонажа
           if (window.characterCreation) {
             window.characterCreation.show(scene);
           }
         }, 300);
       });
     } else {
-      // Новый полноэкранный экран создания персонажа
       if (window.characterCreation) {
         window.characterCreation.show(scene);
       }
@@ -660,36 +672,6 @@ function create() {
   }
 
   updateHeroUI();
-
-  // === CITY_CLEAN NUKE MODE ===
-  if (window.UI_MODE === "CITY_CLEAN") {
-    const keep = new Set([window.cityBg, window.spineHero]);
-
-    const nukeUI = () => {
-      this.children.list.forEach((obj) => {
-        if (!obj) return;
-        if (keep.has(obj)) return;
-
-        obj.setVisible(false);
-        if (obj.disableInteractive) obj.disableInteractive();
-      });
-    };
-
-    nukeUI();
-
-    // Повторять 5 секунд — убить UI который создаётся позже
-    this.time.addEvent({
-      delay: 50,
-      repeat: 100,
-      callback: nukeUI,
-    });
-
-    // Закрепить слои: фон снизу, герой сверху
-    window.cityBg?.setDepth(-1000);
-    window.spineHero?.setDepth(1000);
-
-    console.log("[UI] NUKE mode: only bg + hero visible");
-  }
 }
 
 // ================== UI-ХЕЛПЕРЫ ДЛЯ ТЕКСТА ==================
@@ -753,21 +735,17 @@ function getEnemyHpLabel() {
 function updateHeroUI() {
   if (window.UI_MODE === "CITY_CLEAN") return;
 
-  // [LEGACY] heroStatsText, goldText, killsText, etherText updates removed
-
   if (typeof updateSkillButtonsUI === "function") {
     updateSkillButtonsUI();
   }
 
-  // Обновляем новый UI
   if (typeof updateNewUI === "function") {
     updateNewUI();
   }
 }
 
 function updateLocationLabel() {
-  // [LEGACY] locationText no longer exists - function is no-op
-  // Location info now handled by uiLayout.js
+  // No-op - location info handled by uiLayout.js
 }
 
 // ============================================================
@@ -776,7 +754,7 @@ function updateLocationLabel() {
 
 function setupNewUIHandlers(scene) {
   if (!uiElements) return;
-  
+
   // Меню кнопки (верх право)
   uiElements.menuButtons.forEach(item => {
     item.btn.on("pointerdown", () => {
@@ -803,7 +781,7 @@ function setupNewUIHandlers(scene) {
       }
     });
   });
-  
+
   // NPC кнопки (город)
   uiElements.npcButtons.forEach(item => {
     item.btn.on("pointerdown", () => {
@@ -826,7 +804,6 @@ function setupNewUIHandlers(scene) {
           showShopPanel();
         }
       } else if (item.action === "openArena") {
-        // PvE Арена — полноэкранный режим боя
         hideAllPanels();
         if (typeof onArenaButtonClick === "function") {
           onArenaButtonClick(scene);
@@ -842,7 +819,7 @@ function setupNewUIHandlers(scene) {
       }
     });
   });
-  
+
   // Навигация локаций
   safeOn(uiElements.locPrevBtn, "pointerdown", () => {
     if (mode !== "city") return;
@@ -932,8 +909,6 @@ function hideAllPanels() {
   hideDungeonPanel();
   hideSkillsPanel();
 }
-
-// [LEGACY] hideOldUI() removed - UI elements no longer created
 
 // Интеграция с updateHeroUI
 function updateNewUI() {
