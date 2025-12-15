@@ -102,24 +102,17 @@ let npcDungeonRect = null,
   npcDungeonText = null;
 
 // ----- PHASER КОНФИГ (TMA портретный режим) -----
+var _dpr = window.devicePixelRatio || 1;
 const config = {
   type: Phaser.AUTO,
-  width: 390,
-  height: 844,
+  width: 390 * _dpr,
+  height: 844 * _dpr,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
-  resolution: window.devicePixelRatio || 1, // Чёткий рендер на Retina
   scale: {
-    mode: Phaser.Scale.ENVELOP,
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    min: {
-      width: 360,
-      height: 640
-    },
-    max: {
-      width: 430,
-      height: 932
-    }
+    zoom: 1 / _dpr
   },
   scene: {
     preload: preload,
@@ -433,12 +426,12 @@ function create() {
   cityBg.setDepth(-5);
 
   // DEBUG: проверка качества рендера
-  console.log('[Render] DPR:', window.devicePixelRatio);
-  console.log('[Render] Game resolution:', this.game.renderer.resolution);
-  console.log('[Render] Canvas real size:', this.game.canvas.width, 'x', this.game.canvas.height);
-  console.log('[Render] BG original size:', cityBg.width, 'x', cityBg.height);
+  console.log('[Render] DPR:', _dpr);
+  console.log('[Render] Game size:', this.game.config.width, 'x', this.game.config.height);
+  console.log('[Render] Canvas size:', this.game.canvas.width, 'x', this.game.canvas.height);
+  console.log('[Render] Zoom:', this.scale.zoom);
+  console.log('[Render] BG original:', cityBg.width, 'x', cityBg.height);
   console.log('[Render] BG scale:', cityBg.scaleX.toFixed(2));
-  console.log('[Render] Scale size:', this.scale.width, 'x', this.scale.height);
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
