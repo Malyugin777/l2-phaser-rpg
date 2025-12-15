@@ -6,7 +6,7 @@
 **Платформа:** Telegram Mini App (TMA)
 **Движок:** Phaser 3.80.1 + SpinePlugin 4.1
 **Язык:** Vanilla JavaScript (ES6, strict mode, глобальные переменные)
-**Версия:** 1.1.0
+**Версия:** 1.1.1
 **GitHub:** https://github.com/Malyugin777/l2-phaser-rpg
 **GitHub Pages:** https://malyugin777.github.io/l2-phaser-rpg/src/
 **Telegram:** @Poketlineage_bot
@@ -28,18 +28,18 @@
 ### Phaser Config (АКТУАЛЬНЫЙ!)
 
 ```javascript
+// Retina fix: zoom вместо resolution (deprecated в Phaser 3.50+)
+var _dpr = window.devicePixelRatio || 1;
 const config = {
   type: Phaser.AUTO,
-  width: 390,
-  height: 844,
+  width: 390 * _dpr,   // 780 при DPR=2
+  height: 844 * _dpr,  // 1688 при DPR=2
   parent: "game-container",
   backgroundColor: 0x0a0a12,
-  resolution: window.devicePixelRatio || 1,  // ВАЖНО для Retina!
   scale: {
-    mode: Phaser.Scale.ENVELOP,
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    min: { width: 360, height: 640 },
-    max: { width: 430, height: 932 }
+    zoom: 1 / _dpr     // 0.5 при DPR=2
   },
   scene: { preload, create, update },
   plugins: {
@@ -49,6 +49,10 @@ const config = {
   }
 };
 ```
+
+**Почему zoom, а не resolution:**
+- `resolution` deprecated в Phaser 3.50+
+- `zoom: 1/_dpr` + увеличенные width/height = чёткий рендер на Retina
 
 ### CSS для чёткого рендера (index.html)
 
@@ -267,14 +271,14 @@ if (arenaMyTurn) {
 ```javascript
 // Автоматически выводится при загрузке:
 [Render] DPR: 2
-[Render] Game resolution: 2
-[Render] Canvas real size: 780 x 1688
-[Render] BG original size: 1080 x 1935
+[Render] Game size: 780 x 1688
+[Render] Canvas size: 780 x 1688
+[Render] Zoom: 0.5
+[Render] BG original: 1080 x 1935
 [Render] BG scale: 0.87
-[Render] Scale size: 390 x 844
 ```
 
-**Если resolution = 1 при DPR > 1 — проблема с кэшем!**
+**Проверка:** Canvas size должен быть = Game size × DPR
 
 ### Консольные команды
 
@@ -347,9 +351,12 @@ src/
 | | | - Случайный head-turn в городе |
 | | | - Новый фон talking_island.webp (1080×1935) |
 | | | - Bottom UI panel (Bottom_panel.webp) |
-| | | - resolution: devicePixelRatio для Retina |
 | | | - CSS crisp-edges |
 | | | - Fix эфир логики (бой не останавливается) |
+| 1.1.1 | 15.12.2024 | **Retina fix: zoom вместо resolution** |
+| | | - resolution deprecated в Phaser 3.50+ |
+| | | - width/height × DPR + zoom: 1/DPR |
+| | | - Чёткий рендер на всех устройствах |
 
 ---
 
@@ -377,14 +384,19 @@ src/
 
 ## 🔴 ИЗВЕСТНЫЕ ПРОБЛЕМЫ
 
-### 1. Мыльная картинка
+### 1. Мыльная картинка (РЕШЕНО в 1.1.1)
 
-**Причина:** Кэш браузера/Telegram
+**Причина:** `resolution` в config deprecated в Phaser 3.50+
 
-**Решение:**
-1. Очистить кэш браузера
-2. Закрыть и открыть Telegram
-3. Проверить консоль: `[Render] Game resolution: X` должен равняться DPR
+**Решение:** Использовать zoom:
+```javascript
+var _dpr = window.devicePixelRatio || 1;
+width: 390 * _dpr,
+height: 844 * _dpr,
+scale: { zoom: 1 / _dpr }
+```
+
+**Проверка:** В консоли Canvas size должен быть 780×1688 при DPR=2
 
 ### 2. Spine не загружается
 
