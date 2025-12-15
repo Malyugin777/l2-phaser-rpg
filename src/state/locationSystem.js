@@ -12,33 +12,10 @@ function changeLocation(direction) {
   saveGame();
 }
 
-// Обновление заголовка текущей локации / данжа
+// [LEGACY] locationText removed - function is overridden in game.js
 function updateLocationLabel() {
-  if (!locationText) return;
-  const loc = getCurrentLocation();
-  if (mode === "city") {
-    locationText.setText("Город: Talking Island Village");
-  } else {
-    if (isDungeonRun) {
-      locationText.setText(
-        "Данж: " +
-          loc.name +
-          " (" +
-          dungeonKills +
-          "/" +
-          DUNGEON_KILL_TARGET +
-          ")"
-      );
-    } else {
-      locationText.setText(
-        "Локация: " +
-          loc.name +
-          " (рек. лвл " +
-          loc.recommendedLevel +
-          ")"
-      );
-    }
-  }
+  // No-op - locationText no longer exists
+  // Location info now handled by uiLayout.js
 }
 
 // Смена фона под текущую локацию
@@ -76,14 +53,10 @@ function startMusicForMode(modeName) {
   currentMusicMode = modeName;
 }
 
-function updateMusicToggleLabel() {
-  if (!musicToggleButtonText) return;
-  musicToggleButtonText.setText("Музыка: " + (musicMuted ? "OFF" : "ON"));
-}
+// [LEGACY] updateMusicToggleLabel() removed - musicToggleButtonText no longer exists
 
 function toggleMusicMute() {
   musicMuted = !musicMuted;
-  updateMusicToggleLabel();
 
   if (musicMuted) {
     if (cityMusic && cityMusic.isPlaying) cityMusic.stop();
@@ -184,30 +157,7 @@ function enterCity(scene) {
   if (enemyHpText) enemyHpText.setVisible(false);
   if (merc) merc.setVisible(false);
 
-  if (autoButton) autoButton.setVisible(false);
-  if (autoButtonText) autoButtonText.setVisible(false);
-
-  // Старые стрелки навигации скрыты — телепорт через карту
-  if (locationPrevButton) locationPrevButton.setVisible(false);
-  if (locationPrevText) locationPrevText.setVisible(false);
-  if (locationNextButton) locationNextButton.setVisible(false);
-  if (locationNextText) locationNextText.setVisible(false);
-
-  if (modeButtonText) modeButtonText.setText("В локацию");
-
-  // Старые NPC скрыты — используем новый UI
-  if (npcSmithRect) npcSmithRect.setVisible(false);
-  if (npcSmithText) npcSmithText.setVisible(false);
-  if (npcMapRect) npcMapRect.setVisible(false);
-  if (npcMapText) npcMapText.setVisible(false);
-  if (npcShopRect) npcShopRect.setVisible(false);
-  if (npcShopText) npcShopText.setVisible(false);
-  if (npcArenaRect) npcArenaRect.setVisible(false);
-  if (npcArenaText) npcArenaText.setVisible(false);
-  if (npcMercRect) npcMercRect.setVisible(false);
-  if (npcMercText) npcMercText.setVisible(false);
-  if (npcDungeonRect) npcDungeonRect.setVisible(false);
-  if (npcDungeonText) npcDungeonText.setVisible(false);
+  // [LEGACY UI REMOVED - autoButton, locationPrevButton, locationNextButton, modeButtonText, NPC rectangles]
 
   updateLocationLabel();
   updateHeroUI();
@@ -305,32 +255,7 @@ function enterLocation(scene) {
     }
   }
 
-  if (autoButton) autoButton.setVisible(true);
-  if (autoButtonText) {
-    autoButtonText.setVisible(true);
-    autoButton.fillColor = 0x333333;
-    autoButtonText.setText("Авто-охота: OFF");
-  }
-
-  if (locationPrevButton) locationPrevButton.setVisible(false);
-  if (locationPrevText) locationPrevText.setVisible(false);
-  if (locationNextButton) locationNextButton.setVisible(false);
-  if (locationNextText) locationNextText.setVisible(false);
-
-  if (modeButtonText) modeButtonText.setText("В Город");
-
-  if (npcSmithRect) npcSmithRect.setVisible(false);
-  if (npcSmithText) npcSmithText.setVisible(false);
-  if (npcMapRect) npcMapRect.setVisible(false);
-  if (npcMapText) npcMapText.setVisible(false);
-  if (npcShopRect) npcShopRect.setVisible(false);
-  if (npcShopText) npcShopText.setVisible(false);
-  if (npcArenaRect) npcArenaRect.setVisible(false);
-  if (npcArenaText) npcArenaText.setVisible(false);
-  if (npcMercRect) npcMercRect.setVisible(false);
-  if (npcMercText) npcMercText.setVisible(false);
-  if (npcDungeonRect) npcDungeonRect.setVisible(false);
-  if (npcDungeonText) npcDungeonText.setVisible(false);
+  // [LEGACY UI REMOVED - autoButton, locationPrevButton, locationNextButton, modeButtonText, NPC rectangles]
 
   stopEnemyAttack();
   enemyAttackEvent = scene.time.addEvent({

@@ -43,24 +43,5 @@ function getEtherLabel() {
   return "Эфир: " + heroEther;
 }
 
-function updateEtherUI() {
-  if (etherText) etherText.setText(getEtherLabel());
-}
-
-// Централизованное обновление всего HUD
-function updateHeroUI() {
-  if (heroStatsText) heroStatsText.setText(getHeroStatsLabel());
-  if (goldText) goldText.setText(getGoldLabel());
-  if (killsText) killsText.setText(getKillsLabel());
-  updateEtherUI();
-  updateSkillButtonsUI();
-
-  if (isInventoryOpen) updateInventoryPanel();
-  if (isStatsOpen) updateStatsPanel();
-  // updateForgePanel удалён — forgePanel.js обновляется через rebuildForgeContent
-  if (isQuestsOpen) updateQuestsPanel();
-  if (isShopOpen) updateShopPanel();
-  if (isMapOpen) updateMapPanel();
-  if (isArenaOpen) updateArenaPanel();
-  if (isDungeonOpen) updateDungeonPanel();
-}
+// [LEGACY] updateEtherUI() removed - etherText no longer exists
+// [LEGACY] updateHeroUI() moved to game.js - uses new UI system

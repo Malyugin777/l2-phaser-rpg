@@ -28,31 +28,8 @@ function getSkillButtonLabel(slotKey, isReady) {
 // ====== UI: ПОДПИСИ КНОПОК ======
 
 function updateSkillButtonsUI() {
-  if (typeof consumables !== "undefined" && hpPotionButtonText) {
-    hpPotionButtonText.setText("HP банка (" + consumables.hpPotions + ")");
-  }
-  if (typeof consumables !== "undefined" && mpPotionButtonText) {
-    mpPotionButtonText.setText("MP банка (" + consumables.mpPotions + ")");
-  }
-  if (typeof consumables !== "undefined" && pBuffButtonText) {
-    pBuffButtonText.setText("+P.ATK (" + consumables.pAtkScrolls + ")");
-  }
-  if (typeof consumables !== "undefined" && mBuffButtonText) {
-    mBuffButtonText.setText("+M.ATK (" + consumables.mAtkScrolls + ")");
-  }
-
-  if (typeof skill1Ready === "undefined") {
-    if (skill1ButtonText) skill1ButtonText.setText("Скилл 1");
-    if (skill2ButtonText) skill2ButtonText.setText("Скилл 2");
-    return;
-  }
-
-  if (skill1ButtonText) {
-    skill1ButtonText.setText(getSkillButtonLabel("slot1", skill1Ready));
-  }
-  if (skill2ButtonText) {
-    skill2ButtonText.setText(getSkillButtonLabel("slot2", skill2Ready));
-  }
+  // [LEGACY] Button text updates removed - buttons no longer exist
+  // Skill UI now handled by uiLayout.js updateSkillButtons()
 }
 
 // ====== АКТИВНЫЕ СКИЛЛЫ ======

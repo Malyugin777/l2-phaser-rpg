@@ -57,8 +57,10 @@ function enableAutoHunt(scene) {
   autoHuntEnabled = true;
   saveGame();
 
-  if (autoButton) autoButton.fillColor = 0x1e7f1e;
-  if (autoButtonText) autoButtonText.setText("Авто-охота: ON");
+  // [LEGACY] autoButton references removed - using new UI
+  if (typeof updateAutoButton === "function") {
+    updateAutoButton(true);
+  }
 
   if (autoHuntEvent) {
     autoHuntEvent.remove(false);
@@ -132,8 +134,11 @@ function onAutoHuntSessionEnd(scene) {
 // Выключить авто-охоту
 function disableAutoHunt() {
   autoHuntEnabled = false;
-  if (autoButton) autoButton.fillColor = 0x333333;
-  if (autoButtonText) autoButtonText.setText("Авто-охота: OFF");
+
+  // [LEGACY] autoButton references removed - using new UI
+  if (typeof updateAutoButton === "function") {
+    updateAutoButton(false);
+  }
 
   if (autoHuntEvent) {
     autoHuntEvent.remove(false);
