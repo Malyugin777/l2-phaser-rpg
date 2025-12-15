@@ -119,7 +119,7 @@ const config = {
   },
 
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.ENVELOP,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     zoom: 1 / _dpr
   },
@@ -417,10 +417,13 @@ function create() {
 
   const scene = this;
   window.gameScene = this; // для доступа из панелей
-  const centerY = this.scale.height / 2;
-  const h = this.scale.height;
-  const centerX = this.scale.width / 2;
-  const w = this.scale.width;
+
+  // Логические координаты (делим на DPR для одинаковой работы на всех устройствах)
+  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  const w = this.scale.width / dpr;   // 390
+  const h = this.scale.height / dpr;  // 844
+  const centerX = w / 2;
+  const centerY = h / 2;
 
   // AudioContext fix для TMA (resume после первого клика)
   this.input.once("pointerdown", () => {
@@ -460,19 +463,19 @@ function create() {
   cityMusic = scene.sound.add("city_theme", { loop: true, volume: 0.6 });
   battleMusic = scene.sound.add("battle_theme", { loop: true, volume: 0.6 });
 
-  // герой/враг для локации
-  heroStartX = this.scale.width * 0.2;
-  heroStartY = centerY;
+  // герой/враг для локации (логические координаты)
+  heroStartX = w * 0.25;
+  heroStartY = h * 0.65;
 
   // Создаём Spine героя (ГЛАВНЫЙ персонаж)
   if (this.spine) {
     try {
-      spineHero = this.add.spine(heroStartX, heroStartY + 40, 'hero', 'idle', true);
-      spineHero.setScale(0.5);
+      spineHero = this.add.spine(heroStartX, heroStartY, 'hero', 'idle', true);
+      spineHero.setScale(0.7);
       spineHero.setDepth(5);
       window.spineHero = spineHero;
       hero = spineHero;
-      console.log("[Spine] Hero created successfully");
+      console.log("[Spine] Hero created at:", heroStartX, heroStartY, "scale: 0.7");
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
       // Fallback на заглушку
@@ -485,8 +488,8 @@ function create() {
     console.log("[Hero] No Spine plugin, using fallback");
   }
 
-  const enemyX = this.scale.width * 0.8;
-  const enemyY = centerY;
+  const enemyX = w * 0.75;
+  const enemyY = h * 0.65;
   
   // Враг тоже человечек (красный)
   enemy = createHeroSprite(this, enemyX, enemyY, 0xcc3333);
