@@ -1635,10 +1635,10 @@ function create() {
 
     nukeUI();
 
-    // Повторять 2 секунды — убить UI который создаётся позже
+    // Повторять 5 секунд — убить UI который создаётся позже
     this.time.addEvent({
       delay: 50,
-      repeat: 40,
+      repeat: 100,
       callback: nukeUI,
     });
 

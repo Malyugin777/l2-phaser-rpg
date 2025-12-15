@@ -188,10 +188,16 @@ let uiElements = {
 // ============================================================
 
 function createGameUI(scene) {
+  // CITY_CLEAN mode — не создавать UI вообще
+  if (window.UI_MODE === "CITY_CLEAN") {
+    console.log("[uiLayout] Skipping ALL UI in CITY_CLEAN mode");
+    return;
+  }
+
   const w = scene.scale.width;
   const h = scene.scale.height;
   const pos = getUIPositions(w, h);
-  
+
   createTopLeftUI(scene, pos);
   createTopCenterUI(scene, pos);
   createTopRightUI(scene, pos);
