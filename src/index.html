@@ -27,14 +27,23 @@
       #game-container {
         width: 100vw;
         height: 100vh;
-        max-width: none;
-        margin: 0;
+        max-width: 430px;
+        margin: 0 auto;
         position: fixed;
-        left: 0;
+        left: 50%;
         top: 0;
-        transform: none;
+        transform: translateX(-50%);
         background: #0a0a12;
         overflow: hidden;
+      }
+
+      /* На мобиле — fullscreen */
+      @media (max-width: 520px) {
+        #game-container {
+          max-width: none;
+          left: 0;
+          transform: none;
+        }
       }
 
       canvas {

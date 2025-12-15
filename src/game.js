@@ -68,7 +68,12 @@ let selectedRaceId = null;
 let selectedClassId = null;
 
 // ----- PHASER КОНФИГ (TMA портретный режим) -----
-const _dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+const isMobile = window.matchMedia("(max-width: 520px)").matches;
+
+// На десктопе ограничиваем DPR (иначе раздувает render surface)
+const _dpr = isMobile
+  ? Math.max(1, Math.round(window.devicePixelRatio || 1))
+  : 1;
 
 const config = {
   type: Phaser.AUTO,
@@ -76,30 +81,37 @@ const config = {
   height: 844 * _dpr,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
-
+  fps: {
+    target: 60,
+    forceSetTimeOut: true
+  },
   render: {
     antialias: true,
     pixelArt: false,
     roundPixels: false
   },
-
   scale: {
-    mode: Phaser.Scale.ENVELOP,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    mode: isMobile ? Phaser.Scale.ENVELOP : Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-
-  scene: {
-    preload,
-    create,
-    update,
-  },
-
+  scene: { preload, create, update },
   plugins: {
-    scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }],
-  },
+    scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
+  }
 };
 
 const game = new Phaser.Game(config);
+
+// Экономия ресурсов когда вкладка не видна
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    game.loop.sleep();
+    console.log('[PERF] Game sleeping');
+  } else {
+    game.loop.wake();
+    console.log('[PERF] Game waking');
+  }
+});
 
 // ----- SAFE AREA для TMA -----
 const SAFE_AREA = {
