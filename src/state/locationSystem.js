@@ -122,19 +122,10 @@ function enterCity(scene) {
 
   disableAutoHunt();
   hideCamp();
-  hideForgePanel();
-  hideQuestsPanel();
-  hideShopPanel();
-  hideMapPanel();
-  hideArenaPanel();
-  hideDungeonPanel();
   endOverdrive(scene);
   stopEnemyAttack();
   stopMercAttack();
-
-  // Скрываем кнопки отдыха и shots
   stopRest();
-  hideRestAndShotsUI();
   hidePet();
 
   if (cityHero) cityHero.setVisible(false); // Скрываем старый спрайт
@@ -156,16 +147,6 @@ function enterCity(scene) {
   if (enemy) enemy.setVisible(false);
   if (enemyHpText) enemyHpText.setVisible(false);
   if (merc) merc.setVisible(false);
-
-  // [LEGACY UI REMOVED - autoButton, locationPrevButton, locationNextButton, modeButtonText, NPC rectangles]
-
-  updateLocationLabel();
-  updateHeroUI();
-
-  // Обновляем новый UI для города
-  if (typeof updateUIForMode === "function") {
-    updateUIForMode("city");
-  }
 
   // Хук для tickSystem: сброс боя, meters
   if (typeof onEnterCity === "function") {
@@ -191,21 +172,8 @@ function enterLocation(scene) {
 
   disableAutoHunt();
   hideCamp();
-  hideForgePanel();
-  hideQuestsPanel();
-  hideShopPanel();
-  hideMapPanel();
-  hideArenaPanel();
-  hideDungeonPanel();
-  
-  // Сбрасываем отдых при входе в локацию
   stopRest();
-  showRestAndShotsUI();
-  
-  // Сбрасываем флаг атаки
   isAttacking = false;
-  
-  // Показываем питомца
   showPetInLocation();
 
   // ============================================
@@ -287,15 +255,7 @@ function enterLocation(scene) {
   // Запускаем атаку питомца
   startPetAttack(scene);
 
-  updateLocationLabel();
-  updateHeroUI();
-  
   console.log("[Location] Entry complete! hero:", !!hero, "enemy:", !!enemy, "enemyAlive:", enemyAlive, "isAttacking:", isAttacking);
-  
-  // Обновляем новый UI для локации
-  if (typeof updateUIForMode === "function") {
-    updateUIForMode("location");
-  }
 
   // Хук для tickSystem: сброс stance, meters
   if (typeof onEnterLocation === "function") {

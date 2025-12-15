@@ -442,47 +442,11 @@ function create() {
     cityHero = createHeroSprite(this, this.scale.width * 0.25, centerY, 0x3366cc);
   }
 
-  // === CITY_CLEAN MODE: Only bg + hero, skip all UI ===
+  // === CITY_CLEAN MODE: Skip all UI, baseline only ===
   if (window.UI_MODE === "CITY_CLEAN") {
-    console.log("[UI] CITY_CLEAN: skipping UI init/handlers/panels");
-
-    // Hide location background (keep city bg visible)
-    locationBg.setVisible(false);
-
-    // Position hero in city
-    if (window.spineHero) {
-      window.spineHero.setPosition(w * 0.25, h / 2 + 40);
-      window.spineHero.setVisible(true);
-      window.spineHero.setDepth(1000);
-      heroIdle();
-    }
-
-    // Ensure bg is at bottom
-    window.cityBg?.setDepth(-1000);
-
-    // NUKE disabled - using diagnostics instead
-    console.log("[UI] CITY_CLEAN: NUKE disabled, diagnostics enabled");
-
-    // Hide preEntry overlay so the canvas is visible
-    if (window.preEntry && typeof window.preEntry.skip === "function") {
-      window.preEntry.skip();
-    } else if (window.preEntry && typeof window.preEntry.hide === "function") {
-      window.preEntry.hide();
-    }
-
-    // STEP 6.2: Diagnostics - check what's visible after 50ms
-    const diagScene = this;
-    setTimeout(() => {
-      const keep = new Set([window.cityBg, window.locationBg, window.spineHero].filter(Boolean));
-      const visible = diagScene.children.list.filter(o => o && o.visible === true);
-      const extra = visible.filter(o => !keep.has(o) && o.texture?.key !== "talkingisland_main");
-      console.log("[CLEAN] visible:", visible.length, "extra:", extra.length);
-      extra.slice(0, 50).forEach((o, i) => {
-        console.log(`[CLEAN][extra ${i}]`, o.type, o.name, o.texture?.key, o);
-      });
-    }, 50);
-
-    return; // EXIT EARLY - no UI init
+    if (window.preEntry?.skip) window.preEntry.skip();
+    console.log("[UI] CITY_CLEAN baseline ready");
+    return;
   }
 
   // ============================================================
