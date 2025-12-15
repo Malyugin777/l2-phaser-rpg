@@ -479,9 +479,42 @@ function create() {
     console.log('[PERF] Textures loaded:', this.textures.list ? Object.keys(this.textures.list).length : 'N/A');
     console.log('[PERF] Children count:', this.children.list.length);
 
-    // ДИАГНОСТИКА: Закомментировать пульсацию и idle для теста
-    // scene.tweens.add(...) — закомментировать если есть
-    // heroIdle() — закомментировать
+    // === BOTTOM BAR (even in CITY_CLEAN) ===
+    if (typeof createBottomUI === "function") {
+      const bottomUI = createBottomUI(this);
+      window.bottomUI = bottomUI;
+
+      // Keep UI fixed to camera
+      if (bottomUI?.setScrollFactor) bottomUI.setScrollFactor(0);
+      if (bottomUI?.list) bottomUI.list.forEach(o => o?.setScrollFactor?.(0));
+
+      // Ensure bottom UI elements are above panel (depth 110)
+      if (bottomUI?.setDepth) bottomUI.setDepth(110);
+      if (bottomUI?.list) bottomUI.list.forEach(o => o?.setDepth?.(110));
+
+      // Fallback: if createBottomUI returns plain object of elements
+      if (bottomUI && !bottomUI.list && typeof bottomUI === "object") {
+        Object.values(bottomUI).forEach(o => {
+          o?.setDepth?.(110);
+          o?.setScrollFactor?.(0);
+        });
+      }
+
+      // Bottom panel background
+      if (this.textures.exists("ui_bottom_panel")) {
+        uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
+        uiBottomPanel.setOrigin(0.5, 1);
+        const panelScale = w / uiBottomPanel.width;
+        uiBottomPanel.setScale(panelScale);
+        uiBottomPanel.setDepth(100);
+        uiBottomPanel.setScrollFactor(0);
+        uiBottomPanel.setAlpha(0.92);
+      }
+
+      console.log("[UI] Bottom bar created in CITY_CLEAN");
+    } else {
+      console.warn("[UI] createBottomUI not found");
+    }
 
     console.log("[UI] CITY_CLEAN baseline ready");
     return;
