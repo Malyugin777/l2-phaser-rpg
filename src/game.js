@@ -343,6 +343,14 @@ function preload() {
   this.load.image("map_world", "assets/ui/map_world.png");
   this.load.image("ui_bottom_panel", "assets/ui/Bottom_panel.webp");
 
+  // Новая нижняя панель
+  this.load.image('ui_bottom', 'assets/ui/bottom.png');
+  this.load.image('ui_btn_fight', 'assets/ui/btn_fight_base.png');
+  this.load.image('icon_store', 'assets/ui/icon_store.png');
+  this.load.image('icon_anvil', 'assets/ui/icon_anvil.png');
+  this.load.image('icon_helmet', 'assets/ui/icon_helmet.png');
+  this.load.image('icon_map', 'assets/ui/icon_map.png');
+
   // Экран регистрации
   this.load.image("registration_bg", "assets/intro/registration.png");
 
@@ -350,7 +358,15 @@ function preload() {
   this.load.spine('hero', 'assets/spine/hero.json', 'assets/spine/hero.atlas');
 }
 
+// FPS текст для диагностики (создаётся в create)
+let fpsText = null;
+
 function update(time, delta) {
+  // FPS диагностика
+  if (fpsText) {
+    fpsText.setText('FPS: ' + Math.round(this.game.loop.actualFps));
+  }
+
   // Тик-система (реген, кулдауны, баффы)
   if (typeof processTick === "function") {
     processTick(delta);
@@ -445,6 +461,24 @@ function create() {
   // === CITY_CLEAN MODE: Skip all UI, baseline only ===
   if (window.UI_MODE === "CITY_CLEAN") {
     if (window.preEntry?.skip) window.preEntry.skip();
+
+    // FPS счётчик для диагностики
+    fpsText = this.add.text(10, 10, 'FPS: --', {
+      fontSize: '16px',
+      fill: '#00ff00',
+      backgroundColor: '#000000'
+    }).setDepth(9999).setScrollFactor(0);
+
+    // Лог производительности
+    console.log('[PERF] DPR:', window.devicePixelRatio);
+    console.log('[PERF] Canvas:', this.game.canvas.width, 'x', this.game.canvas.height);
+    console.log('[PERF] Textures loaded:', this.textures.list ? Object.keys(this.textures.list).length : 'N/A');
+    console.log('[PERF] Children count:', this.children.list.length);
+
+    // ДИАГНОСТИКА: Закомментировать пульсацию и idle для теста
+    // scene.tweens.add(...) — закомментировать если есть
+    // heroIdle() — закомментировать
+
     console.log("[UI] CITY_CLEAN baseline ready");
     return;
   }
@@ -452,6 +486,10 @@ function create() {
   // ============================================================
   // FIX A: All UI code below ONLY runs when NOT CITY_CLEAN
   // ============================================================
+
+  // Новая нижняя панель UI (bottom.png)
+  const bottomUI = createBottomUI(this);
+  window.bottomUI = bottomUI;
 
   // Нижняя UI панель (поверх фона, всегда видна)
   uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
@@ -640,6 +678,86 @@ function create() {
   }
 
   updateHeroUI();
+}
+
+// ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
+
+function createBottomUI(scene) {
+  const w = scene.scale.width;
+  const h = scene.scale.height;
+
+  // Панель — масштаб под ширину экрана
+  const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom')
+    .setOrigin(0.5, 1)
+    .setDepth(100)
+    .setScrollFactor(0);
+
+  // Масштаб: панель 1408px → экран 390px
+  const panelScale = w / 1408;  // ≈ 0.277
+  bottomPanel.setScale(panelScale);
+
+  const panelHeight = 768 * panelScale;  // ≈ 213px
+  const panelTop = h - panelHeight;
+  const panelCenterX = w / 2;
+
+  // === КРАСНАЯ КНОПКА БОЯ ===
+  // На панели кнопка справа, примерно на X = 1150 от левого края панели
+  // После масштаба: (1150 - 704) * 0.277 = 123px от центра
+  const fightBtnX = panelCenterX + 123 * panelScale * 3.6;  // смещение вправо
+  const fightBtnY = h - panelHeight / 2;  // по центру панели по высоте
+
+  const fightBtn = scene.add.image(fightBtnX, fightBtnY, 'ui_btn_fight')
+    .setOrigin(0.5, 0.5)
+    .setDepth(110)
+    .setScrollFactor(0)
+    .setScale(panelScale * 1.2)  // чуть больше
+    .setInteractive({ useHandCursor: true });
+
+  scene.tweens.add({
+    targets: fightBtn,
+    scale: panelScale * 1.25,
+    yoyo: true,
+    repeat: -1,
+    duration: 800,
+    ease: 'Sine.easeInOut'
+  });
+
+  fightBtn.on('pointerdown', () => {
+    console.log('[UI] Fight button clicked!');
+  });
+
+  // === ИКОНКИ В СЛОТАХ (слева на панели) ===
+  // Слоты на панели примерно: X = 180, 350, 520, 690 (от левого края)
+  // Центр панели = 704, значит смещения: -524, -354, -184, -14
+  const iconY = h - panelHeight * 0.5;  // по центру панели
+
+  const slotOffsets = [-380, -230, -80, 70];  // примерные смещения от центра
+
+  const icons = [
+    { key: 'icon_helmet', action: 'inventory' },
+    { key: 'icon_anvil', action: 'forge' },
+    { key: 'icon_store', action: 'shop' },
+    { key: 'icon_map', action: 'map' },
+  ];
+
+  const createdIcons = icons.map((iconData, i) => {
+    const x = panelCenterX + slotOffsets[i] * panelScale;
+    const icon = scene.add.image(x, iconY, iconData.key)
+      .setDepth(110)
+      .setScrollFactor(0)
+      .setScale(panelScale * 1.5)
+      .setInteractive({ useHandCursor: true });
+
+    icon.on('pointerdown', () => {
+      console.log(`[UI] Icon clicked: ${iconData.action}`);
+    });
+
+    return icon;
+  });
+
+  console.log('[UI] Bottom panel created, scale:', panelScale.toFixed(3));
+
+  return { bottomPanel, fightBtn, icons: createdIcons };
 }
 
 // ================== UI-ХЕЛПЕРЫ ДЛЯ ТЕКСТА ==================
