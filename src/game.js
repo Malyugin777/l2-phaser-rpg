@@ -109,6 +109,11 @@ const config = {
   height: 844 * _dpr,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
+  render: {
+    antialias: true,
+    pixelArt: false,
+    roundPixels: false
+  },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -426,12 +431,14 @@ function create() {
   cityBg.setDepth(-5);
 
   // DEBUG: проверка качества рендера
-  console.log('[Render] DPR:', _dpr);
-  console.log('[Render] Game size:', this.game.config.width, 'x', this.game.config.height);
+  console.log('[Render] DPR:', window.devicePixelRatio);
+  console.log('[Render] Config size:', this.game.config.width, 'x', this.game.config.height);
   console.log('[Render] Canvas size:', this.game.canvas.width, 'x', this.game.canvas.height);
-  console.log('[Render] Zoom:', this.scale.zoom);
-  console.log('[Render] BG original:', cityBg.width, 'x', cityBg.height);
-  console.log('[Render] BG scale:', cityBg.scaleX.toFixed(2));
+  console.log('[Render] Scale zoom:', this.scale.zoom);
+  console.log('[Render] Antialias:', this.game.config.render.antialias);
+  if (this.game.canvas.width !== this.game.config.width) {
+    console.warn('[Render] WARNING: Canvas size mismatch!');
+  }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
