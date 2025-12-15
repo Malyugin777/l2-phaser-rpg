@@ -6,7 +6,7 @@
 **Платформа:** Telegram Mini App (TMA)
 **Движок:** Phaser 3.80.1 + SpinePlugin 4.1
 **Язык:** Vanilla JavaScript (ES6, strict mode, глобальные переменные)
-**Версия:** 1.1.1
+**Версия:** 1.2.0
 **GitHub:** https://github.com/Malyugin777/l2-phaser-rpg
 **GitHub Pages:** https://malyugin777.github.io/l2-phaser-rpg/src/
 **Telegram:** @Poketlineage_bot
@@ -19,266 +19,179 @@
 
 | Параметр | Значение | Описание |
 |----------|----------|----------|
-| UI_WIDTH | 390 | Ширина игры |
-| UI_HEIGHT | 844 | Высота игры |
-| SAFE_TOP | 67px (8%) | Отступ под шапку Telegram |
-| SAFE_BOTTOM | 84px (10%) | Отступ под жесты/кнопку |
-| SAFE_LEFT/RIGHT | 16px (4%) | Боковые отступы |
+| UI_WIDTH | 390 | Логическая ширина |
+| UI_HEIGHT | 844 | Логическая высота |
+| Canvas | 780×1688 | При DPR=2 |
 
 ### Phaser Config (АКТУАЛЬНЫЙ!)
 
 ```javascript
-// Retina fix: zoom вместо resolution (deprecated в Phaser 3.50+)
-var _dpr = window.devicePixelRatio || 1;
+const _dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+
 const config = {
   type: Phaser.AUTO,
   width: 390 * _dpr,   // 780 при DPR=2
   height: 844 * _dpr,  // 1688 при DPR=2
   parent: "game-container",
   backgroundColor: 0x0a0a12,
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    zoom: 1 / _dpr     // 0.5 при DPR=2
+
+  render: {
+    antialias: true,
+    pixelArt: false,
+    roundPixels: false
   },
+
+  scale: {
+    mode: Phaser.Scale.ENVELOP,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
+
   scene: { preload, create, update },
   plugins: {
-    scene: [
-      { key: 'SpinePlugin', plugin: window.SpinePlugin, mapping: 'spine' }
-    ]
+    scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
   }
 };
 ```
 
-**Почему zoom, а не resolution:**
-- `resolution` deprecated в Phaser 3.50+
-- `zoom: 1/_dpr` + увеличенные width/height = чёткий рендер на Retina
+**Важные моменты:**
+- `Math.round(_dpr)` — iOS отдаёт дробные значения (2.000000596)
+- `ENVELOP` — заполняет весь экран без чёрных полос
+- `antialias: true` — сглаживание для мультяшной графики
 
-### CSS для чёткого рендера (index.html)
+### CSS Fullscreen (index.html)
 
 ```css
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0a0a12;
+  overflow: hidden;  /* убрать скролл на iOS */
+}
+
+#game-container {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  margin: 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: #0a0a12;
+  overflow: hidden;
+}
+
 canvas {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: auto;  /* НЕ crisp-edges для мультяшки */
+}
+```
+
+### Логические координаты в create()
+
+```javascript
+// Делим на DPR для одинаковой работы на всех устройствах
+const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+const w = this.scale.width / dpr;   // 390
+const h = this.scale.height / dpr;  // 844
+
+// Позиционирование героя
+heroStartX = w * 0.25;
+heroStartY = h * 0.65;
+spineHero.setScale(0.7);
+```
+
+---
+
+## 🧪 UI_MODE: Режимы отображения
+
+### Флаг режима (game.js)
+
+```javascript
+const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
+window.UI_MODE = UI_MODE;
+```
+
+### CITY_CLEAN Mode (NUKE)
+
+Скрывает ВСЁ кроме фона и героя:
+
+```javascript
+if (window.UI_MODE === "CITY_CLEAN") {
+  const keep = new Set([window.cityBg, window.spineHero]);
+
+  const nukeUI = () => {
+    this.children.list.forEach((obj) => {
+      if (!obj || keep.has(obj)) return;
+      obj.setVisible(false);
+      if (obj.disableInteractive) obj.disableInteractive();
+    });
+  };
+
+  nukeUI();
+  this.time.addEvent({ delay: 50, repeat: 100, callback: nukeUI });
+
+  window.cityBg?.setDepth(-1000);
+  window.spineHero?.setDepth(1000);
+}
+```
+
+**uiLayout.js** также пропускает создание UI:
+```javascript
+function createGameUI(scene) {
+  if (window.UI_MODE === "CITY_CLEAN") return;
+  // ...
 }
 ```
 
 ---
 
-## 🎭 Spine Анимации (НОВОЕ!)
+## 🎭 Spine Анимации
 
-### Доступные анимации в hero.json
+### Доступные анимации
 
 | Анимация | Loop | Использование |
 |----------|------|---------------|
-| `idle` | Yes | Стоит (город, локация) |
+| `idle` | Yes | Стоит |
 | `attack` | No | Атака |
-| `fall` | No | Получение урона / смерть |
-| `crouch` | Yes | Сидит (отдых) |
+| `fall` | No | Урон / смерть |
+| `crouch` | Yes | Отдых |
 | `run` | Yes | Бежит |
 | `walk` | Yes | Идёт |
-| `jump` | No | Прыжок (крит) |
-| `head-turn` | No | Поворот головы (случайный в городе) |
+| `jump` | No | Крит |
+| `head-turn` | No | Случайный в городе |
 
-### Функции анимаций (game.js)
+### Функции анимаций
 
 ```javascript
-// Базовая функция
-function playAnim(animName, loop) {
-  if (!window.spineHero) return false;
-  try {
-    window.spineHero.play(animName, loop);
-    return true;
-  } catch(e) { return false; }
-}
-
-// Готовые функции
 heroIdle()           // idle loop
 heroAttack()         // attack → idle (400ms)
 heroHit()            // fall → idle (200ms)
 heroDeath()          // fall (остаётся)
-heroRun()            // run loop
-heroWalk()           // walk loop
-heroCrouch()         // crouch loop (отдых)
-heroJump()           // jump → idle (500ms)
 heroCriticalHit()    // jump → attack → idle
 heroEnterLocation()  // run → idle (1000ms)
-heroHeadTurn()       // head-turn → idle (1500ms)
-```
-
-### Интеграция анимаций
-
-| Файл | Событие | Анимация |
-|------|---------|----------|
-| combatSystem.js | Обычная атака | `heroAttack()` |
-| combatSystem.js | Критический удар | `heroCriticalHit()` |
-| combatSystem.js | Использование скилла | `heroCriticalHit()` |
-| combatSystem.js | Получение урона | `heroHit()` |
-| combatSystem.js | Смерть героя | `heroDeath()` |
-| tickSystem.js | Сесть (sitDown) | `heroCrouch()` |
-| tickSystem.js | Встать (standUp) | `heroIdle()` |
-| locationSystem.js | Вход в город | `heroIdle()` |
-| locationSystem.js | Вход в локацию | `heroEnterLocation()` |
-| arenaSystem.js | Атака на арене | `heroAttack()` |
-| arenaSystem.js | Урон на арене | `heroHit()` |
-
-### Случайные анимации в городе (tickSystem.js)
-
-```javascript
-// Каждые 5 сек, 10% шанс head-turn
-const CITY_ANIM_INTERVAL_MS = 5000;
-const CITY_ANIM_CHANCE = 0.1;
-```
-
----
-
-## 🖼️ Ассеты
-
-### Backgrounds (src/assets/backgrounds/)
-
-| Файл | Формат | Размер | Использование |
-|------|--------|--------|---------------|
-| talking_island.webp | WebP | 1080×1935 | Город (cityBg) |
-| obelisk_of_victory.png | PNG | - | Локация 0 |
-| northern_territory.png | PNG | - | Локация 1 |
-| elven_ruins.png | PNG | - | Локация 2 |
-| orc_barracks.png | PNG | - | Локация 3 |
-
-### UI (src/assets/ui/)
-
-| Файл | Формат | Использование |
-|------|--------|---------------|
-| Bottom_panel.webp | WebP | Нижняя UI панель |
-| map_world.png | PNG | Карта телепорта |
-
-### Spine (src/assets/spine/)
-
-| Файл | Описание |
-|------|----------|
-| hero.json | Skeleton data |
-| hero.atlas | Atlas |
-| hero.png | Texture |
-
-### Загрузка ассетов (preload)
-
-```javascript
-// Фоны
-this.load.image("talkingisland_main", "assets/backgrounds/talking_island.webp");
-this.load.image("obelisk_of_victory", "assets/backgrounds/obelisk_of_victory.png");
-// ...
-
-// UI
-this.load.image("ui_bottom_panel", "assets/ui/Bottom_panel.webp");
-this.load.image("map_world", "assets/ui/map_world.png");
-
-// Spine
-this.load.spine('hero', 'assets/spine/hero.json', 'assets/spine/hero.atlas');
-```
-
----
-
-## 🎨 UI Layout
-
-### Bottom Panel (create)
-
-```javascript
-uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
-uiBottomPanel.setOrigin(0.5, 1);           // Привязка к низу
-uiBottomPanel.setScale(w / uiBottomPanel.width); // Fit width
-uiBottomPanel.setDepth(100);               // Поверх фона
-uiBottomPanel.setScrollFactor(0);          // Фиксированная
-uiBottomPanel.setAlpha(0.92);              // Чуть прозрачнее
-```
-
-### fitBackground (cover mode)
-
-```javascript
-function fitBackground(bg, scene) {
-  if (!bg || !scene) return;
-  var w = scene.scale.width;
-  var h = scene.scale.height;
-  var scale = Math.max(w / bg.width, h / bg.height);
-  bg.setScale(scale);
-  bg.setPosition(w / 2, h / 2);
-  bg.setOrigin(0.5, 0.5);
-  bg.setScrollFactor(0);
-}
-```
-
----
-
-## ⚔️ Combat System
-
-### Эфир и Soulshots (ВАЖНО!)
-
-**Правильная логика:**
-- Эфир тратится ТОЛЬКО на Soulshots
-- Soulshots — опциональное усиление (+100% fighter / +50% mystic)
-- Без эфира — обычные атаки работают
-- Бой НИКОГДА не останавливается из-за эфира
-
-```javascript
-// restSystem.js - useShotIfEnabled()
-function useShotIfEnabled() {
-  if (arch === "fighter" && buffs.soulshotsOn && wallet.ether > 0) {
-    wallet.ether -= 1;
-    return { used: true, multiplier: 2.0 };  // +100%
-  }
-  if (arch === "mystic" && buffs.spiritshotsOn && wallet.ether > 0) {
-    wallet.ether -= 1;
-    return { used: true, multiplier: 1.5 };  // +50%
-  }
-  return { used: false, multiplier: 1.0 };   // Обычная атака
-}
-```
-
-### Авто-охота
-
-- Сессия ограничена по времени (AUTO_HUNT_DURATION_MS)
-- По окончании показывается лагерь "Сессия окончена"
-- НЕ связано с эфиром!
-
----
-
-## 🏟️ PvE Арена
-
-### Spine интеграция
-
-```javascript
-// createArenaUI() - Герой на арене
-if (window.spineHero) {
-  window.spineHero.setPosition(120, h/2 + 50);
-  window.spineHero.setVisible(true);
-  window.spineHero.setDepth(151);
-  heroIdle();
-  arenaMyChar = window.spineHero;
-}
-
-// arenaBattleStep() - Анимации боя
-if (arenaMyTurn) {
-  heroAttack();  // Мой ход
-} else {
-  heroHit();     // Враг бьёт меня
-}
 ```
 
 ---
 
 ## 🐛 Debug
 
-### Проверка качества рендера (консоль)
+### Консольные логи при загрузке
 
 ```javascript
-// Автоматически выводится при загрузке:
+GAMEJS BUILD: 2025-12-15-RETINA-FIX
 [Render] DPR: 2
-[Render] Game size: 780 x 1688
+[Render] Config size: 780 x 1688
 [Render] Canvas size: 780 x 1688
-[Render] Zoom: 0.5
-[Render] BG original: 1080 x 1935
-[Render] BG scale: 0.87
+[Render] Antialias: true
+[Scale] mode: 3 expected ENVELOP= 3
+[Scale] parent size: 390 x 844
+[Scale] Canvas CSS: 390 x 844
+[Spine] Hero created at: 97.5 548.6 scale: 0.7
+[UI] NUKE mode: only bg + hero visible
 ```
-
-**Проверка:** Canvas size должен быть = Game size × DPR
 
 ### Консольные команды
 
@@ -286,54 +199,11 @@ if (arenaMyTurn) {
 // Сброс сейва
 localStorage.clear(); location.reload();
 
-// Тест профессий
-stats.level = 20; updateHeroUI();
-
-// Тест арены
-arenaState.energy = 30;
-
-// Дать ресурсы
-wallet.gold = 10000;
-wallet.ether = 100;
-resources.ore = 100;
+// Переключить UI mode
+window.UI_MODE = "LEGACY"; location.reload();
 
 // Тест Spine
 window.spineHero.play('attack', false);
-```
-
----
-
-## 📁 Архитектура проекта
-
-```
-src/
-├── index.html              # Точка входа + CSS crisp-edges
-├── preEntry.css            # Loader стили
-├── preEntry.js             # Loader + Intro
-├── game.js                 # Phaser main + Spine анимации
-│
-├── state/
-│   ├── uiConstants.js      # UI константы
-│   ├── heroState.js        # Данные героя
-│   ├── combatSystem.js     # Бой + анимации атаки/урона
-│   ├── locationSystem.js   # Город ↔ локация + Spine позиция
-│   ├── tickSystem.js       # Реген + случайные анимации
-│   ├── restSystem.js       # Отдых + Soulshots
-│   ├── arenaSystem.js      # Арена + Spine интеграция
-│   └── ...
-│
-├── ui/
-│   └── ...
-│
-└── assets/
-    ├── backgrounds/
-    │   └── talking_island.webp  # Новый город 1080×1935
-    ├── ui/
-    │   └── Bottom_panel.webp    # Нижняя панель
-    └── spine/
-        ├── hero.json
-        ├── hero.atlas
-        └── hero.png
 ```
 
 ---
@@ -345,62 +215,48 @@ src/
 | 1.0.0 | 14.12.2024 | PvE Арена, TMA Touch Fix |
 | 1.0.1 | 14.12.2024 | fitBackground, gold buttons |
 | 1.0.2 | 14.12.2024 | Spine setup, SpinePlugin CDN |
-| 1.1.0 | 15.12.2024 | **Spine анимации полностью интегрированы** |
-| | | - Все анимации: idle, attack, hit, death, crouch, run, walk, jump |
-| | | - Интеграция в combat, arena, rest, location transitions |
-| | | - Случайный head-turn в городе |
-| | | - Новый фон talking_island.webp (1080×1935) |
-| | | - Bottom UI panel (Bottom_panel.webp) |
-| | | - CSS crisp-edges |
-| | | - Fix эфир логики (бой не останавливается) |
-| 1.1.1 | 15.12.2024 | **Retina fix: zoom вместо resolution** |
-| | | - resolution deprecated в Phaser 3.50+ |
-| | | - width/height × DPR + zoom: 1/DPR |
-| | | - Чёткий рендер на всех устройствах |
+| 1.1.0 | 15.12.2024 | Spine анимации интегрированы |
+| 1.1.1 | 15.12.2024 | Retina fix (zoom) |
+| 1.2.0 | 15.12.2024 | **Fullscreen + CITY_CLEAN mode** |
+| | | - ENVELOP scale mode |
+| | | - Rounded DPR для iOS |
+| | | - CSS fullscreen (no black borders) |
+| | | - antialias: true (не pixelArt) |
+| | | - UI_MODE флаг |
+| | | - NUKE mode для чистого города |
+| | | - Логические координаты (w/dpr) |
+| | | - Hero scale 0.7, position 25%×65% |
 
 ---
 
 ## ✅ Готово
 
-- [x] Spine анимации (все 12 функций)
-- [x] Интеграция в бой (атака, крит, урон, смерть)
-- [x] Интеграция в арену (Spine вместо квадрата)
-- [x] Интеграция в отдых (crouch/idle)
-- [x] Случайные анимации в городе
-- [x] Новый фон города (WebP, 1080×1935)
-- [x] Bottom UI panel
-- [x] Retina support (devicePixelRatio)
-- [x] CSS crisp-edges
-- [x] Правильная логика эфира
+- [x] Spine анимации
+- [x] Retina support (DPR × size)
+- [x] Fullscreen без чёрных полос
+- [x] CITY_CLEAN mode
+- [x] Antialias для мультяшки
+- [x] Логические координаты
 
 ## 📋 TODO
 
-- [ ] Пересохранить остальные фоны в WebP quality 90
+- [ ] Пересохранить фоны в WebP
 - [ ] Spine для врагов
 - [ ] Эффекты ударов (particles)
-- [ ] Звуки для анимаций
+- [ ] Звуки
 
 ---
 
 ## 🔴 ИЗВЕСТНЫЕ ПРОБЛЕМЫ
 
-### 1. Мыльная картинка (РЕШЕНО в 1.1.1)
+### 1. Мыльная картинка (РЕШЕНО)
 
-**Причина:** `resolution` в config deprecated в Phaser 3.50+
+**Решение:** `width * DPR` + `ENVELOP` + `antialias: true`
 
-**Решение:** Использовать zoom:
-```javascript
-var _dpr = window.devicePixelRatio || 1;
-width: 390 * _dpr,
-height: 844 * _dpr,
-scale: { zoom: 1 / _dpr }
-```
+### 2. Чёрные полосы (РЕШЕНО)
 
-**Проверка:** В консоли Canvas size должен быть 780×1688 при DPR=2
+**Решение:** CSS `max-width: none`, `left: 0`, `overflow: hidden`
 
-### 2. Spine не загружается
+### 3. iOS дробный DPR
 
-**Проверить:**
-- SpinePlugin CDN: `phaser@3.80.1/plugins/spine4.1/dist/SpinePlugin.js`
-- Файлы в assets/spine/: hero.json, hero.atlas, hero.png
-- Консоль: `[Spine] Hero created successfully`
+**Решение:** `Math.round(devicePixelRatio)`
