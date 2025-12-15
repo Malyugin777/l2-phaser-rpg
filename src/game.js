@@ -120,8 +120,7 @@ const config = {
 
   scale: {
     mode: Phaser.Scale.ENVELOP,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    zoom: 1 / _dpr
+    autoCenter: Phaser.Scale.CENTER_BOTH
   },
 
   scene: {
@@ -441,9 +440,11 @@ function create() {
   console.log('[Render] DPR:', window.devicePixelRatio);
   console.log('[Render] Config size:', this.game.config.width, 'x', this.game.config.height);
   console.log('[Render] Canvas size:', this.game.canvas.width, 'x', this.game.canvas.height);
-  console.log('[Render] Canvas CSS size:', this.game.canvas.clientWidth, 'x', this.game.canvas.clientHeight);
-  console.log('[Render] Scale zoom:', this.scale.zoom);
   console.log('[Render] Antialias:', this.game.config.render?.antialias ?? 'N/A');
+  console.log('[Scale] mode:', this.scale.scaleMode, 'expected ENVELOP=', Phaser.Scale.ENVELOP);
+  console.log('[Scale] parent size:', this.scale.parentSize.width, 'x', this.scale.parentSize.height);
+  console.log('[Scale] display:', this.scale.displaySize.width, 'x', this.scale.displaySize.height);
+  console.log('[Scale] Canvas CSS:', this.game.canvas.clientWidth, 'x', this.game.canvas.clientHeight);
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
