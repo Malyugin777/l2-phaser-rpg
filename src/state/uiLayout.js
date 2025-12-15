@@ -651,11 +651,14 @@ function updateUIBars() {
 }
 
 function updateUIForMode(currentMode) {
+  // Если UI не создан — выходим
+  if (window.UI_MODE === "CITY_CLEAN") return;
+
   const isCity = currentMode === "city";
 
   // NPC кнопки — только в городе
-  uiElements.npcButtons.forEach(npc => {
-    npc.btn.setVisible(isCity);
+  uiElements.npcButtons?.forEach(npc => {
+    npc?.btn?.setVisible(isCity);
     if (npc.icon) npc.icon.setVisible(isCity);
     if (npc.label) npc.label.setVisible(isCity);
   });

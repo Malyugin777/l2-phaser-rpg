@@ -1709,6 +1709,8 @@ function getEnemyHpLabel() {
 }
 
 function updateHeroUI() {
+  if (window.UI_MODE === "CITY_CLEAN") return;
+
   if (heroStatsText) heroStatsText.setText(getHeroStatsLabel());
   if (goldText) goldText.setText(getGoldLabel());
   if (killsText) killsText.setText(getKillsLabel());
@@ -1994,6 +1996,8 @@ function hideOldUI() {
 
 // Интеграция с updateHeroUI
 function updateNewUI() {
+  if (window.UI_MODE === "CITY_CLEAN") return;
+
   if (typeof updateUIBars === "function") {
     updateUIBars();
   }
