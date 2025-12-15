@@ -500,17 +500,6 @@ function create() {
         });
       }
 
-      // Bottom panel background
-      if (this.textures.exists("ui_bottom_panel")) {
-        uiBottomPanel = this.add.image(w / 2, h, "ui_bottom_panel");
-        uiBottomPanel.setOrigin(0.5, 1);
-        const panelScale = w / uiBottomPanel.width;
-        uiBottomPanel.setScale(panelScale);
-        uiBottomPanel.setDepth(100);
-        uiBottomPanel.setScrollFactor(0);
-        uiBottomPanel.setAlpha(0.92);
-      }
-
       console.log("[UI] Bottom bar created in CITY_CLEAN");
     } else {
       console.warn("[UI] createBottomUI not found");
