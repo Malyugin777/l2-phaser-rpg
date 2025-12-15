@@ -438,6 +438,7 @@ function create() {
   cityBg = this.add.image(w / 2, h / 2, "talkingisland_main");
   fitBackground(cityBg, this);
   cityBg.setDepth(-5);
+  window.cityBg = cityBg;
 
   // DEBUG: проверка качества рендера
   console.log('[Render] DPR:', window.devicePixelRatio);
@@ -1618,90 +1619,34 @@ function create() {
 
   updateHeroUI();
 
-  // === CITY_CLEAN MODE: скрыть весь UI ===
-  function hideAllUIExceptScene(scene) {
-    const hide = (obj) => {
-      if (!obj) return;
-      obj.setVisible(false);
-      if (obj.disableInteractive) obj.disableInteractive();
+  // === CITY_CLEAN NUKE MODE ===
+  if (window.UI_MODE === "CITY_CLEAN") {
+    const keep = new Set([window.cityBg, window.spineHero]);
+
+    const nukeUI = () => {
+      this.children.list.forEach((obj) => {
+        if (!obj) return;
+        if (keep.has(obj)) return;
+
+        obj.setVisible(false);
+        if (obj.disableInteractive) obj.disableInteractive();
+      });
     };
 
-    // === КОНТЕЙНЕРЫ UI (если есть) ===
-    hide(window.uiContainer);
-    hide(window.hudContainer);
-    hide(window.uiLayer);
-    hide(window.uiTopBar);
-    hide(window.uiBottomBar);
+    nukeUI();
 
-    // === ВЕРХНИЙ HUD ===
-    hide(window.hpBarBg);
-    hide(window.hpBarFill);
-    hide(window.mpBarBg);
-    hide(window.mpBarFill);
-    hide(window.hpText);
-    hide(window.mpText);
-    hide(window.goldIcon);
-    hide(window.goldText);
-    hide(window.gemsIcon);
-    hide(window.gemsText);
-    hide(window.etherText);
-    hide(window.locationTitleText);
-    hide(window.locationText);
-    hide(window.topBtnInv);
-    hide(window.topBtnQuest);
-    hide(window.topBtnSettings);
-
-    // === НИЖНИЙ UI ===
-    hide(window.levelText);
-    hide(window.expText);
-    hide(window.expBar);
-    hide(window.uiBottomPanel);
-
-    // NPC зоны
-    hide(window.npcSmithRect);
-    hide(window.npcShopRect);
-    hide(window.npcArenaRect);
-    hide(window.npcDungeonRect);
-    hide(window.npcMapRect);
-    hide(window.npcMercRect);
-
-    // NPC кнопки из uiLayout
-    const btns = window.uiElements?.npcButtons;
-    if (Array.isArray(btns)) {
-      btns.forEach((b) => {
-        hide(b?.bg);
-        hide(b?.icon);
-        hide(b?.text);
-        hide(b);
-      });
-    }
-
-    // Все элементы из uiElements
-    const all = window.uiElements?.all;
-    if (Array.isArray(all)) all.forEach(hide);
-
-    // Legacy кнопки
-    [
-      'skill1Button', 'skill2Button',
-      'hpPotionButton', 'mpPotionButton',
-      'autoButton', 'modeButton',
-      'locationPrevButton', 'locationNextButton',
-      'inventoryButton', 'statsButton', 'questsButton'
-    ].forEach(k => hide(window[k]));
-
-    // === ОТКЛЮЧИТЬ ИНТЕРАКТИВ У ВСЕГО КРОМЕ ФОНА И ГЕРОЯ ===
-    scene.children.list.forEach((obj) => {
-      if (!obj) return;
-      if (obj === window.spineHero) return;
-      if (obj === window.cityBg) return;
-      if (obj.disableInteractive) obj.disableInteractive();
+    // Повторять 2 секунды — убить UI который создаётся позже
+    this.time.addEvent({
+      delay: 50,
+      repeat: 40,
+      callback: nukeUI,
     });
 
-    console.log('[UI] All UI hidden - CITY_CLEAN mode');
-  }
+    // Закрепить слои: фон снизу, герой сверху
+    window.cityBg?.setDepth(-1000);
+    window.spineHero?.setDepth(1000);
 
-  if (window.UI_MODE === "CITY_CLEAN") {
-    hideAllUIExceptScene(this);
+    console.log("[UI] NUKE mode: only bg + hero visible");
   }
 }
 
