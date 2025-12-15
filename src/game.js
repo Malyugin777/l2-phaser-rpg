@@ -82,6 +82,24 @@ const getScaleMode = () => {
 
 const RESOLUTION = isMobile ? (window.devicePixelRatio || 1) : 1;
 
+// --- Viewport height sync (fixes Telegram/WebView "bottom clipped") ---
+function syncAppHeight() {
+  const tg = window.Telegram?.WebApp;
+  const h =
+    (tg && typeof tg.viewportHeight === "number" && tg.viewportHeight) ||
+    (window.visualViewport?.height) ||
+    window.innerHeight;
+  document.documentElement.style.setProperty("--app-height", `${Math.round(h)}px`);
+}
+
+try {
+  // Telegram Mini App: ask for full height if available
+  window.Telegram?.WebApp?.expand?.();
+} catch (_) {}
+
+syncAppHeight();
+window.visualViewport?.addEventListener("resize", syncAppHeight);
+
 const config = {
   type: Phaser.AUTO,
   width: BASE_W,
@@ -99,6 +117,7 @@ const config = {
 const game = new Phaser.Game(config);
 
 window.addEventListener("resize", () => {
+  syncAppHeight();
   const nextMode = getScaleMode();
   if (game.scale && game.scale.scaleMode !== nextMode) game.scale.scaleMode = nextMode;
   game.scale?.refresh();
@@ -498,6 +517,21 @@ function create() {
           o?.setDepth?.(110);
           o?.setScrollFactor?.(0);
         });
+      }
+
+      // Move UI up if bottom is eaten by Telegram / browser UI
+      const vv = window.visualViewport;
+      if (vv) {
+        const safePx = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        if (safePx > 0) {
+          const scaleY = this.scale.displaySize.height / this.scale.height;
+          const safeGame = safePx / (scaleY || 1);
+          if (bottomUI?.y != null) bottomUI.y -= safeGame;
+          if (bottomUI?.list) bottomUI.list.forEach(o => {
+            if (typeof o.y === "number") o.y -= safeGame;
+          });
+          console.log("[UI] safe bottom px:", safePx, "=> game:", safeGame.toFixed(2));
+        }
       }
 
       console.log("[UI] Bottom bar created in CITY_CLEAN");

@@ -10,12 +10,18 @@
     <link rel="stylesheet" href="preEntry.css">
 
     <style>
+      :root {
+        --app-height: 100vh;
+      }
+
       html, body {
         margin: 0;
         padding: 0;
+        width: 100%;
         height: 100%;
         background: #0a0a12;
-        overflow: hidden;
+        overflow: hidden !important;
+        overscroll-behavior: none;
       }
 
       body {
@@ -29,14 +35,17 @@
         inset: 0;
         margin: auto;
         width: min(100vw, 430px);
-        height: min(100vh, 932px);
+        height: min(var(--app-height), 932px);
         background: #0a0a12;
         overflow: hidden;
         touch-action: none;
       }
 
       @media (max-width: 520px), (pointer: coarse) {
-        #game-container { width: 100vw; height: 100vh; }
+        #game-container {
+          width: 100vw;
+          height: var(--app-height);
+        }
       }
 
       canvas { display: block; image-rendering: auto; }
