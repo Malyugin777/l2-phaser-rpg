@@ -478,6 +478,14 @@ function create() {
     });
 
     console.log("[UI] NUKE mode: only bg + hero visible");
+
+    // HOTFIX D: hide preEntry overlay so the canvas is visible
+    if (window.preEntry && typeof window.preEntry.skip === "function") {
+      window.preEntry.skip();
+    } else if (window.preEntry && typeof window.preEntry.hide === "function") {
+      window.preEntry.hide();
+    }
+
     return; // EXIT EARLY - no UI init
   }
 
