@@ -1,4 +1,5 @@
 "use strict";
+console.log("GAMEJS BUILD: 2025-12-15-RETINA-FIX");
 
 // ============================================================
 //  game.js — ГЛАВНЫЙ ФАЙЛ ИГРЫ
@@ -437,7 +438,7 @@ function create() {
   // DEBUG: проверка качества рендера
   console.log('[Render] DPR:', window.devicePixelRatio);
   console.log('[Render] Config size:', this.game.config.width, 'x', this.game.config.height);
-  console.log('[Render] Resolution:', this.game.config.resolution);
+  console.log('[Render] Renderer resolution:', this.game.renderer?.config?.resolution);
   console.log('[Render] Canvas size:', this.game.canvas.width, 'x', this.game.canvas.height);
   console.log('[Render] Antialias:', this.game.config.render?.antialias ?? 'N/A');
 
