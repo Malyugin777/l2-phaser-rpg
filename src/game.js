@@ -67,50 +67,46 @@ let confirmButtonText = null;
 let selectedRaceId = null;
 let selectedClassId = null;
 
-// ----- PHASER КОНФИГ (TMA портретный режим) -----
-const isMobile = window.matchMedia("(max-width: 520px)").matches;
+// ----- PHASER CONFIG (TMA + Desktop stable scaling) -----
+const BASE_W = 390;
+const BASE_H = 844;
 
-// На десктопе ограничиваем DPR (иначе раздувает render surface)
-const _dpr = isMobile
-  ? Math.max(1, Math.round(window.devicePixelRatio || 1))
-  : 1;
+const _isCoarse = window.matchMedia("(pointer: coarse)").matches;
+const _isSmall = window.matchMedia("(max-width: 520px)").matches;
+const isMobile = _isCoarse || _isSmall;
+
+const getScaleMode = () => {
+  const portrait = window.innerHeight >= window.innerWidth;
+  return (isMobile && portrait) ? Phaser.Scale.ENVELOP : Phaser.Scale.FIT;
+};
+
+const RESOLUTION = isMobile ? (window.devicePixelRatio || 1) : 1;
 
 const config = {
   type: Phaser.AUTO,
-  width: 390 * _dpr,
-  height: 844 * _dpr,
+  width: BASE_W,
+  height: BASE_H,
+  resolution: RESOLUTION,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
-  fps: {
-    target: 60,
-    forceSetTimeOut: true
-  },
-  render: {
-    antialias: true,
-    pixelArt: false,
-    roundPixels: false
-  },
-  scale: {
-    mode: isMobile ? Phaser.Scale.ENVELOP : Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  },
+  fps: { target: 60, forceSetTimeOut: true },
+  render: { antialias: true, pixelArt: false, roundPixels: false },
+  scale: { mode: getScaleMode(), autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: { preload, create, update },
-  plugins: {
-    scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
-  }
+  plugins: { scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }] }
 };
 
 const game = new Phaser.Game(config);
 
-// Экономия ресурсов когда вкладка не видна
+window.addEventListener("resize", () => {
+  const nextMode = getScaleMode();
+  if (game.scale && game.scale.scaleMode !== nextMode) game.scale.scaleMode = nextMode;
+  game.scale?.refresh();
+});
+
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    game.loop.sleep();
-    console.log('[PERF] Game sleeping');
-  } else {
-    game.loop.wake();
-    console.log('[PERF] Game waking');
-  }
+  if (document.hidden) { game.loop.sleep(); console.log("[PERF] Game sleeping"); }
+  else { game.loop.wake(); console.log("[PERF] Game waking"); }
 });
 
 // ----- SAFE AREA для TMA -----
@@ -393,6 +389,13 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
+  // Diagnostics at start
+  const c = this.game.canvas;
+  console.log("[Scale] inner:", window.innerWidth, window.innerHeight, "dpr:", window.devicePixelRatio);
+  console.log("[Scale] canvas:", c.width, c.height, "css:", c.style.width, c.style.height);
+  console.log("[Scale] parent:", c.parentElement?.clientWidth, c.parentElement?.clientHeight);
+  console.log("[Scale] mode:", getScaleMode() === Phaser.Scale.ENVELOP ? "ENVELOP" : "FIT");
+
   loadGame();
 
   // FIX C: safeRecalc only in non-CITY_CLEAN mode
@@ -403,10 +406,9 @@ function create() {
   const scene = this;
   window.gameScene = this; // для доступа из панелей
 
-  // Логические координаты (делим на DPR для одинаковой работы на всех устройствах)
-  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
-  const w = this.scale.width / dpr;   // 390
-  const h = this.scale.height / dpr;  // 844
+  // Логические координаты (теперь без деления на DPR - resolution в config)
+  const w = this.scale.width;
+  const h = this.scale.height;
   const centerX = w / 2;
   const centerY = h / 2;
 
@@ -422,16 +424,6 @@ function create() {
   fitBackground(cityBg, this);
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
-
-  // DEBUG: проверка качества рендера
-  console.log('[Render] DPR:', window.devicePixelRatio);
-  console.log('[Render] Config size:', this.game.config.width, 'x', this.game.config.height);
-  console.log('[Render] Canvas size:', this.game.canvas.width, 'x', this.game.canvas.height);
-  console.log('[Render] Antialias:', this.game.config.render?.antialias ?? 'N/A');
-  console.log('[Scale] mode:', this.scale.scaleMode, 'expected ENVELOP=', Phaser.Scale.ENVELOP);
-  console.log('[Scale] parent size:', this.scale.parentSize.width, 'x', this.scale.parentSize.height);
-  console.log('[Scale] display:', this.scale.displaySize.width, 'x', this.scale.displaySize.height);
-  console.log('[Scale] Canvas CSS:', this.game.canvas.clientWidth, 'x', this.game.canvas.clientHeight);
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
