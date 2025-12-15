@@ -1,6 +1,9 @@
 "use strict";
 console.log("GAMEJS BUILD: 2025-12-15-RETINA-FIX");
 
+const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
+window.UI_MODE = UI_MODE;
+
 // ============================================================
 //  game.js — ГЛАВНЫЙ ФАЙЛ ИГРЫ
 //  Все данные героя теперь в heroState.js
@@ -1614,6 +1617,92 @@ function create() {
   }
 
   updateHeroUI();
+
+  // === CITY_CLEAN MODE: скрыть весь UI ===
+  function hideAllUIExceptScene(scene) {
+    const hide = (obj) => {
+      if (!obj) return;
+      obj.setVisible(false);
+      if (obj.disableInteractive) obj.disableInteractive();
+    };
+
+    // === КОНТЕЙНЕРЫ UI (если есть) ===
+    hide(window.uiContainer);
+    hide(window.hudContainer);
+    hide(window.uiLayer);
+    hide(window.uiTopBar);
+    hide(window.uiBottomBar);
+
+    // === ВЕРХНИЙ HUD ===
+    hide(window.hpBarBg);
+    hide(window.hpBarFill);
+    hide(window.mpBarBg);
+    hide(window.mpBarFill);
+    hide(window.hpText);
+    hide(window.mpText);
+    hide(window.goldIcon);
+    hide(window.goldText);
+    hide(window.gemsIcon);
+    hide(window.gemsText);
+    hide(window.etherText);
+    hide(window.locationTitleText);
+    hide(window.locationText);
+    hide(window.topBtnInv);
+    hide(window.topBtnQuest);
+    hide(window.topBtnSettings);
+
+    // === НИЖНИЙ UI ===
+    hide(window.levelText);
+    hide(window.expText);
+    hide(window.expBar);
+    hide(window.uiBottomPanel);
+
+    // NPC зоны
+    hide(window.npcSmithRect);
+    hide(window.npcShopRect);
+    hide(window.npcArenaRect);
+    hide(window.npcDungeonRect);
+    hide(window.npcMapRect);
+    hide(window.npcMercRect);
+
+    // NPC кнопки из uiLayout
+    const btns = window.uiElements?.npcButtons;
+    if (Array.isArray(btns)) {
+      btns.forEach((b) => {
+        hide(b?.bg);
+        hide(b?.icon);
+        hide(b?.text);
+        hide(b);
+      });
+    }
+
+    // Все элементы из uiElements
+    const all = window.uiElements?.all;
+    if (Array.isArray(all)) all.forEach(hide);
+
+    // Legacy кнопки
+    [
+      'skill1Button', 'skill2Button',
+      'hpPotionButton', 'mpPotionButton',
+      'autoButton', 'modeButton',
+      'locationPrevButton', 'locationNextButton',
+      'inventoryButton', 'statsButton', 'questsButton'
+    ].forEach(k => hide(window[k]));
+
+    // === ОТКЛЮЧИТЬ ИНТЕРАКТИВ У ВСЕГО КРОМЕ ФОНА И ГЕРОЯ ===
+    scene.children.list.forEach((obj) => {
+      if (!obj) return;
+      if (obj === window.spineHero) return;
+      if (obj === window.cityBg) return;
+      if (obj.disableInteractive) obj.disableInteractive();
+    });
+
+    console.log('[UI] All UI hidden - CITY_CLEAN mode');
+  }
+
+  if (window.UI_MODE === "CITY_CLEAN") {
+    hideAllUIExceptScene(this);
+  }
 }
 
 // ================== UI-ХЕЛПЕРЫ ДЛЯ ТЕКСТА ==================
