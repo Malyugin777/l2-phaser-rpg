@@ -503,38 +503,65 @@ function create() {
       const bottomUI = createBottomUI(this);
       window.bottomUI = bottomUI;
 
-      // Keep UI fixed to camera
-      if (bottomUI?.setScrollFactor) bottomUI.setScrollFactor(0);
-      if (bottomUI?.list) bottomUI.list.forEach(o => o?.setScrollFactor?.(0));
-
-      // Ensure bottom UI elements are above panel (depth 110)
-      if (bottomUI?.setDepth) bottomUI.setDepth(110);
-      if (bottomUI?.list) bottomUI.list.forEach(o => o?.setDepth?.(110));
-
-      // Fallback: if createBottomUI returns plain object of elements
-      if (bottomUI && !bottomUI.list && typeof bottomUI === "object") {
-        Object.values(bottomUI).forEach(o => {
-          o?.setDepth?.(110);
-          o?.setScrollFactor?.(0);
-        });
-      }
-
-      // Move UI up if bottom is eaten by Telegram / browser UI
-      const vv = window.visualViewport;
-      if (vv) {
-        const safePx = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-        if (safePx > 0) {
-          const scaleY = this.scale.displaySize.height / this.scale.height;
-          const safeGame = safePx / (scaleY || 1);
-          if (bottomUI?.y != null) bottomUI.y -= safeGame;
-          if (bottomUI?.list) bottomUI.list.forEach(o => {
-            if (typeof o.y === "number") o.y -= safeGame;
-          });
-          console.log("[UI] safe bottom px:", safePx, "=> game:", safeGame.toFixed(2));
+      // 1) Set depth/scrollFactor FIRST (before bounds calculation)
+      [bottomUI.bottomPanel, bottomUI.fightBtn, ...(bottomUI.icons || [])].forEach(obj => {
+        if (obj) {
+          obj.setScrollFactor?.(0);
+          if (obj === bottomUI.bottomPanel) obj.setDepth?.(100);
+          else obj.setDepth?.(110);
         }
-      }
+      });
 
-      console.log("[UI] Bottom bar created in CITY_CLEAN");
+      // 2) Pin bottom UI into visible area
+      const pinBottomUI = () => {
+        const padding = 10;
+        const h = this.scale.height;  // 844
+
+        if (!bottomUI) return;
+
+        // Collect all display objects
+        const allObjects = [];
+        if (bottomUI.bottomPanel) allObjects.push(bottomUI.bottomPanel);
+        if (bottomUI.fightBtn) allObjects.push(bottomUI.fightBtn);
+        if (bottomUI.icons && Array.isArray(bottomUI.icons)) {
+          allObjects.push(...bottomUI.icons);
+        }
+
+        if (allObjects.length === 0) return;
+
+        // Find the lowest point
+        let maxBottom = -Infinity;
+        allObjects.forEach(obj => {
+          if (obj && obj.getBounds) {
+            const bounds = obj.getBounds();
+            if (bounds.bottom > maxBottom) maxBottom = bounds.bottom;
+          }
+        });
+
+        if (!isFinite(maxBottom)) return;
+
+        // If bottom overflows, shift everything up
+        const overflow = maxBottom - (h - padding);
+        if (overflow > 0) {
+          allObjects.forEach(obj => {
+            if (obj && typeof obj.y === "number") {
+              obj.y -= overflow;
+            }
+          });
+          console.log("[UI] pinBottomUI overflow:", overflow.toFixed(2), "=> shifted up");
+        } else {
+          console.log("[UI] pinBottomUI: no overflow, maxBottom:", maxBottom.toFixed(2), "h:", h);
+        }
+      };
+
+      pinBottomUI();
+      this.scale?.on?.("resize", pinBottomUI);
+
+      console.log("[UI] Bottom bar elements:",
+        "panel:", !!bottomUI.bottomPanel,
+        "btn:", !!bottomUI.fightBtn,
+        "icons:", bottomUI.icons?.length || 0
+      );
     } else {
       console.warn("[UI] createBottomUI not found");
     }
