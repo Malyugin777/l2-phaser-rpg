@@ -10,12 +10,12 @@
     <link rel="stylesheet" href="preEntry.css">
 
     <style>
-      html,
-      body {
+      html, body {
         margin: 0;
         padding: 0;
-        background: #0a0a12;
         height: 100%;
+        background: #0a0a12;
+        overflow: hidden;
       }
 
       body {
@@ -27,17 +27,14 @@
       #game-container {
         width: 100vw;
         height: 100vh;
-        max-width: 430px;
-        margin: 0 auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        max-width: none;
+        margin: 0;
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: none;
         background: #0a0a12;
         overflow: hidden;
-        position: fixed;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
       }
 
       canvas {
