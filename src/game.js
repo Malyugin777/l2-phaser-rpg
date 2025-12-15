@@ -103,16 +103,14 @@ let npcDungeonRect = null,
   npcDungeonText = null;
 
 // ----- PHASER КОНФИГ (TMA портретный режим) -----
-const _dpr = window.devicePixelRatio || 1;
+const _dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
 
 const config = {
   type: Phaser.AUTO,
-  width: 390,
-  height: 844,
+  width: 390 * _dpr,
+  height: 844 * _dpr,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
-
-  resolution: _dpr, // ретина через resolution
 
   render: {
     antialias: true,
@@ -122,7 +120,8 @@ const config = {
 
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    zoom: 1 / _dpr
   },
 
   scene: {
@@ -438,8 +437,9 @@ function create() {
   // DEBUG: проверка качества рендера
   console.log('[Render] DPR:', window.devicePixelRatio);
   console.log('[Render] Config size:', this.game.config.width, 'x', this.game.config.height);
-  console.log('[Render] Renderer resolution:', this.game.renderer?.config?.resolution);
   console.log('[Render] Canvas size:', this.game.canvas.width, 'x', this.game.canvas.height);
+  console.log('[Render] Canvas CSS size:', this.game.canvas.clientWidth, 'x', this.game.canvas.clientHeight);
+  console.log('[Render] Scale zoom:', this.scale.zoom);
   console.log('[Render] Antialias:', this.game.config.render?.antialias ?? 'N/A');
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
