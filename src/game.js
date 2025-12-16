@@ -523,7 +523,7 @@ function create() {
       const bottomUI = createBottomUI(this);
       window.bottomUI = bottomUI;
 
-      // 1) Set depth/scrollFactor FIRST (before bounds calculation)
+      // 1) Set depth/scrollFactor FIRST
       [bottomUI.bottomPanel, bottomUI.fightBtn, ...(bottomUI.icons || [])].forEach(obj => {
         if (obj) {
           obj.setScrollFactor?.(0);
@@ -532,50 +532,95 @@ function create() {
         }
       });
 
-      // 2) Pin bottom UI into visible area
-      const pinBottomUI = () => {
-        const padding = 10;
-        const h = this.scale.height;  // 844
+      // 2) getSafeRect — вычисляет видимую область в game-координатах
+      const getSafeRect = () => {
+        const s = this.scale;
+        const parent = this.game.canvas.parentElement;
 
-        if (!bottomUI) return;
+        const cssPerGameY = s.displaySize.height / s.height || 1;
+        const cssPerGameX = s.displaySize.width / s.width || 1;
 
-        // Collect all display objects
-        const allObjects = [];
-        if (bottomUI.bottomPanel) allObjects.push(bottomUI.bottomPanel);
-        if (bottomUI.fightBtn) allObjects.push(bottomUI.fightBtn);
-        if (bottomUI.icons && Array.isArray(bottomUI.icons)) {
-          allObjects.push(...bottomUI.icons);
-        }
+        const vhCss = parent?.clientHeight || window.innerHeight || 1;
+        const vwCss = parent?.clientWidth || window.innerWidth || 1;
 
-        if (allObjects.length === 0) return;
+        const visibleH = vhCss / cssPerGameY;
+        const visibleW = vwCss / cssPerGameX;
 
-        // Find the lowest point
-        let maxBottom = -Infinity;
-        allObjects.forEach(obj => {
-          if (obj && obj.getBounds) {
-            const bounds = obj.getBounds();
-            if (bounds.bottom > maxBottom) maxBottom = bounds.bottom;
-          }
-        });
+        const cropY = Math.max(0, (s.height - visibleH) / 2);
+        const cropX = Math.max(0, (s.width - visibleW) / 2);
 
-        if (!isFinite(maxBottom)) return;
-
-        // If bottom overflows, shift everything up
-        const overflow = maxBottom - (h - padding);
-        if (overflow > 0) {
-          allObjects.forEach(obj => {
-            if (obj && typeof obj.y === "number") {
-              obj.y -= overflow;
-            }
-          });
-          console.log("[UI] pinBottomUI overflow:", overflow.toFixed(2), "=> shifted up");
-        } else {
-          console.log("[UI] pinBottomUI: no overflow, maxBottom:", maxBottom.toFixed(2), "h:", h);
-        }
+        return {
+          left: cropX,
+          right: s.width - cropX,
+          top: cropY,
+          bottom: s.height - cropY,
+          width: s.width - cropX * 2,
+          height: s.height - cropY * 2,
+          centerX: s.width / 2,
+          centerY: s.height / 2
+        };
       };
 
-      pinBottomUI();
-      this.scale?.on?.("resize", pinBottomUI);
+      // 3) layoutUI — позиционирует элементы в видимой области
+      const layoutUI = () => {
+        const safe = getSafeRect();
+        const pad = 12;
+
+        if (!window.bottomUI) return;
+
+        const { bottomPanel, fightBtn, icons } = window.bottomUI;
+
+        // === ПАНЕЛЬ ===
+        if (bottomPanel) {
+          bottomPanel.setOrigin(0.5, 1);
+          bottomPanel.x = safe.centerX;
+          bottomPanel.y = safe.bottom - pad;
+
+          const baseW = bottomPanel.width || 1;
+          const panelScale = Math.min(1, safe.width / baseW);
+          bottomPanel.setScale(panelScale);
+        }
+
+        const panelH = bottomPanel ? bottomPanel.displayHeight : 100;
+        const panelTop = safe.bottom - pad - panelH;
+        const btnY = panelTop + panelH * 0.55;
+
+        // === КНОПКА БОЯ ===
+        if (fightBtn) {
+          fightBtn.setOrigin(0.5, 0.5);
+          fightBtn.x = safe.right - 70;
+          fightBtn.y = btnY;
+        }
+
+        // === ИКОНКИ ===
+        if (icons && icons.length > 0) {
+          const startX = safe.left + 50;
+          const endX = Math.max(startX, safe.centerX - 30);
+          const step = (endX - startX) / Math.max(1, icons.length - 1);
+
+          icons.forEach((icon, i) => {
+            if (icon) {
+              icon.setOrigin(0.5, 0.5);
+              icon.x = startX + step * i;
+              icon.y = btnY;
+            }
+          });
+        }
+
+        console.log("[UI] layoutUI:",
+          "bottom:", safe.bottom.toFixed(0),
+          "panelH:", panelH.toFixed(0),
+          "btnY:", btnY.toFixed(0)
+        );
+      };
+
+      layoutUI();
+
+      if (!window.__uiLayoutBound) {
+        this.scale.on("resize", layoutUI);
+        window.visualViewport?.addEventListener("resize", layoutUI);
+        window.__uiLayoutBound = true;
+      }
 
       console.log("[UI] Bottom bar elements:",
         "panel:", !!bottomUI.bottomPanel,
