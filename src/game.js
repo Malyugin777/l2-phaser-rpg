@@ -76,8 +76,28 @@ const _isSmall = window.matchMedia("(max-width: 520px)").matches;
 const isMobile = _isCoarse || _isSmall;
 
 const getScaleMode = () => {
-  const portrait = window.innerHeight >= window.innerWidth;
-  return (isMobile && portrait) ? Phaser.Scale.ENVELOP : Phaser.Scale.FIT;
+  const parent = document.getElementById("game-container");
+  const pw = parent?.clientWidth ?? window.innerWidth;
+  const ph = parent?.clientHeight ?? window.innerHeight;
+
+  // Защита от деления на 0 (до layout)
+  if (!ph) return Phaser.Scale.FIT;
+
+  const aspect = pw / ph;
+  const baseAspect = BASE_W / BASE_H; // ~0.462
+  const tooWide = aspect > baseAspect * 1.15;
+
+  const result = (isMobile && !tooWide) ? Phaser.Scale.ENVELOP : Phaser.Scale.FIT;
+
+  console.log(
+    "[Scale] parent:", pw, ph,
+    "aspect:", aspect.toFixed(3),
+    "baseAspect:", baseAspect.toFixed(3),
+    "tooWide:", tooWide,
+    "mode:", result === Phaser.Scale.ENVELOP ? "ENVELOP" : "FIT"
+  );
+
+  return result;
 };
 
 const RESOLUTION = isMobile ? (window.devicePixelRatio || 1) : 1;
