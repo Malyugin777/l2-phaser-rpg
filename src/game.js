@@ -435,6 +435,15 @@ function create() {
   console.log("[Scale] parent:", c.parentElement?.clientWidth, c.parentElement?.clientHeight);
   console.log("[Scale] mode:", getScaleMode() === Phaser.Scale.ENVELOP ? "ENVELOP" : "FIT");
 
+  // DPI diagnostics
+  const rect = c.getBoundingClientRect();
+  console.log("[DPI] dpr", window.devicePixelRatio);
+  console.log("[DPI] backing", c.width, c.height, "css", rect.width.toFixed(2), rect.height.toFixed(2));
+  console.log("[DPI] config.resolution", this.game.config?.resolution);
+  console.log("[DPI] renderer.resolution", this.game.renderer?.resolution);
+  console.log("[DPI] antialias", this.game.config?.render?.antialias, "pixelArt", this.game.config?.render?.pixelArt, "roundPixels", this.game.config?.render?.roundPixels);
+  console.log("[DPI] isMobile", isMobile, "RESOLUTION const", RESOLUTION);
+
   loadGame();
 
   // FIX C: safeRecalc only in non-CITY_CLEAN mode
@@ -561,57 +570,63 @@ function create() {
         };
       };
 
-      // 3) layoutUI — позиционирует элементы в видимой области
+      // 3) layoutUI — позиционирует элементы от bounds панели
       const layoutUI = () => {
         const safe = getSafeRect();
         const pad = 12;
 
-        if (!window.bottomUI) return;
+        const ui = window.bottomUI;
+        if (!ui) return;
 
-        const { bottomPanel, fightBtn, icons } = window.bottomUI;
+        const { bottomPanel, fightBtn, icons } = ui;
 
-        // === ПАНЕЛЬ ===
+        // === PANEL ===
         if (bottomPanel) {
           bottomPanel.setOrigin(0.5, 1);
           bottomPanel.x = safe.centerX;
           bottomPanel.y = safe.bottom - pad;
 
           const baseW = bottomPanel.width || 1;
-          const panelScale = Math.min(1, safe.width / baseW);
-          bottomPanel.setScale(panelScale);
+          const scale = Math.min(1, safe.width / baseW);
+          bottomPanel.setScale(scale);
         }
 
-        const panelH = bottomPanel ? bottomPanel.displayHeight : 100;
-        const panelTop = safe.bottom - pad - panelH;
-        const btnY = panelTop + panelH * 0.55;
+        // Получаем реальные границы панели после scale
+        const panelB = bottomPanel?.getBounds?.();
+        const panelTop = panelB ? panelB.top : (safe.bottom - 120);
+        const panelMidY = panelB ? (panelB.top + panelB.bottom) / 2 : (safe.bottom - 60);
 
-        // === КНОПКА БОЯ ===
-        if (fightBtn) {
+        // === FIGHT BTN (справа ВНУТРИ панели) ===
+        if (fightBtn && panelB) {
+          const rightPad = 60;  // отступ от правого края панели
           fightBtn.setOrigin(0.5, 0.5);
-          fightBtn.x = safe.right - 70;
-          fightBtn.y = btnY;
+          fightBtn.x = panelB.right - rightPad;
+          fightBtn.y = panelMidY;
         }
 
-        // === ИКОНКИ ===
-        if (icons && icons.length > 0) {
-          const startX = safe.left + 50;
-          const endX = Math.max(startX, safe.centerX - 30);
-          const step = (endX - startX) / Math.max(1, icons.length - 1);
+        // === ICONS (слева до fightBtn) ===
+        if (icons?.length && panelB) {
+          const leftPad = 55;      // отступ от левого края панели
+          const gapToFight = 120;  // резерв под кнопку справа
+          const startX = panelB.left + leftPad;
+          const endX = (fightBtn?.x ?? panelB.right) - gapToFight;
 
-          icons.forEach((icon, i) => {
-            if (icon) {
-              icon.setOrigin(0.5, 0.5);
-              icon.x = startX + step * i;
-              icon.y = btnY;
-            }
+          const usable = Math.max(0, endX - startX);
+          const step = usable / Math.max(1, icons.length - 1);
+
+          icons.forEach((ic, i) => {
+            if (!ic) return;
+            ic.setOrigin(0.5, 0.5);
+            ic.x = startX + step * i;
+            ic.y = panelMidY;
           });
         }
 
-        console.log("[UI] layoutUI:",
-          "bottom:", safe.bottom.toFixed(0),
-          "panelH:", panelH.toFixed(0),
-          "btnY:", btnY.toFixed(0)
-        );
+        console.log("[UI] layoutUI", {
+          safeW: safe.width.toFixed(0),
+          panelW: panelB ? (panelB.right - panelB.left).toFixed(0) : "na",
+          panelMidY: panelMidY.toFixed(0),
+        });
       };
 
       layoutUI();
