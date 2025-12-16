@@ -453,9 +453,38 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
-  // Canvas reference
+  // Canvas reference (with null check)
   const c = this.game.canvas;
+  if (!c) {
+    console.error("[FATAL] canvas is null/undefined in create()");
+    return;
+  }
   const r = c.getBoundingClientRect();
+
+  // === DIAGNOSTIC LOGS (A) ===
+  console.log("[DPI CHECK]",
+    "dpr", window.devicePixelRatio,
+    "config.resolution", this.game.config?.resolution,
+    "renderer.resolution", this.game.renderer?.resolution,
+    "canvas backing", c.width, c.height,
+    "canvas css", r.width.toFixed(1), r.height.toFixed(1),
+    "scale", { w: this.scale.width, h: this.scale.height, dw: this.scale.displaySize.width, dh: this.scale.displaySize.height }
+  );
+
+  // === DIAGNOSTIC LOGS (RENDERER) ===
+  console.log("[RENDERER]", this.game.renderer?.type, this.game.renderer);
+
+  // === DIAGNOSTIC LOGS (SCALE MODE) ===
+  console.log("[SCALE MODE]", this.scale.scaleMode);
+
+  // === DIAGNOSTIC LOGS (VIEWPORT) ===
+  const p = c.parentElement;
+  const vv = window.visualViewport;
+  console.log("[VIEWPORT]",
+    "parent", p?.clientWidth, p?.clientHeight,
+    "inner", window.innerWidth, window.innerHeight,
+    "vv", vv ? [vv.width, vv.height, vv.offsetTop] : null
+  );
 
   // Force CSS smoothing
   c.style.imageRendering = "auto";
@@ -467,18 +496,6 @@ function create() {
   } catch (e) {
     console.warn("[DPI] setDefaultFilter not available", e);
   }
-
-  // DPI diagnostics
-  console.log(
-    "[DPI]",
-    "dpr", window.devicePixelRatio,
-    "isMobile", isMobile,
-    "desiredRes", RESOLUTION,
-    "backing", c.width, c.height,
-    "css", r.width.toFixed(1), r.height.toFixed(1),
-    "configRes", this.game.config?.resolution,
-    "rendererRes", this.game.renderer?.resolution
-  );
 
   loadGame();
 
