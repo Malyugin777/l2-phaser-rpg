@@ -115,8 +115,13 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// GPU auto-guard: prevent render surface blow-up
+// GPU auto-guard: prevent render surface blow-up (DESKTOP ONLY)
 setTimeout(() => {
+  if (isMobile) {
+    console.log("[GPU] skip guard on mobile");
+    return;
+  }
+
   const c = game.canvas;
   if (!c) return;
 
@@ -125,19 +130,10 @@ setTimeout(() => {
 
   if (backing > maxSafe) {
     console.warn("[GPU] Too large backing:", c.width, "x", c.height, "=> forcing resolution=1");
-
-    // Force Phaser resolution
     game.config.resolution = 1;
     if (game.renderer) game.renderer.resolution = 1;
-
-    // Resize renderer to current game size (keep logical size)
-    game.renderer?.resize?.(game.scale.gameSize.width, game.scale.gameSize.height);
-
-    // Refresh scale -> rebuild canvas sizing
     game.scale?.refresh();
-
-    console.log("[GPU] Forced resolution=1 + refresh");
-    console.log("[GPU] after guard backing:", game.canvas.width, game.canvas.height);
+    console.log("[GPU] after guard backing", c.width, c.height);
   } else {
     console.log("[GPU] Render surface OK:", c.width, "x", c.height);
   }
@@ -442,14 +438,16 @@ function create() {
   console.log("[Scale] parent:", c.parentElement?.clientWidth, c.parentElement?.clientHeight);
   console.log("[Scale] mode:", getScaleMode() === Phaser.Scale.ENVELOP ? "ENVELOP" : "FIT");
 
-  // DPI diagnostics
-  const rect = c.getBoundingClientRect();
-  console.log("[DPI] dpr", window.devicePixelRatio);
-  console.log("[DPI] backing", c.width, c.height, "css", rect.width.toFixed(2), rect.height.toFixed(2));
-  console.log("[DPI] config.resolution", this.game.config?.resolution);
-  console.log("[DPI] renderer.resolution", this.game.renderer?.resolution);
-  console.log("[DPI] antialias", this.game.config?.render?.antialias, "pixelArt", this.game.config?.render?.pixelArt, "roundPixels", this.game.config?.render?.roundPixels);
-  console.log("[DPI] isMobile", isMobile, "RESOLUTION const", RESOLUTION);
+  // DPI diagnostics (compact)
+  const r = c.getBoundingClientRect();
+  console.log(
+    "[DPI]",
+    "dpr", window.devicePixelRatio,
+    "backing", c.width, c.height,
+    "css", r.width.toFixed(1), r.height.toFixed(1),
+    "configRes", this.game.config?.resolution,
+    "rendererRes", this.game.renderer?.resolution
+  );
 
   loadGame();
 
@@ -578,9 +576,30 @@ function create() {
       };
 
       // 3) layoutUI — позиционирует элементы от bounds панели
+      const scene = this;
       const layoutUI = () => {
         const safe = getSafeRect();
-        const pad = 20;
+
+        // Base pad
+        const basePad = 10;
+
+        // Extra safe-bottom (iOS/Telegram bottom chrome)
+        const vv = window.visualViewport;
+        const eatenCss = vv ? Math.max(0, (window.innerHeight - vv.height - vv.offsetTop)) : 0;
+
+        // Convert CSS px -> game px
+        const s = scene.scale;
+        const cssPerGameY = (s.displaySize.height / s.height) || 1;
+        const extraPadGame = eatenCss / cssPerGameY;
+
+        // Final pad
+        const pad = basePad + extraPadGame;
+
+        console.log("[UI] safeBottom", {
+          eatenCss: Math.round(eatenCss),
+          extraPadGame: extraPadGame.toFixed(1),
+          pad: pad.toFixed(1)
+        });
 
         const ui = window.bottomUI;
         if (!ui) return;
