@@ -76,28 +76,7 @@ const _isSmall = window.matchMedia("(max-width: 520px)").matches;
 const isMobile = _isCoarse || _isSmall;
 
 const getScaleMode = () => {
-  const parent = document.getElementById("game-container");
-  const pw = parent?.clientWidth ?? window.innerWidth;
-  const ph = parent?.clientHeight ?? window.innerHeight;
-
-  // Защита от деления на 0 (до layout)
-  if (!ph) return Phaser.Scale.FIT;
-
-  const aspect = pw / ph;
-  const baseAspect = BASE_W / BASE_H; // ~0.462
-  const tooWide = aspect > baseAspect * 1.15;
-
-  const result = (isMobile && !tooWide) ? Phaser.Scale.ENVELOP : Phaser.Scale.FIT;
-
-  console.log(
-    "[Scale] parent:", pw, ph,
-    "aspect:", aspect.toFixed(3),
-    "baseAspect:", baseAspect.toFixed(3),
-    "tooWide:", tooWide,
-    "mode:", result === Phaser.Scale.ENVELOP ? "ENVELOP" : "FIT"
-  );
-
-  return result;
+  return Phaser.Scale.ENVELOP;
 };
 
 const RESOLUTION = isMobile ? (window.devicePixelRatio || 1) : 1;
@@ -135,6 +114,34 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+// GPU auto-guard: prevent render surface blow-up
+setTimeout(() => {
+  const c = game.canvas;
+  if (!c) return;
+
+  const backing = c.width * c.height;
+  const maxSafe = 2000 * 2000;
+
+  if (backing > maxSafe) {
+    console.warn("[GPU] Too large backing:", c.width, "x", c.height, "=> forcing resolution=1");
+
+    // Force Phaser resolution
+    game.config.resolution = 1;
+    if (game.renderer) game.renderer.resolution = 1;
+
+    // Resize renderer to current game size (keep logical size)
+    game.renderer?.resize?.(game.scale.gameSize.width, game.scale.gameSize.height);
+
+    // Refresh scale -> rebuild canvas sizing
+    game.scale?.refresh();
+
+    console.log("[GPU] Forced resolution=1 + refresh");
+    console.log("[GPU] after guard backing:", game.canvas.width, game.canvas.height);
+  } else {
+    console.log("[GPU] Render surface OK:", c.width, "x", c.height);
+  }
+}, 200);
 
 window.addEventListener("resize", () => {
   syncAppHeight();
@@ -573,7 +580,7 @@ function create() {
       // 3) layoutUI — позиционирует элементы от bounds панели
       const layoutUI = () => {
         const safe = getSafeRect();
-        const pad = 12;
+        const pad = 20;
 
         const ui = window.bottomUI;
         if (!ui) return;
@@ -593,12 +600,11 @@ function create() {
 
         // Получаем реальные границы панели после scale
         const panelB = bottomPanel?.getBounds?.();
-        const panelTop = panelB ? panelB.top : (safe.bottom - 120);
         const panelMidY = panelB ? (panelB.top + panelB.bottom) / 2 : (safe.bottom - 60);
 
         // === FIGHT BTN (справа ВНУТРИ панели) ===
         if (fightBtn && panelB) {
-          const rightPad = 60;  // отступ от правого края панели
+          const rightPad = 80;
           fightBtn.setOrigin(0.5, 0.5);
           fightBtn.x = panelB.right - rightPad;
           fightBtn.y = panelMidY;
@@ -606,10 +612,10 @@ function create() {
 
         // === ICONS (слева до fightBtn) ===
         if (icons?.length && panelB) {
-          const leftPad = 55;      // отступ от левого края панели
-          const gapToFight = 120;  // резерв под кнопку справа
+          const leftPad = 70;
+          const gapToFight = 140;
           const startX = panelB.left + leftPad;
-          const endX = (fightBtn?.x ?? panelB.right) - gapToFight;
+          const endX = Math.max(startX, (fightBtn?.x ?? panelB.right) - gapToFight);
 
           const usable = Math.max(0, endX - startX);
           const step = usable / Math.max(1, icons.length - 1);
@@ -622,11 +628,7 @@ function create() {
           });
         }
 
-        console.log("[UI] layoutUI", {
-          safeW: safe.width.toFixed(0),
-          panelW: panelB ? (panelB.right - panelB.left).toFixed(0) : "na",
-          panelMidY: panelMidY.toFixed(0),
-        });
+        console.log("[UI] layoutUI done");
       };
 
       layoutUI();
