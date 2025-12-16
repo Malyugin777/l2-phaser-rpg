@@ -71,9 +71,16 @@ let selectedClassId = null;
 const BASE_W = 390;
 const BASE_H = 844;
 
+// Telegram-aware isMobile detection
+const tg = window.Telegram?.WebApp;
+const tgPlatform = tg?.platform;
+const isTgMobile = tgPlatform === "ios" || tgPlatform === "android";
+
 const _isCoarse = window.matchMedia("(pointer: coarse)").matches;
 const _isSmall = window.matchMedia("(max-width: 520px)").matches;
-const isMobile = _isCoarse || _isSmall;
+
+const isMobile = isTgMobile || _isCoarse || _isSmall;
+console.log("[ENV]", { tgPlatform, isTgMobile, _isCoarse, _isSmall, isMobile });
 
 const getScaleMode = () => {
   return Phaser.Scale.ENVELOP;
@@ -107,13 +114,28 @@ const config = {
   parent: "game-container",
   backgroundColor: 0x0a0a12,
   fps: { target: 60, forceSetTimeOut: true },
-  render: { antialias: true, pixelArt: false, roundPixels: false },
+  render: { antialias: true, antialiasGL: true, pixelArt: false, roundPixels: false },
   scale: { mode: getScaleMode(), autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: { preload, create, update },
   plugins: { scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }] }
 };
 
 const game = new Phaser.Game(config);
+
+// Retina backing + runtime fallback
+function applyResolutionSafe(game, res) {
+  try {
+    try { game.config.resolution = res; } catch (_) {}
+    try { if (game.renderer && "resolution" in game.renderer) game.renderer.resolution = res; } catch (_) {}
+    if (game?.renderer?.resize) {
+      try { game.renderer.resize(BASE_W, BASE_H, res); } catch (_) {}
+    }
+  } catch (_) {}
+  game.scale?.refresh();
+}
+
+// Delay to ensure renderer is ready
+setTimeout(() => applyResolutionSafe(game, RESOLUTION), 0);
 
 // GPU auto-guard: prevent render surface blow-up (DESKTOP ONLY)
 setTimeout(() => {
@@ -431,18 +453,27 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
-  // Diagnostics at start
+  // Canvas reference
   const c = this.game.canvas;
-  console.log("[Scale] inner:", window.innerWidth, window.innerHeight, "dpr:", window.devicePixelRatio);
-  console.log("[Scale] canvas:", c.width, c.height, "css:", c.style.width, c.style.height);
-  console.log("[Scale] parent:", c.parentElement?.clientWidth, c.parentElement?.clientHeight);
-  console.log("[Scale] mode:", getScaleMode() === Phaser.Scale.ENVELOP ? "ENVELOP" : "FIT");
-
-  // DPI diagnostics (compact)
   const r = c.getBoundingClientRect();
+
+  // Force CSS smoothing
+  c.style.imageRendering = "auto";
+  c.style.setProperty("image-rendering", "auto");
+
+  // Force LINEAR texture filtering
+  try {
+    this.textures.setDefaultFilter(Phaser.Textures.FilterMode.LINEAR);
+  } catch (e) {
+    console.warn("[DPI] setDefaultFilter not available", e);
+  }
+
+  // DPI diagnostics
   console.log(
     "[DPI]",
     "dpr", window.devicePixelRatio,
+    "isMobile", isMobile,
+    "desiredRes", RESOLUTION,
     "backing", c.width, c.height,
     "css", r.width.toFixed(1), r.height.toFixed(1),
     "configRes", this.game.config?.resolution,
@@ -581,7 +612,7 @@ function create() {
         const safe = getSafeRect();
 
         // Base pad
-        const basePad = 10;
+        const basePad = 8;
 
         // Extra safe-bottom (iOS/Telegram bottom chrome)
         const vv = window.visualViewport;
