@@ -937,6 +937,15 @@ function create() {
         p.setScale(p.scaleX * 1.05, p.scaleY * 1.05);
       }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale += 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
+        const btn = window.bottomUI.fightBtn;
+        btn.setScale(btn.scaleX * 1.05, btn.scaleY * 1.05);
+      }
+      else if (selectedElement.startsWith('icon')) {
+        const idx = parseInt(selectedElement.replace('icon', ''));
+        const icon = window.bottomUI?.icons?.[idx];
+        if (icon) icon.setScale(icon.scaleX * 1.05, icon.scaleY * 1.05);
+      }
       updateOverlay();
     });
     this.input.keyboard.on('keydown-Q', () => {
@@ -947,6 +956,15 @@ function create() {
         p.setScale(p.scaleX * 0.95, p.scaleY * 0.95);
       }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale -= 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
+        const btn = window.bottomUI.fightBtn;
+        btn.setScale(btn.scaleX * 0.95, btn.scaleY * 0.95);
+      }
+      else if (selectedElement.startsWith('icon')) {
+        const idx = parseInt(selectedElement.replace('icon', ''));
+        const icon = window.bottomUI?.icons?.[idx];
+        if (icon) icon.setScale(icon.scaleX * 0.95, icon.scaleY * 0.95);
+      }
       updateOverlay();
     });
 
