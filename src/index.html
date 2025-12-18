@@ -144,5 +144,54 @@
 <!-- MAIN -->
 <script src="game.js"></script>
 
+<!-- Debug overlay - visible on screen -->
+<div id="debug-overlay" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: red;
+  color: white;
+  font-family: monospace;
+  font-size: 10px;
+  padding: 5px;
+  z-index: 999999;
+  text-align: center;
+  pointer-events: none;
+">LOADING DEBUG...</div>
+
+<script>
+  const debugEl = document.getElementById('debug-overlay');
+  const logs = [];
+
+  function debugLog(msg) {
+    logs.push(msg);
+    if (logs.length > 8) logs.shift();
+    debugEl.innerHTML = logs.join(' | ');
+    console.log(msg);
+  }
+
+  const tg = window.Telegram?.WebApp;
+  const plat = tg?.platform || 'web';
+  const dpr = (window.devicePixelRatio || 1).toFixed(1);
+
+  debugLog('P:' + plat);
+  debugLog('DPR:' + dpr);
+  debugLog('SCR:' + window.innerWidth + 'x' + window.innerHeight);
+
+  setTimeout(() => {
+    const c = document.querySelector('canvas');
+    if (c) {
+      debugLog('BACK:' + c.width + 'x' + c.height);
+      const r = c.getBoundingClientRect();
+      debugLog('CSS:' + r.width.toFixed(0) + 'x' + r.height.toFixed(0));
+    }
+  }, 2000);
+</script>
+
+<!-- Eruda console -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+
 </body>
 </html>
