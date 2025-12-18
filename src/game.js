@@ -71,6 +71,9 @@ let selectedClassId = null;
 const BASE_W = 390;
 const BASE_H = 844;
 
+const dprCap = Math.min(window.devicePixelRatio || 1, 2);
+console.log("[DPI] dprCap", dprCap);
+
 // Telegram-aware isMobile detection
 const tg = window.Telegram?.WebApp;
 const tgPlatform = tg?.platform;
@@ -663,16 +666,19 @@ function create() {
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
 
-  // Apply resampled texture to city background (match canvas backing)
-  const canvasW = this.game.canvas.width;
-  const canvasH = this.game.canvas.height;
-  const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", canvasW, canvasH);
+  // Resample in DEVICE PIXELS
+  const targetWpx = Math.round(cityBg.displayWidth * dprCap);
+  const targetHpx = Math.round(cityBg.displayHeight * dprCap);
+  console.log("[RESAMPLE] target device px:", targetWpx, targetHpx);
+
+  const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", targetWpx, targetHpx);
   if (rsKey) {
     cityBg.setTexture(rsKey);
-    cityBg.setDisplaySize(canvasW, canvasH);
-    cityBg.setPosition(canvasW / 2, canvasH / 2);
-
-    console.log("[RESAMPLE] applied to cityBg", canvasW, canvasH);
+    cityBg.setScale(1 / dprCap);
+    cityBg.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
+    cityBg.x = Math.round(cityBg.x);
+    cityBg.y = Math.round(cityBg.y);
+    console.log("[RESAMPLE] applied scale:", cityBg.scaleX.toFixed(3));
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
