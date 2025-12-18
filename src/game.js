@@ -4,6 +4,24 @@ console.log("GAMEJS BUILD: 2025-12-15-CITY-CLEAN-HOTFIX");
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
 
+// === TUNE MODE ===
+const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
+const TUNE_KEY = 'TUNE_SETTINGS';
+
+function getTuneSettings() {
+  const defaults = { bgZoom: 1.0, bgPanX: 0, bgPanY: 0, uiYOffset: 0 };
+  if (!TUNE_ENABLED) return defaults;
+  try {
+    const saved = localStorage.getItem(TUNE_KEY);
+    return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
+  } catch (e) { return defaults; }
+}
+
+function saveTuneSettings(settings) {
+  localStorage.setItem(TUNE_KEY, JSON.stringify(settings));
+  console.log('[TUNE] Saved:', JSON.stringify(settings));
+}
+
 // ============================================================
 //  game.js — ГЛАВНЫЙ ФАЙЛ ИГРЫ
 //  Все данные героя теперь в heroState.js
@@ -698,6 +716,69 @@ function create() {
     console.log("[BG] step4 - after resample scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
     console.log("[BG] step4 - display:", cityBg.displayWidth.toFixed(1), "x", cityBg.displayHeight.toFixed(1));
     console.log("[BG] step4 - ratio:", (cityBg.displayWidth / cityBg.displayHeight).toFixed(4));
+  }
+
+  // === TUNE MODE CONTROLS ===
+  if (TUNE_ENABLED) {
+    const tune = getTuneSettings();
+    const baseScale = cityBg.scaleX;
+
+    // Overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'tune-overlay';
+    overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font:12px monospace;z-index:99999;border-radius:5px;';
+    document.body.appendChild(overlay);
+
+    const updateOverlay = () => {
+      overlay.innerHTML = `
+        <b>TUNE MODE</b><br>
+        bgZoom: ${tune.bgZoom.toFixed(2)}<br>
+        bgPanX: ${tune.bgPanX}<br>
+        bgPanY: ${tune.bgPanY}<br>
+        uiY: ${tune.uiYOffset}<br>
+        <button onclick="window.tuneSave()">Save</button>
+        <button onclick="window.tuneReset()">Reset</button>
+        <button onclick="window.tuneCopy()">Copy</button>
+      `;
+    };
+
+    const applyTune = () => {
+      cityBg.setScale(baseScale * tune.bgZoom);
+      cityBg.x = Math.round(this.cameras.main.centerX + tune.bgPanX);
+      cityBg.y = Math.round(this.cameras.main.centerY + tune.bgPanY);
+      updateOverlay();
+    };
+
+    window.tuneSave = () => saveTuneSettings(tune);
+    window.tuneReset = () => { Object.assign(tune, {bgZoom:1,bgPanX:0,bgPanY:0,uiYOffset:0}); applyTune(); };
+    window.tuneCopy = () => {
+      const json = JSON.stringify(tune);
+      navigator.clipboard?.writeText(json);
+      console.log('[TUNE] Copy:', json);
+    };
+
+    // Drag to pan
+    let dragging = false, startX, startY;
+    this.input.on('pointerdown', (p) => { dragging = true; startX = p.x; startY = p.y; });
+    this.input.on('pointermove', (p) => {
+      if (!dragging) return;
+      tune.bgPanX += Math.round(p.x - startX);
+      tune.bgPanY += Math.round(p.y - startY);
+      startX = p.x; startY = p.y;
+      applyTune();
+    });
+    this.input.on('pointerup', () => { dragging = false; });
+
+    // Arrow keys for fine tune
+    this.input.keyboard.on('keydown-UP', () => { tune.bgPanY -= 5; applyTune(); });
+    this.input.keyboard.on('keydown-DOWN', () => { tune.bgPanY += 5; applyTune(); });
+    this.input.keyboard.on('keydown-LEFT', () => { tune.bgPanX -= 5; applyTune(); });
+    this.input.keyboard.on('keydown-RIGHT', () => { tune.bgPanX += 5; applyTune(); });
+    this.input.keyboard.on('keydown-PLUS', () => { tune.bgZoom += 0.05; applyTune(); });
+    this.input.keyboard.on('keydown-MINUS', () => { tune.bgZoom -= 0.05; applyTune(); });
+
+    applyTune();
+    console.log('[TUNE] Mode enabled. Drag to pan, arrows for fine tune, +/- for zoom');
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
