@@ -903,6 +903,10 @@ function create() {
       "talkingisland_main",   // background
       "ui_bottom",            // bottom panel
       "ui_btn_fight",         // fight button
+      "icon_store",           // icons
+      "icon_anvil",
+      "icon_helmet",
+      "icon_map",
     ];
 
     smoothKeys.forEach((k) => {
@@ -1158,27 +1162,30 @@ function createBottomUI(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
 
-  // Панель — масштаб под ширину экрана
+  // Панель с фиксированной высотой
   const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom')
     .setOrigin(0.5, 1)
     .setDepth(100)
     .setScrollFactor(0);
 
-  // UNIFORM scale for retina smoothness
-  const panelScale = w / 1408;  // ≈ 0.277
+  // FIXED-HEIGHT uniform scale (UI height independent of screen width)
+  const TARGET_UI_H = 96;  // fixed UI height in game units
+  const panelScale = TARGET_UI_H / bottomPanel.height;
   bottomPanel.setScale(panelScale, panelScale);  // scaleX = scaleY
 
-  const panelHeight = 768 * panelScale;  // ≈ 213px
+  // Snap to whole pixels
+  bottomPanel.x = Math.round(w / 2);
+  bottomPanel.y = Math.round(h);
+
+  const panelHeight = bottomPanel.height * panelScale;
   const panelTop = h - panelHeight;
   const panelCenterX = w / 2;
 
   // === КРАСНАЯ КНОПКА БОЯ ===
-  // На панели кнопка справа, примерно на X = 1150 от левого края панели
-  // После масштаба: (1150 - 704) * 0.277 = 123px от центра
-  const fightBtnX = panelCenterX + 123 * panelScale * 3.6;  // смещение вправо
-  const fightBtnY = h - panelHeight / 2;  // по центру панели по высоте
-
   const fightBtnScale = panelScale * 1.2;
+  const fightBtnX = Math.round(panelCenterX + 123 * panelScale * 3.6);
+  const fightBtnY = Math.round(h - panelHeight / 2);
+
   const fightBtn = scene.add.image(fightBtnX, fightBtnY, 'ui_btn_fight')
     .setOrigin(0.5, 0.5)
     .setDepth(110)
@@ -1200,11 +1207,9 @@ function createBottomUI(scene) {
   });
 
   // === ИКОНКИ В СЛОТАХ (слева на панели) ===
-  // Слоты на панели примерно: X = 180, 350, 520, 690 (от левого края)
-  // Центр панели = 704, значит смещения: -524, -354, -184, -14
-  const iconY = h - panelHeight * 0.5;  // по центру панели
-
-  const slotOffsets = [-380, -230, -80, 70];  // примерные смещения от центра
+  const iconScale = panelScale * 1.5;
+  const iconY = Math.round(h - panelHeight * 0.5);
+  const slotOffsets = [-380, -230, -80, 70];
 
   const icons = [
     { key: 'icon_helmet', action: 'inventory' },
@@ -1214,11 +1219,11 @@ function createBottomUI(scene) {
   ];
 
   const createdIcons = icons.map((iconData, i) => {
-    const x = panelCenterX + slotOffsets[i] * panelScale;
+    const x = Math.round(panelCenterX + slotOffsets[i] * panelScale);
     const icon = scene.add.image(x, iconY, iconData.key)
       .setDepth(110)
       .setScrollFactor(0)
-      .setScale(panelScale * 1.5)
+      .setScale(iconScale, iconScale)  // uniform scale
       .setInteractive({ useHandCursor: true });
 
     icon.on('pointerdown', () => {
