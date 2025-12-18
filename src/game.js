@@ -1542,26 +1542,33 @@ function createBottomUI(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
 
-  // Panel dimensions
-  const panelW = w;          // Full screen width
-  const panelH = 96;         // Fixed height
-
   // Apply LINEAR filter for slightly better quality
   const tex = scene.textures.get('ui_bottom');
   if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-  // Simple Image panel (back to basics)
+  // Get texture dimensions for aspect ratio
+  const texW = tex?.source[0]?.width || 1408;
+  const texH = tex?.source[0]?.height || 768;
+  const aspect = texW / texH;  // ~1.83
+
+  // Keep aspect ratio: scale to fit width
+  const finalW = w;                    // 390 (screen width)
+  const finalH = Math.round(finalW / aspect);  // ~213
+
+  // Simple Image panel with correct aspect ratio
   const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom');
   bottomPanel.setOrigin(0.5, 1);  // Bottom center origin
-  bottomPanel.setDisplaySize(panelW, panelH);
+  bottomPanel.setDisplaySize(finalW, finalH);
   bottomPanel.setDepth(100);
   bottomPanel.setScrollFactor(0);
 
-  console.log("[UI] Panel created:", bottomPanel.x, bottomPanel.y, "size:", bottomPanel.displayWidth, "x", bottomPanel.displayHeight);
+  console.log("[UI] Panel aspect-correct:", finalW, "x", finalH, "aspect:", aspect.toFixed(2));
+  console.log("[UI] Panel visible:", bottomPanel.visible, "alpha:", bottomPanel.alpha, "depth:", bottomPanel.depth);
+  console.log("[UI] Panel bounds:", JSON.stringify(bottomPanel.getBounds()));
 
-  const panelHeight = panelH;
+  const panelHeight = finalH;
   const panelCenterX = w / 2;
-  const panelScale = panelH / 768;  // For button/icon scaling
+  const panelScale = finalH / texH;  // For button/icon scaling
 
   // === КРАСНАЯ КНОПКА БОЯ ===
   const fightBtnScale = panelScale * 1.2;
