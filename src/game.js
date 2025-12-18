@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-UI-RESAMPLE");
+console.log("GAMEJS BUILD: 2025-12-19-TUNE-SAVE");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -10,10 +10,10 @@ if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
 
 // Base positions for tune mode calculations
 const HERO_BASE = { x: 150, y: 500, scale: 0.7 };
+let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
-  // Always return fresh defaults (no localStorage issues)
-  return {
+  const defaults = {
     bgZoom: 1.0, bgPanX: 0, bgPanY: 0,
     panelX: 0, panelY: 0, panelScale: 1.0,
     heroX: 0, heroY: 0, heroScale: 1.0,
@@ -23,6 +23,21 @@ function getTuneSettings() {
     icon2X: 0, icon2Y: 0,
     icon3X: 0, icon3Y: 0
   };
+
+  // Only load from localStorage when in tune mode
+  if (!TUNE_ENABLED) return defaults;
+
+  try {
+    const saved = localStorage.getItem('TUNE_SETTINGS');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      console.log("[TUNE] Loaded from localStorage:", parsed);
+      return { ...defaults, ...parsed };
+    }
+  } catch (e) {
+    console.log("[TUNE] Error loading settings:", e);
+  }
+  return defaults;
 }
 
 // ============================================================
@@ -768,17 +783,20 @@ function create() {
     `;
     document.body.appendChild(overlay);
 
-    // Button handlers - SAVE just copies to clipboard (no localStorage)
+    // Button handlers - SAVE to localStorage + clipboard
     document.getElementById('tune-save').onclick = () => {
       const json = JSON.stringify(tune, null, 2);
-      console.log("[TUNE] Current settings:\n" + json);
+      localStorage.setItem('TUNE_SETTINGS', JSON.stringify(tune));
       navigator.clipboard?.writeText(json);
-      alert("Settings copied to clipboard!\n\n" + json);
+      console.log("[TUNE] Saved to localStorage and clipboard:\n" + json);
+      alert("Saved to localStorage!\n\n" + json);
     };
     document.getElementById('tune-reset').onclick = () => {
-      // Reset tune values to defaults
+      // Reset tune values to defaults and clear localStorage
       Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0, icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0});
+      localStorage.removeItem('TUNE_SETTINGS');
       applyTune();
+      console.log("[TUNE] Reset to defaults, localStorage cleared");
       alert('Reset to defaults!');
     };
     document.getElementById('tune-copy').onclick = () => {
@@ -801,6 +819,7 @@ function create() {
         <b style="color:#0ff">3.Hero:</b> ${hero?.x?.toFixed(0) || '?'},${hero?.y?.toFixed(0) || '?'} s:${(HERO_BASE.scale * tune.heroScale).toFixed(2)}<br>
         <small>&nbsp;base:${HERO_BASE.x},${HERO_BASE.y} ofs:${tune.heroX},${tune.heroY}</small><br>
         <b style="color:#f0f">4.Btn:</b> ${btn?.x?.toFixed(0) || '?'},${btn?.y?.toFixed(0) || '?'}<br>
+        <small>&nbsp;base:${FIGHTBTN_BASE?.x?.toFixed(0) || '?'},${FIGHTBTN_BASE?.y?.toFixed(0) || '?'} ofs:${tune.btnX},${tune.btnY}</small><br>
         <b style="color:#f80">5-8.Icons:</b><br>
         &nbsp;🪖${icons[0]?.x?.toFixed(0) || '?'},${icons[0]?.y?.toFixed(0) || '?'} ⚒️${icons[1]?.x?.toFixed(0) || '?'},${icons[1]?.y?.toFixed(0) || '?'}<br>
         &nbsp;🏪${icons[2]?.x?.toFixed(0) || '?'},${icons[2]?.y?.toFixed(0) || '?'} 🗺️${icons[3]?.x?.toFixed(0) || '?'},${icons[3]?.y?.toFixed(0) || '?'}
@@ -842,11 +861,11 @@ function create() {
         window.spineHero.setDepth(50);
       }
 
-      // Fight button
-      if (window.bottomUI?.fightBtn && bp.btnX !== 0) {
+      // Fight button - use FIGHTBTN_BASE (offset-based positioning)
+      if (window.bottomUI?.fightBtn && FIGHTBTN_BASE) {
         window.fightBtnTween?.stop();
-        window.bottomUI.fightBtn.x = Math.round(bp.btnX + tune.btnX);
-        window.bottomUI.fightBtn.y = Math.round(bp.btnY + tune.btnY);
+        window.bottomUI.fightBtn.x = Math.round(FIGHTBTN_BASE.x + tune.btnX);
+        window.bottomUI.fightBtn.y = Math.round(FIGHTBTN_BASE.y + tune.btnY);
       }
 
       // Icons
@@ -1119,6 +1138,16 @@ function create() {
     if (typeof createBottomUI === "function") {
       const bottomUI = createBottomUI(this);
       window.bottomUI = bottomUI;
+
+      // Capture FIGHTBTN_BASE for tune mode (before any modifications)
+      if (bottomUI.fightBtn && !FIGHTBTN_BASE) {
+        FIGHTBTN_BASE = {
+          x: bottomUI.fightBtn.x,
+          y: bottomUI.fightBtn.y,
+          scale: bottomUI.fightBtn.scaleX
+        };
+        console.log("[TUNE] FIGHTBTN_BASE captured:", FIGHTBTN_BASE);
+      }
 
       // Apply tune settings after UI is created
       if (TUNE_ENABLED && window.applyTune) {
