@@ -1,4 +1,39 @@
 "use strict";
+
+// === ON-SCREEN DEBUG HUD (visible on mobile) ===
+(function () {
+  if (window.__HUD) return;
+  const hud = document.createElement("pre");
+  hud.id = "hud";
+  hud.style.cssText = [
+    "position:fixed",
+    "left:0","top:0",
+    "max-width:100vw","max-height:45vh",
+    "overflow:auto",
+    "z-index:999999",
+    "margin:0","padding:6px",
+    "background:rgba(0,0,0,.85)",
+    "color:#0f0",
+    "font:12px/1.2 monospace",
+    "pointer-events:none",
+    "white-space:pre-wrap"
+  ].join(";");
+  document.body.appendChild(hud);
+  const buf = [];
+  const push = (m) => {
+    buf.push(m);
+    if (buf.length > 60) buf.shift();
+    hud.textContent = buf.join("\n");
+  };
+  window.__HUD = { push };
+  const origLog = console.log.bind(console);
+  const origErr = console.error.bind(console);
+  console.log = (...a) => { origLog(...a); push("[LOG] " + a.map(String).join(" ")); };
+  console.error = (...a) => { origErr(...a); push("[ERR] " + a.map(String).join(" ")); };
+  window.addEventListener("error", (e) => push("[WINERR] " + (e.message || e.type)));
+  window.addEventListener("unhandledrejection", (e) => push("[REJ] " + (e.reason?.message || e.reason || "unknown")));
+})();
+
 console.log("GAMEJS BUILD: 2025-12-15-CITY-CLEAN-HOTFIX");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
@@ -135,8 +170,8 @@ function applyResolutionSafe(game, res) {
     // renderer may not have .resolution in Phaser 3.80; use config instead
     try { if (game.renderer?.config) game.renderer.config.resolution = res; } catch (_) {}
 
-    // if renderer.resize exists, call it (WebGL usually has it)
-    try { game.renderer?.resize?.(BASE_W, BASE_H, res); } catch (_) {}
+    // TEMPORARILY DISABLED: renderer.resize can cause black screen on iOS
+    // try { game.renderer?.resize?.(BASE_W, BASE_H, res); } catch (_) {}
 
   } catch (e) {
     console.warn("[DPI] applyResolutionSafe error", e);
@@ -164,19 +199,19 @@ game.events.once("ready", () => {
 
   applyResolutionSafe(game, RESOLUTION);
 
-  // Fallback: if backing is still BASE size while we wanted HiDPI, force it
-  if (RESOLUTION > 1) {
-    const c = game.canvas;
-    const wantW = Math.round(BASE_W * RESOLUTION);
-    const wantH = Math.round(BASE_H * RESOLUTION);
-    if (c.width === BASE_W && c.height === BASE_H) {
-      console.warn("[DPI] resolution ignored, forcing backing store:", wantW, wantH);
-      c.width = wantW;
-      c.height = wantH;
-      try { game.renderer?.resize?.(BASE_W, BASE_H, RESOLUTION); } catch (_) {}
-      try { game.scale?.refresh?.(); } catch (_) {}
-    }
-  }
+  // TEMPORARILY DISABLED: Manual canvas size changes can cause black screen on iOS
+  // if (RESOLUTION > 1) {
+  //   const c = game.canvas;
+  //   const wantW = Math.round(BASE_W * RESOLUTION);
+  //   const wantH = Math.round(BASE_H * RESOLUTION);
+  //   if (c.width === BASE_W && c.height === BASE_H) {
+  //     console.warn("[DPI] resolution ignored, forcing backing store:", wantW, wantH);
+  //     c.width = wantW;
+  //     c.height = wantH;
+  //     try { game.renderer?.resize?.(BASE_W, BASE_H, RESOLUTION); } catch (_) {}
+  //     try { game.scale?.refresh?.(); } catch (_) {}
+  //   }
+  // }
 });
 
 // GPU auto-guard: prevent render surface blow-up (DESKTOP ONLY)
@@ -535,6 +570,22 @@ function create() {
     return;
   }
   const r = c.getBoundingClientRect();
+
+  // === COMPACT MOBILE DIAGNOSTIC ===
+  console.log("[MOBCHK]",
+    "BASE", BASE_W, BASE_H,
+    "scale", this.scale.width, this.scale.height,
+    "disp", this.scale.displaySize?.width, this.scale.displaySize?.height,
+    "canvasWH", c?.width, c?.height,
+    "css", r ? r.width.toFixed(0) + "x" + r.height.toFixed(0) : "na",
+    "parent", c?.parentElement?.clientWidth, c?.parentElement?.clientHeight,
+    "dpr", window.devicePixelRatio
+  );
+
+  // === WEBGL CONTEXT LOST DETECTION ===
+  const cv = this.game.canvas;
+  cv?.addEventListener("webglcontextlost", (e) => { e.preventDefault(); console.error("[WEBGL] context lost"); });
+  cv?.addEventListener("webglcontextrestored", () => console.log("[WEBGL] context restored"));
 
   // === DIAGNOSTIC LOGS (DPI CHECK) ===
   console.log("[DPI CHECK]", {
