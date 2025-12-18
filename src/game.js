@@ -455,7 +455,7 @@ function preload() {
 
   // UI
   this.load.image("map_world", "assets/ui/map_world.png");
-  this.load.image("ui_bottom_panel", "assets/ui/Bottom_panel.webp");
+  // this.load.image("ui_bottom_panel", "assets/ui/Bottom_panel.webp"); // REMOVED: file deleted
 
   // Новая нижняя панель
   this.load.image('ui_bottom', 'assets/ui/bottom.png');
@@ -559,6 +559,20 @@ function create() {
     "inner", window.innerWidth, window.innerHeight,
     "vv", vv ? [vv.width, vv.height, vv.offsetTop] : null
   );
+
+  console.log("[VIEWPORT] container styles:", {
+    width: document.getElementById('game-container')?.style.width,
+    height: document.getElementById('game-container')?.style.height,
+    cssWidth: document.getElementById('game-container')?.clientWidth,
+    cssHeight: document.getElementById('game-container')?.clientHeight,
+  });
+
+  console.log("[VIEWPORT] canvas styles:", {
+    canvasWidth: this.game.canvas?.style.width,
+    canvasHeight: this.game.canvas?.style.height,
+    canvasClientW: this.game.canvas?.clientWidth,
+    canvasClientH: this.game.canvas?.clientHeight,
+  });
 
   // === FORCE SMOOTHING ===
   if (canvas) {

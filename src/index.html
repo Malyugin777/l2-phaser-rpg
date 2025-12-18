@@ -37,20 +37,14 @@
 
       #game-container {
         position: fixed;
-        inset: 0;
-        margin: auto;
-        width: min(100vw, 430px);
-        height: min(var(--app-height), 932px);
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        height: var(--app-height, 100vh);
         background: #0a0a12;
         overflow: hidden;
         touch-action: none;
-      }
-
-      @media (max-width: 520px), (pointer: coarse) {
-        #game-container {
-          width: 100vw;
-          height: var(--app-height);
-        }
       }
 
       canvas { display: block; image-rendering: auto; }
@@ -169,7 +163,7 @@
 <script src="ui/skillsPanel.js"></script>
 
 <!-- MAIN -->
-<script src="game.js?v=20241220"></script>
+<script src="game.js?v=20241220b"></script>
 
 </body>
 </html>
