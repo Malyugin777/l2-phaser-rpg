@@ -978,6 +978,9 @@ function create() {
     this.input.keyboard.on('keydown-SEVEN', () => { selectedElement = 'icon2'; updateOverlay(); });
     this.input.keyboard.on('keydown-EIGHT', () => { selectedElement = 'icon3'; updateOverlay(); });
 
+    // Make applyTune globally accessible for later call
+    window.applyTune = applyTune;
+
     applyTune();
     console.log('[TUNE] Mode enabled. 1-8=select, drag=move, arrows=fine, Q/E=scale');
   }
@@ -1058,6 +1061,11 @@ function create() {
     if (typeof createBottomUI === "function") {
       const bottomUI = createBottomUI(this);
       window.bottomUI = bottomUI;
+
+      // Apply saved tune settings after UI is created
+      if (TUNE_ENABLED && window.applyTune) {
+        setTimeout(() => window.applyTune(), 100);
+      }
 
       // 1) Set depth/scrollFactor FIRST
       [bottomUI.bottomPanel, bottomUI.fightBtn, ...(bottomUI.icons || [])].forEach(obj => {
