@@ -634,6 +634,30 @@ function create() {
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
 
+  // Mipmap generation for smooth downscale (only works for POT textures)
+  function isPOT(n) { return (n & (n - 1)) === 0; }
+
+  const key = "talkingisland_main";
+  const tex = this.textures.get(key);
+  const src = tex?.source?.[0];
+  const img = src?.image;
+  const gl = this.game.renderer?.gl;
+  const glTex = src?.glTexture;
+
+  if (gl && img && glTex) {
+    const w = img.width, h = img.height;
+
+    if (isPOT(w) && isPOT(h)) {
+      gl.bindTexture(gl.TEXTURE_2D, glTex);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      console.log("[MIPMAP] OK", key, w, h);
+    } else {
+      console.log("[MIPMAP] SKIP (NPOT)", key, w, h);
+    }
+  }
+
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
   locationBg.setDepth(-5);
