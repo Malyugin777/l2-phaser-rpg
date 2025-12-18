@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-QUALITY-DIAG");
+console.log("GAMEJS BUILD: 2025-12-19-TEX-ANALYSIS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -104,8 +104,8 @@ let selectedRaceId = null;
 let selectedClassId = null;
 
 // ----- PHASER CONFIG (TMA + Desktop stable scaling) -----
-const BASE_W = 390;
-const BASE_H = 844;
+const BASE_W = 780;
+const BASE_H = 1688;
 
 const dprCap = Math.min(window.devicePixelRatio || 1, 2);
 console.log("[DPI] dprCap", dprCap);
@@ -1346,6 +1346,44 @@ function create() {
     if (window.cityBg) logTex("talkingisland_main", window.cityBg);
     if (window.bottomUI?.bottomPanel) logTex("ui_bottom", window.bottomUI.bottomPanel);
     if (window.bottomUI?.fightBtn) logTex("ui_btn_fight", window.bottomUI.fightBtn);
+
+    // === TEXTURE SIZE ANALYSIS ===
+    console.log("[TEX-SIZE] === Texture Optimization Report ===");
+
+    const analyzeTexture = (key, displayObj) => {
+      const tex = this.textures.get(key);
+      const srcW = tex?.source?.[0]?.width || 0;
+      const srcH = tex?.source?.[0]?.height || 0;
+
+      const dispW = displayObj?.displayWidth || 0;
+      const dispH = displayObj?.displayHeight || 0;
+
+      const optimalW = Math.ceil(dispW * 1.5);  // 1.5x for quality headroom
+      const optimalH = Math.ceil(dispH * 1.5);
+
+      const ratio = srcW / Math.max(1, dispW);
+      const wastedKB = Math.round((srcW * srcH - optimalW * optimalH) * 4 / 1024);
+
+      const status = ratio > 3 ? '🔴 OVERSIZED' : ratio > 2 ? '🟡 BIG' : '🟢 OK';
+
+      console.log(`[TEX-SIZE] ${key}:`);
+      console.log(`  Source: ${srcW}×${srcH}`);
+      console.log(`  Display: ${dispW.toFixed(0)}×${dispH.toFixed(0)}`);
+      console.log(`  Optimal: ${optimalW}×${optimalH}`);
+      console.log(`  Ratio: ${ratio.toFixed(1)}x ${status}`);
+      if (wastedKB > 100) console.log(`  Wasted GPU memory: ~${wastedKB} KB`);
+    };
+
+    const ui = window.bottomUI;
+    if (ui) {
+      if (ui.bottomPanel) analyzeTexture('ui_bottom', ui.bottomPanel);
+      if (ui.fightBtn) analyzeTexture('ui_btn_fight', ui.fightBtn);
+      if (ui.icons?.[0]) analyzeTexture('icon_helmet', ui.icons[0]);
+      if (ui.icons?.[1]) analyzeTexture('icon_anvil', ui.icons[1]);
+    }
+
+    // Background too
+    if (window.cityBg) analyzeTexture('talkingisland_main', window.cityBg);
 
     return;
   }
