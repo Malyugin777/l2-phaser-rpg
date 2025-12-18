@@ -279,6 +279,33 @@ function fitBackground(bg, scene) {
   bg.setScrollFactor(0);
 }
 
+// === BG PRE-RESAMPLE (iOS-safe, no mipmaps needed) ===
+function makeResampledBg(scene, srcKey, outKey, targetW, targetH) {
+  const tex = scene.textures.get(srcKey);
+  const srcImg = tex?.getSourceImage?.();
+  if (!srcImg) { console.log("[RESAMPLE] no src", srcKey); return null; }
+
+  const W = Math.max(2, Math.round(targetW));
+  const H = Math.max(2, Math.round(targetH));
+
+  // Remove if already exists
+  if (scene.textures.exists(outKey)) scene.textures.remove(outKey);
+
+  const ctex = scene.textures.createCanvas(outKey, W, H);
+  const ctx = ctex.getContext();
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(srcImg, 0, 0, W, H);
+
+  ctex.refresh();
+  try { ctex.setFilter(Phaser.Textures.FilterMode.LINEAR); } catch (e) {}
+
+  console.log("[RESAMPLE] built", outKey, W, H);
+  return outKey;
+}
+
 // ================== SPINE АНИМАЦИИ ==================
 // Доступные анимации в hero.json:
 // attack, crouch, crouch-from fall, fall, head-turn,
@@ -634,63 +661,17 @@ function create() {
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
 
-  // === MIPMAP RETRY (won't crash, will log) ===
-  const BG_KEY = "talkingisland_main";
-
-  const tryMips = () => {
-    const r = this.game.renderer;
-    const gl = r && r.gl;
-    if (!r || r.type !== Phaser.WEBGL || !gl) {
-      console.log("[MIPMAP] SKIP not WebGL");
-      return { done: true };
-    }
-
-    const tex = this.textures.get(BG_KEY);
-    const src = tex?.source?.[0];
-    const img = src?.image;
-    const glTex = src?.glTexture;
-
-    console.log("[MIPMAP] try", {
-      img: img ? [img.width, img.height] : null,
-      glTexType: glTex?.constructor?.name || typeof glTex,
-    });
-
-    if (!img || !(glTex instanceof WebGLTexture)) {
-      return { done: false };
-    }
-
-    // POT check
-    const isPOT = (n) => n > 0 && (n & (n - 1)) === 0;
-    if (!isPOT(img.width) || !isPOT(img.height)) {
-      console.log("[MIPMAP] SKIP NPOT", img.width, img.height);
-      return { done: true };
-    }
-
-    gl.bindTexture(gl.TEXTURE_2D, glTex);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    console.log("[MIPMAP] OK", img.width, img.height);
-    return { done: true };
-  };
-
-  // Retry 10 times every 150ms
-  console.log("[MIPMAP] setup");
-  let tries = 0;
-  const mipTimer = this.time.addEvent({
-    delay: 150,
-    loop: true,
-    callback: () => {
-      tries++;
-      const res = tryMips();
-      if (res.done || tries >= 10) {
-        if (tries >= 10) console.log("[MIPMAP] GIVE UP");
-        mipTimer.remove(false);
-      }
-    }
-  });
+  // Apply resampled texture to city background
+  const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", cityBg.displayWidth, cityBg.displayHeight);
+  if (rsKey) {
+    const W = Math.round(cityBg.displayWidth);
+    const H = Math.round(cityBg.displayHeight);
+    cityBg.setTexture(rsKey);
+    cityBg.setDisplaySize(W, H);
+    cityBg.x = Math.round(cityBg.x);
+    cityBg.y = Math.round(cityBg.y);
+    console.log("[RESAMPLE] applied to cityBg", W, H);
+  }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
