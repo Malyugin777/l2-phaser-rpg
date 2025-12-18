@@ -79,6 +79,28 @@
     </style>
   </head>
  <body>
+  <div id="error-display" style="
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: red;
+    color: white;
+    font-size: 12px;
+    padding: 10px;
+    z-index: 999999;
+    white-space: pre-wrap;
+  "></div>
+
+  <script>
+    window.onerror = function(msg, url, line) {
+      var el = document.getElementById('error-display');
+      el.style.display = 'block';
+      el.innerHTML += msg + ' (line ' + line + ')\n';
+    };
+  </script>
+
   <!-- Pre-Entry Overlay (Loader + Intro) -->
   <div id="preEntry">
     <div id="preLoader">
