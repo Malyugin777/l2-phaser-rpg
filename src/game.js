@@ -664,13 +664,15 @@ function create() {
   // Apply resampled texture to city background
   const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", cityBg.displayWidth, cityBg.displayHeight);
   if (rsKey) {
-    const W = Math.round(cityBg.displayWidth);
-    const H = Math.round(cityBg.displayHeight);
     cityBg.setTexture(rsKey);
-    cityBg.setDisplaySize(W, H);
-    cityBg.x = Math.round(cityBg.x);
-    cityBg.y = Math.round(cityBg.y);
-    console.log("[RESAMPLE] applied to cityBg", W, H);
+
+    // ENVELOP: uniform scale to cover full camera (no squash)
+    const cam = this.cameras.main;
+    const s = Math.max(cam.width / cityBg.width, cam.height / cityBg.height);
+    cityBg.setScale(s);
+    cityBg.setPosition(Math.round(cam.centerX), Math.round(cam.centerY));
+
+    console.log("[RESAMPLE] applied to cityBg", cityBg.width, cityBg.height, "scale:", s.toFixed(3));
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
