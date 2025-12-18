@@ -736,6 +736,7 @@ function create() {
     const overlay = document.createElement('div');
     overlay.id = 'tune-overlay';
     overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font:12px monospace;z-index:99999;border-radius:5px;max-width:200px;';
+    overlay.addEventListener('pointerdown', (e) => e.stopPropagation()); // Don't let clicks pass through
     document.body.appendChild(overlay);
 
     const updateOverlay = () => {
@@ -748,7 +749,7 @@ function create() {
         <b style="color:#0ff">Hero:</b> x:${tune.heroX} y:${tune.heroY} s:${tune.heroScale.toFixed(2)}<br>
         <b style="color:#f0f">Btn:</b> x:${tune.btnX} y:${tune.btnY}<br>
         <hr style="border-color:#333">
-        <small>Click element to select<br>Drag to move, +/- to scale</small>
+        <small>1-4: select element<br>Drag/Arrows: move<br>Q/E: scale</small>
         <div style="margin-top:8px;">
           <button id="tune-save">💾</button>
           <button id="tune-reset">🔄</button>
@@ -884,22 +885,28 @@ function create() {
       updateOverlay();
     });
 
-    // +/- for scale
-    this.input.keyboard.on('keydown-PLUS', () => {
+    // Q/E for scale (+ and - don't work in Phaser)
+    this.input.keyboard.on('keydown-E', () => {
       if (selectedElement === 'bg') { tune.bgZoom += 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
       else if (selectedElement === 'panel') { tune.panelScale += 0.05; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale += 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
       updateOverlay();
     });
-    this.input.keyboard.on('keydown-MINUS', () => {
+    this.input.keyboard.on('keydown-Q', () => {
       if (selectedElement === 'bg') { tune.bgZoom -= 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
       else if (selectedElement === 'panel') { tune.panelScale -= 0.05; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale -= 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
       updateOverlay();
     });
 
+    // Number keys 1-4 to select element directly
+    this.input.keyboard.on('keydown-ONE', () => { selectedElement = 'bg'; updateOverlay(); });
+    this.input.keyboard.on('keydown-TWO', () => { selectedElement = 'panel'; updateOverlay(); });
+    this.input.keyboard.on('keydown-THREE', () => { selectedElement = 'hero'; updateOverlay(); });
+    this.input.keyboard.on('keydown-FOUR', () => { selectedElement = 'btn'; updateOverlay(); });
+
     applyTune();
-    console.log('[TUNE] Mode enabled. Click to select, drag to move, arrows for fine tune, +/- for scale');
+    console.log('[TUNE] Mode enabled. 1-4=select, drag=move, arrows=fine, Q/E=scale');
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
