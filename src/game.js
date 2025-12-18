@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-TUNE-FIXED");
+console.log("GAMEJS BUILD: 2025-12-19-UI-RESAMPLE");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1652,6 +1652,68 @@ function createBottomUI(scene) {
   });
 
   console.log("[UI] Icons created at y=", iconY, "scale=", iconScale.toFixed(3));
+
+  // === RESAMPLE UI ELEMENTS FOR RETINA QUALITY ===
+  if (typeof makeResampledBg === "function" && dprCap > 1) {
+    // Resample bottom panel
+    if (bottomPanel && bottomPanel.texture) {
+      const panelW = Math.round(bottomPanel.displayWidth * dprCap);
+      const panelH = Math.round(bottomPanel.displayHeight * dprCap);
+      const panelRs = makeResampledBg(scene, "ui_bottom", "ui_bottom_rs", panelW, panelH);
+      if (panelRs) {
+        const oldX = bottomPanel.x, oldY = bottomPanel.y;
+        bottomPanel.setTexture(panelRs);
+        bottomPanel.setScale(bottomPanel.scaleX / dprCap);
+        bottomPanel.setPosition(oldX, oldY);
+        console.log("[RESAMPLE] ui_bottom:", panelW, "x", panelH);
+      }
+    }
+
+    // Resample fight button
+    if (fightBtn && fightBtn.texture) {
+      const btnW = Math.round(fightBtn.displayWidth * dprCap);
+      const btnH = Math.round(fightBtn.displayHeight * dprCap);
+      const btnRs = makeResampledBg(scene, "ui_btn_fight", "ui_btn_fight_rs", btnW, btnH);
+      if (btnRs) {
+        const oldX = fightBtn.x, oldY = fightBtn.y;
+        fightBtn.setTexture(btnRs);
+        fightBtn.setScale(fightBtn.scaleX / dprCap);
+        fightBtn.setPosition(oldX, oldY);
+        // Update tween target scale
+        if (fightBtnTween) {
+          fightBtnTween.stop();
+          const newScale = fightBtn.scaleX;
+          scene.tweens.add({
+            targets: fightBtn,
+            scale: newScale * 1.05,
+            yoyo: true,
+            repeat: -1,
+            duration: 800,
+            ease: 'Sine.easeInOut'
+          });
+        }
+        console.log("[RESAMPLE] ui_btn_fight:", btnW, "x", btnH);
+      }
+    }
+
+    // Resample icons
+    const iconKeys = ["icon_helmet", "icon_anvil", "icon_store", "icon_map"];
+    createdIcons.forEach((icon, i) => {
+      if (icon && icon.texture) {
+        const key = iconKeys[i];
+        const iw = Math.round(icon.displayWidth * dprCap);
+        const ih = Math.round(icon.displayHeight * dprCap);
+        const rsKey = makeResampledBg(scene, key, key + "_rs", iw, ih);
+        if (rsKey) {
+          const oldX = icon.x, oldY = icon.y;
+          icon.setTexture(rsKey);
+          icon.setScale(icon.scaleX / dprCap);
+          icon.setPosition(oldX, oldY);
+          console.log("[RESAMPLE]", key + ":", iw, "x", ih);
+        }
+      }
+    });
+  }
 
   return { bottomPanel, fightBtn, icons: createdIcons };
 }
