@@ -13,7 +13,11 @@ function getTuneSettings() {
     bgZoom: 1.0, bgPanX: 0, bgPanY: 0,
     panelX: 0, panelY: 0, panelScale: 1.0,
     heroX: 0, heroY: 0, heroScale: 1.0,
-    btnX: 0, btnY: 0
+    btnX: 0, btnY: 0,
+    icon0X: 0, icon0Y: 0,
+    icon1X: 0, icon1Y: 0,
+    icon2X: 0, icon2Y: 0,
+    icon3X: 0, icon3Y: 0
   };
   if (!TUNE_ENABLED) return defaults;
   try {
@@ -727,7 +731,7 @@ function create() {
   if (TUNE_ENABLED) {
     const tune = getTuneSettings();
     const baseScale = cityBg.scaleX;
-    let selectedElement = 'bg'; // 'bg', 'panel', 'hero', 'btn'
+    let selectedElement = 'bg'; // 'bg', 'panel', 'hero', 'btn', 'icon0', 'icon1', 'icon2', 'icon3'
 
     // Store references for tune mode
     window.tuneRefs = { cityBg, baseScale };
@@ -740,16 +744,19 @@ function create() {
     document.body.appendChild(overlay);
 
     const updateOverlay = () => {
-      const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f' };
+      const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f', icon0: '#f80', icon1: '#f80', icon2: '#f80', icon3: '#f80' };
       overlay.innerHTML = `
-        <b>TUNE MODE</b> [<span style="color:${selColors[selectedElement]}">${selectedElement}</span>]<br>
+        <b>TUNE</b> [<span style="color:${selColors[selectedElement] || '#fff'}">${selectedElement}</span>]<br>
         <hr style="border-color:#333">
-        <b style="color:#0f0">BG:</b> zoom:${tune.bgZoom.toFixed(2)} x:${tune.bgPanX} y:${tune.bgPanY}<br>
-        <b style="color:#ff0">Panel:</b> x:${tune.panelX} y:${tune.panelY} s:${tune.panelScale.toFixed(2)}<br>
-        <b style="color:#0ff">Hero:</b> x:${tune.heroX} y:${tune.heroY} s:${tune.heroScale.toFixed(2)}<br>
-        <b style="color:#f0f">Btn:</b> x:${tune.btnX} y:${tune.btnY}<br>
+        <b style="color:#0f0">1.BG:</b> z:${tune.bgZoom.toFixed(2)} ${tune.bgPanX},${tune.bgPanY}<br>
+        <b style="color:#ff0">2.Panel:</b> ${tune.panelX},${tune.panelY} s:${tune.panelScale.toFixed(2)}<br>
+        <b style="color:#0ff">3.Hero:</b> ${tune.heroX},${tune.heroY} s:${tune.heroScale.toFixed(2)}<br>
+        <b style="color:#f0f">4.Btn:</b> ${tune.btnX},${tune.btnY}<br>
+        <b style="color:#f80">5-8.Icons:</b><br>
+        &nbsp;🪖${tune.icon0X},${tune.icon0Y} ⚒️${tune.icon1X},${tune.icon1Y}<br>
+        &nbsp;🏪${tune.icon2X},${tune.icon2Y} 🗺️${tune.icon3X},${tune.icon3Y}<br>
         <hr style="border-color:#333">
-        <small>1-4: select element<br>Drag/Arrows: move<br>Q/E: scale</small>
+        <small>1-8: select | Arrows: move | Q/E: scale</small>
         <div style="margin-top:8px;">
           <button id="tune-save">💾</button>
           <button id="tune-reset">🔄</button>
@@ -761,7 +768,7 @@ function create() {
         alert('Saved!');
       });
       document.getElementById('tune-reset')?.addEventListener('click', () => {
-        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0});
+        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0, icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0});
         applyTune();
       });
       document.getElementById('tune-copy')?.addEventListener('click', () => {
@@ -806,8 +813,19 @@ function create() {
     let dragging = false, startX, startY;
 
     this.input.on('pointerdown', (p) => {
-      // Check what was clicked (in order of depth)
-      if (window.bottomUI?.fightBtn?.getBounds()?.contains(p.x, p.y)) {
+      // Check what was clicked (in order of depth - highest first)
+      const icons = window.bottomUI?.icons || [];
+      let iconClicked = -1;
+      for (let i = 0; i < icons.length; i++) {
+        if (icons[i]?.getBounds()?.contains(p.x, p.y)) {
+          iconClicked = i;
+          break;
+        }
+      }
+
+      if (iconClicked >= 0) {
+        selectedElement = 'icon' + iconClicked;
+      } else if (window.bottomUI?.fightBtn?.getBounds()?.contains(p.x, p.y)) {
         selectedElement = 'btn';
       } else if (window.bottomUI?.bottomPanel?.getBounds()?.contains(p.x, p.y)) {
         selectedElement = 'panel';
@@ -849,11 +867,32 @@ function create() {
         tune.btnY += dy;
         window.bottomUI.fightBtn.x += dx;
         window.bottomUI.fightBtn.y += dy;
+      } else if (selectedElement.startsWith('icon')) {
+        const iconIdx = parseInt(selectedElement.replace('icon', ''));
+        const icon = window.bottomUI?.icons?.[iconIdx];
+        if (icon) {
+          tune[`icon${iconIdx}X`] += dx;
+          tune[`icon${iconIdx}Y`] += dy;
+          icon.x += dx;
+          icon.y += dy;
+        }
       }
       updateOverlay();
     });
 
     this.input.on('pointerup', () => { dragging = false; });
+
+    // Helper to move icon
+    const moveIcon = (delta, axis) => {
+      if (selectedElement.startsWith('icon')) {
+        const idx = parseInt(selectedElement.replace('icon', ''));
+        const icon = window.bottomUI?.icons?.[idx];
+        if (icon) {
+          tune[`icon${idx}${axis}`] += delta;
+          icon[axis.toLowerCase()] += delta;
+        }
+      }
+    };
 
     // Arrow keys for fine tune selected element
     this.input.keyboard.on('keydown-UP', () => {
@@ -861,6 +900,7 @@ function create() {
       else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY -= 5; window.bottomUI.bottomPanel.y -= 5; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroY -= 5; window.spineHero.y -= 5; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY -= 5; window.bottomUI.fightBtn.y -= 5; }
+      else moveIcon(-5, 'Y');
       updateOverlay();
     });
     this.input.keyboard.on('keydown-DOWN', () => {
@@ -868,6 +908,7 @@ function create() {
       else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY += 5; window.bottomUI.bottomPanel.y += 5; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroY += 5; window.spineHero.y += 5; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY += 5; window.bottomUI.fightBtn.y += 5; }
+      else moveIcon(5, 'Y');
       updateOverlay();
     });
     this.input.keyboard.on('keydown-LEFT', () => {
@@ -875,6 +916,7 @@ function create() {
       else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX -= 5; window.bottomUI.bottomPanel.x -= 5; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroX -= 5; window.spineHero.x -= 5; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX -= 5; window.bottomUI.fightBtn.x -= 5; }
+      else moveIcon(-5, 'X');
       updateOverlay();
     });
     this.input.keyboard.on('keydown-RIGHT', () => {
@@ -882,6 +924,7 @@ function create() {
       else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX += 5; window.bottomUI.bottomPanel.x += 5; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroX += 5; window.spineHero.x += 5; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX += 5; window.bottomUI.fightBtn.x += 5; }
+      else moveIcon(5, 'X');
       updateOverlay();
     });
 
@@ -907,14 +950,18 @@ function create() {
       updateOverlay();
     });
 
-    // Number keys 1-4 to select element directly
+    // Number keys 1-8 to select element directly
     this.input.keyboard.on('keydown-ONE', () => { selectedElement = 'bg'; updateOverlay(); });
     this.input.keyboard.on('keydown-TWO', () => { selectedElement = 'panel'; updateOverlay(); });
     this.input.keyboard.on('keydown-THREE', () => { selectedElement = 'hero'; updateOverlay(); });
     this.input.keyboard.on('keydown-FOUR', () => { selectedElement = 'btn'; updateOverlay(); });
+    this.input.keyboard.on('keydown-FIVE', () => { selectedElement = 'icon0'; updateOverlay(); });
+    this.input.keyboard.on('keydown-SIX', () => { selectedElement = 'icon1'; updateOverlay(); });
+    this.input.keyboard.on('keydown-SEVEN', () => { selectedElement = 'icon2'; updateOverlay(); });
+    this.input.keyboard.on('keydown-EIGHT', () => { selectedElement = 'icon3'; updateOverlay(); });
 
     applyTune();
-    console.log('[TUNE] Mode enabled. 1-4=select, drag=move, arrows=fine, Q/E=scale');
+    console.log('[TUNE] Mode enabled. 1-8=select, drag=move, arrows=fine, Q/E=scale');
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
