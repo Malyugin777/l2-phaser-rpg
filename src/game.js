@@ -752,45 +752,60 @@ function create() {
     // Store references for tune mode
     window.tuneRefs = { cityBg, baseScale, tune };
 
-    // Overlay
+    // Overlay - create once, update text only
     const overlay = document.createElement('div');
     overlay.id = 'tune-overlay';
-    overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font:12px monospace;z-index:99999;border-radius:5px;max-width:200px;';
-    overlay.addEventListener('pointerdown', (e) => e.stopPropagation()); // Don't let clicks pass through
+    overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font:12px monospace;z-index:99999;border-radius:5px;max-width:220px;';
+    overlay.addEventListener('pointerdown', (e) => e.stopPropagation());
+    overlay.addEventListener('click', (e) => e.stopPropagation());
+
+    // Static HTML with spans for dynamic values
+    overlay.innerHTML = `
+      <b>TUNE</b> [<span id="tune-sel">bg</span>]<br>
+      <hr style="border-color:#333">
+      <span id="tune-values"></span>
+      <hr style="border-color:#333">
+      <small>1-8: select | Arrows: move | Q/E: scale</small>
+      <div style="margin-top:8px;">
+        <button id="tune-save">💾 SAVE</button>
+        <button id="tune-reset">🔄</button>
+        <button id="tune-copy">📋</button>
+      </div>
+    `;
     document.body.appendChild(overlay);
 
+    // Attach button handlers ONCE
+    document.getElementById('tune-save').onclick = () => {
+      const data = JSON.stringify(tune);
+      localStorage.setItem(TUNE_KEY, data);
+      console.log('[TUNE] SAVED:', data);
+      alert('Saved!\n' + data);
+    };
+    document.getElementById('tune-reset').onclick = () => {
+      Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0, icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0});
+      localStorage.removeItem(TUNE_KEY);
+      applyTune();
+      alert('Reset!');
+    };
+    document.getElementById('tune-copy').onclick = () => {
+      const data = JSON.stringify(tune);
+      navigator.clipboard?.writeText(data);
+      alert('Copied!\n' + data);
+    };
+
+    const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f', icon0: '#f80', icon1: '#f80', icon2: '#f80', icon3: '#f80' };
+
     const updateOverlay = () => {
-      const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f', icon0: '#f80', icon1: '#f80', icon2: '#f80', icon3: '#f80' };
-      overlay.innerHTML = `
-        <b>TUNE</b> [<span style="color:${selColors[selectedElement] || '#fff'}">${selectedElement}</span>]<br>
-        <hr style="border-color:#333">
+      document.getElementById('tune-sel').innerHTML = `<span style="color:${selColors[selectedElement] || '#fff'}">${selectedElement}</span>`;
+      document.getElementById('tune-values').innerHTML = `
         <b style="color:#0f0">1.BG:</b> z:${tune.bgZoom.toFixed(2)} ${tune.bgPanX},${tune.bgPanY}<br>
         <b style="color:#ff0">2.Panel:</b> ${tune.panelX},${tune.panelY} s:${tune.panelScale.toFixed(2)}<br>
         <b style="color:#0ff">3.Hero:</b> ${tune.heroX},${tune.heroY} s:${tune.heroScale.toFixed(2)}<br>
         <b style="color:#f0f">4.Btn:</b> ${tune.btnX},${tune.btnY}<br>
         <b style="color:#f80">5-8.Icons:</b><br>
         &nbsp;🪖${tune.icon0X},${tune.icon0Y} ⚒️${tune.icon1X},${tune.icon1Y}<br>
-        &nbsp;🏪${tune.icon2X},${tune.icon2Y} 🗺️${tune.icon3X},${tune.icon3Y}<br>
-        <hr style="border-color:#333">
-        <small>1-8: select | Arrows: move | Q/E: scale</small>
-        <div style="margin-top:8px;">
-          <button id="tune-save">💾</button>
-          <button id="tune-reset">🔄</button>
-          <button id="tune-copy">📋</button>
-        </div>
+        &nbsp;🏪${tune.icon2X},${tune.icon2Y} 🗺️${tune.icon3X},${tune.icon3Y}
       `;
-      document.getElementById('tune-save')?.addEventListener('click', () => {
-        saveTuneSettings(tune);
-        alert('Saved!');
-      });
-      document.getElementById('tune-reset')?.addEventListener('click', () => {
-        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0, icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0});
-        applyTune();
-      });
-      document.getElementById('tune-copy')?.addEventListener('click', () => {
-        navigator.clipboard?.writeText(JSON.stringify(tune));
-        alert('Copied!');
-      });
     };
 
     const applyTune = () => {
