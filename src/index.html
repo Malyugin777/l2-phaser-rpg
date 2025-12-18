@@ -42,19 +42,22 @@
         width: 100vw;
         height: 100vh;
         height: var(--app-height, 100vh);
-        background: #1a1a2e;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         overflow: hidden;
         touch-action: none;
       }
 
       canvas {
-        display: block;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        /* Scale uniformly to COVER the container */
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: cover;
         image-rendering: auto;
-        max-width: 100%;
-        max-height: 100%;
       }
 
       * {
