@@ -619,6 +619,11 @@ function create() {
   locationBg.setDepth(-5);
   locationBg.setVisible(false);
 
+  // === RENDER DIAGNOSTICS ===
+  console.log("[RENDER] Scene children:", this.children?.list?.length);
+  console.log("[RENDER] Background:", typeof cityBg, "visible:", cityBg?.visible, "alpha:", cityBg?.alpha);
+  console.log("[RENDER] cityBg position:", cityBg?.x, cityBg?.y, "scale:", cityBg?.scaleX, cityBg?.scaleY);
+
   // герой/враг для локации (логические координаты)
   heroStartX = w * 0.25;
   heroStartY = h * 0.65;

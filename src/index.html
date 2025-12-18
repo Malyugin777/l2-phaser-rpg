@@ -42,7 +42,7 @@
         width: 100vw;
         height: 100vh;
         height: var(--app-height, 100vh);
-        background: #0a0a12;
+        background: #1a1a2e;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -50,7 +50,12 @@
         touch-action: none;
       }
 
-      canvas { display: block; image-rendering: auto; }
+      canvas {
+        display: block;
+        image-rendering: auto;
+        max-width: 100%;
+        max-height: 100%;
+      }
 
       * {
         box-sizing: border-box;
@@ -115,13 +120,16 @@
     function updateViewportDebug() {
       var el = document.getElementById('viewport-debug');
       var container = document.getElementById('game-container');
-      var canvas = document.querySelector('canvas');
+      var canvases = document.querySelectorAll('canvas');
+      var canvas = canvases[0];
 
       var info = [];
       info.push('WIN: ' + window.innerWidth + 'x' + window.innerHeight);
       info.push('CONT: ' + (container ? container.clientWidth + 'x' + container.clientHeight : 'NO'));
       info.push('CANVAS: ' + (canvas ? canvas.clientWidth + 'x' + canvas.clientHeight : 'NO'));
-      info.push('--app-h: ' + getComputedStyle(document.documentElement).getPropertyValue('--app-height'));
+      info.push('NUM_CANVAS: ' + canvases.length);
+      info.push('VISIBLE: ' + (canvas ? getComputedStyle(canvas).visibility : 'NO'));
+      info.push('OPACITY: ' + (canvas ? getComputedStyle(canvas).opacity : 'NO'));
 
       el.innerHTML = info.join(' | ');
     }
@@ -198,7 +206,7 @@
 <script src="ui/skillsPanel.js"></script>
 
 <!-- MAIN -->
-<script src="game.js?v=20241220d"></script>
+<script src="game.js?v=20241220e"></script>
 
 </body>
 </html>
