@@ -122,6 +122,18 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// Force resolution on renderer
+game.events.once('ready', function() {
+  const dpr = window.devicePixelRatio || 1;
+
+  if (game.renderer && game.renderer.resize) {
+    game.renderer.resize(390, 844, dpr);
+    console.log("[RESOLUTION] forced via renderer.resize, dpr:", dpr);
+  }
+
+  console.log("[RESOLUTION] after force - canvas:", game.canvas.width, game.canvas.height);
+});
+
 // Retina backing + runtime fallback (with hard guards)
 function applyResolutionSafe(game, res) {
   if (!game || !game.canvas) {

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resolution Test</title>
+  <style>
+    body { margin: 0; background: #000; }
+    #info { position: fixed; top: 10px; left: 10px; color: lime; font-family: monospace; font-size: 14px; z-index: 999; background: rgba(0,0,0,0.8); padding: 10px; }
+  </style>
+</head>
+<body>
+  <div id="info">Loading...</div>
+  <div id="game"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script>
+    const dpr = window.devicePixelRatio || 1;
+    const info = document.getElementById('info');
+
+    info.innerHTML = 'DPR: ' + dpr + '<br>Testing...';
+
+    const config = {
+      type: Phaser.AUTO,
+      width: 390,
+      height: 844,
+      resolution: dpr,
+      parent: 'game',
+      backgroundColor: '#2d2d2d',
+      scene: {
+        create: function() {
+          const c = this.game.canvas;
+          const result = [
+            'DPR: ' + dpr,
+            'Config resolution: ' + this.game.config.resolution,
+            'Renderer resolution: ' + this.game.renderer?.resolution,
+            'Canvas backing: ' + c.width + 'x' + c.height,
+            'Expected: ' + (390*dpr) + 'x' + (844*dpr),
+            '',
+            (c.width === Math.round(390*dpr)) ? '✅ RESOLUTION WORKS!' : '❌ RESOLUTION IGNORED!'
+          ];
+
+          info.innerHTML = result.join('<br>');
+          console.log(result.join('\n'));
+
+          this.add.text(50, 200, result.join('\n'), { fontSize: '20px', fill: '#0f0' });
+        }
+      }
+    };
+
+    new Phaser.Game(config);
+  </script>
+</body>
+</html>
