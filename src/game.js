@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-RESAMPLE-FIX");
+console.log("GAMEJS BUILD: 2025-12-19-PHASER-3.55");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -125,7 +125,7 @@ const getScaleMode = () => {
   return Phaser.Scale.ENVELOP;  // ENVELOP fills screen, crops edges (no black bars)
 };
 
-const RESOLUTION = isMobile ? (window.devicePixelRatio || 1) : 1;
+const RESOLUTION = window.devicePixelRatio || 1;  // Phaser 3.55.2 handles this properly
 
 // --- Viewport height sync (fixes Telegram/WebView "bottom clipped") ---
 function syncAppHeight() {
@@ -161,61 +161,10 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Force resolution on renderer
-game.events.once('ready', function() {
-  const dpr = window.devicePixelRatio || 1;
-
-  if (game.renderer && game.renderer.resize) {
-    game.renderer.resize(390, 844, dpr);
-    console.log("[RESOLUTION] forced via renderer.resize, dpr:", dpr);
-  }
-
-  console.log("[RESOLUTION] after force - canvas:", game.canvas.width, game.canvas.height);
-});
-
-// Retina backing + runtime fallback (with hard guards)
-function applyResolutionSafe(game, res) {
-  if (!game || !game.canvas) {
-    console.warn("[DPI] applyResolutionSafe skipped: no canvas yet");
-    return;
-  }
-
-  try {
-    // set config resolution
-    try { game.config.resolution = res; } catch (_) {}
-    // renderer may not have .resolution in Phaser 3.80; use config instead
-    try { if (game.renderer?.config) game.renderer.config.resolution = res; } catch (_) {}
-
-    // TEMPORARILY DISABLED: renderer.resize can cause black screen on iOS
-    // try { game.renderer?.resize?.(BASE_W, BASE_H, res); } catch (_) {}
-
-  } catch (e) {
-    console.warn("[DPI] applyResolutionSafe error", e);
-  }
-
-  try { game.scale?.refresh?.(); } catch (e) {
-    console.warn("[DPI] refresh failed", e);
-  }
-}
-
-// Wait for game to be fully ready before applying resolution
+// Phaser 3.55.2 handles resolution properly - just log for debugging
 game.events.once("ready", () => {
-  console.log("[READY] canvas?", !!game.canvas, game.canvas?.width, game.canvas?.height);
-
-  // Renderer capability logs
-  const r = game.renderer;
-  console.log("[RENDERER]", {
-    ctor: r?.constructor?.name,
-    type: r?.type,
-    hasGL: !!r?.gl,
-    renderType: game.config?.renderType,
-    resCfg: game.config?.resolution,
-    rCfgRes: r?.config?.resolution,
-  });
-
-  applyResolutionSafe(game, RESOLUTION);
-
-  // NOTE: Forced backing removed - breaks layout. Keep backing at game units (390x844)
+  const c = game.canvas;
+  console.log("[RESOLUTION] Phaser 3.55.2 - canvas:", c?.width, "x", c?.height, "DPR:", RESOLUTION);
 });
 
 // GPU auto-guard: prevent render surface blow-up (DESKTOP ONLY)
@@ -1682,83 +1631,7 @@ function createBottomUI(scene) {
 
   console.log("[UI] Icons created at y=", iconY, "scale=", iconScale.toFixed(3));
 
-  // === RESAMPLE UI ELEMENTS FOR QUALITY (use 50% of original texture size) ===
-  if (typeof makeResampledBg === "function") {
-    // Resample bottom panel - use ORIGINAL texture size
-    if (bottomPanel) {
-      const origTex = scene.textures.get("ui_bottom");
-      if (origTex && origTex.source[0]) {
-        const origW = origTex.source[0].width;
-        const origH = origTex.source[0].height;
-        const targetW = Math.round(origW * 0.5);
-        const targetH = Math.round(origH * 0.5);
-        const oldDisplayW = bottomPanel.displayWidth;
-        const oldDisplayH = bottomPanel.displayHeight;
-
-        const panelRs = makeResampledBg(scene, "ui_bottom", "ui_bottom_rs", targetW, targetH);
-        if (panelRs) {
-          bottomPanel.setTexture(panelRs);
-          bottomPanel.setDisplaySize(oldDisplayW, oldDisplayH);
-          console.log("[RESAMPLE] ui_bottom:", targetW, "x", targetH, "display:", oldDisplayW.toFixed(0));
-        }
-      }
-    }
-
-    // Resample fight button - use ORIGINAL texture size
-    if (fightBtn) {
-      const origTex = scene.textures.get("ui_btn_fight");
-      if (origTex && origTex.source[0]) {
-        const origW = origTex.source[0].width;
-        const origH = origTex.source[0].height;
-        const targetW = Math.round(origW * 0.5);
-        const targetH = Math.round(origH * 0.5);
-        const oldDisplayW = fightBtn.displayWidth;
-        const oldDisplayH = fightBtn.displayHeight;
-
-        const btnRs = makeResampledBg(scene, "ui_btn_fight", "ui_btn_fight_rs", targetW, targetH);
-        if (btnRs) {
-          fightBtn.setTexture(btnRs);
-          fightBtn.setDisplaySize(oldDisplayW, oldDisplayH);
-          // Update tween target scale
-          if (fightBtnTween) {
-            fightBtnTween.stop();
-            const newScale = fightBtn.scaleX;
-            scene.tweens.add({
-              targets: fightBtn,
-              scale: newScale * 1.05,
-              yoyo: true,
-              repeat: -1,
-              duration: 800,
-              ease: 'Sine.easeInOut'
-            });
-          }
-          console.log("[RESAMPLE] ui_btn_fight:", targetW, "x", targetH);
-        }
-      }
-    }
-
-    // Resample icons - use ORIGINAL texture size
-    const iconKeys = ["icon_helmet", "icon_anvil", "icon_store", "icon_map"];
-    createdIcons.forEach((icon, i) => {
-      const key = iconKeys[i];
-      const origTex = scene.textures.get(key);
-      if (origTex && origTex.source[0]) {
-        const origW = origTex.source[0].width;
-        const origH = origTex.source[0].height;
-        const targetW = Math.round(origW * 0.5);
-        const targetH = Math.round(origH * 0.5);
-        const oldDisplayW = icon.displayWidth;
-        const oldDisplayH = icon.displayHeight;
-
-        const rsKey = makeResampledBg(scene, key, key + "_rs", targetW, targetH);
-        if (rsKey) {
-          icon.setTexture(rsKey);
-          icon.setDisplaySize(oldDisplayW, oldDisplayH);
-          console.log("[RESAMPLE]", key + ":", targetW, "x", targetH);
-        }
-      }
-    });
-  }
+  // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
   return { bottomPanel, fightBtn, icons: createdIcons };
 }
