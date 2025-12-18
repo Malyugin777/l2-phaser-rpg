@@ -736,10 +736,26 @@ function create() {
         bgPanX: ${tune.bgPanX}<br>
         bgPanY: ${tune.bgPanY}<br>
         uiY: ${tune.uiYOffset}<br>
-        <button onclick="window.tuneSave()">Save</button>
-        <button onclick="window.tuneReset()">Reset</button>
-        <button onclick="window.tuneCopy()">Copy</button>
+        <div style="margin-top:8px;">
+          <button id="tune-save">💾 Save</button>
+          <button id="tune-reset">🔄 Reset</button>
+          <button id="tune-copy">📋 Copy</button>
+        </div>
       `;
+      // Attach event listeners after innerHTML update
+      document.getElementById('tune-save')?.addEventListener('click', () => {
+        saveTuneSettings(tune);
+        alert('Saved! Settings: ' + JSON.stringify(tune));
+      });
+      document.getElementById('tune-reset')?.addEventListener('click', () => {
+        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, uiYOffset:0});
+        applyTune();
+      });
+      document.getElementById('tune-copy')?.addEventListener('click', () => {
+        const json = JSON.stringify(tune);
+        navigator.clipboard?.writeText(json);
+        alert('Copied: ' + json);
+      });
     };
 
     const applyTune = () => {
@@ -749,13 +765,6 @@ function create() {
       updateOverlay();
     };
 
-    window.tuneSave = () => saveTuneSettings(tune);
-    window.tuneReset = () => { Object.assign(tune, {bgZoom:1,bgPanX:0,bgPanY:0,uiYOffset:0}); applyTune(); };
-    window.tuneCopy = () => {
-      const json = JSON.stringify(tune);
-      navigator.clipboard?.writeText(json);
-      console.log('[TUNE] Copy:', json);
-    };
 
     // Drag to pan
     let dragging = false, startX, startY;
