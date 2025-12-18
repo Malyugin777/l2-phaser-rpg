@@ -1227,28 +1227,54 @@ function create() {
       spineHero.setScale(0.7);
       spineHero.setVisible(true);
       spineHero.setAlpha(1);
-      spineHero.setDepth(100);  // Very high depth to be on top
+      spineHero.setDepth(500);  // VERY high depth to be on top of everything
 
-      console.log("[HERO] FORCED to: 150,500 scale:0.7 depth:100");
+      console.log("[HERO] FORCED to: 150,500 scale:0.7 depth:500");
       console.log("[HERO] After force:", spineHero.x, spineHero.y, "scale:", spineHero.scaleX, "visible:", spineHero.visible);
+
+      // DEBUG: Check Spine internal state
+      console.log("[HERO] Spine state:", spineHero.state ? "HAS STATE" : "NO STATE");
+      console.log("[HERO] Spine skeleton:", spineHero.skeleton ? "HAS SKELETON" : "NO SKELETON");
+      console.log("[HERO] Spine plugin:", spineHero.plugin ? "HAS PLUGIN" : "NO PLUGIN");
+
+      // DEBUG: Add RED RECTANGLE marker at hero position
+      const heroMarker = this.add.rectangle(spineHero.x, spineHero.y, 100, 150, 0xff0000, 0.5);
+      heroMarker.setDepth(999);
+      heroMarker.setStrokeStyle(3, 0xffff00);  // Yellow border
+      window.heroMarker = heroMarker;
+      console.log("[HERO] RED MARKER added at:", spineHero.x, spineHero.y);
+
+      // DEBUG: Check depths
+      console.log("[DEPTH] cityBg:", cityBg?.depth);
+      console.log("[DEPTH] heroSpine:", spineHero.depth);
+      console.log("[DEPTH] heroMarker:", heroMarker.depth);
 
       window.spineHero = spineHero;
       window.heroSpine = spineHero;  // Alias for debugging
       hero = spineHero;
     } catch (e) {
-      console.warn("[Spine] Failed:", e.message);
+      console.warn("[Spine] Failed:", e.message, e);
       // Fallback на заглушку
       hero = createHeroSprite(this, 150, 500, 0x3366cc);
-      hero.setDepth(100);
+      hero.setDepth(500);
       window.heroSpine = hero;
-      console.log("[Hero] Fallback sprite created at 150,500");
+      // Add marker for fallback too
+      const heroMarker = this.add.rectangle(150, 500, 100, 150, 0xff0000, 0.5);
+      heroMarker.setDepth(999);
+      window.heroMarker = heroMarker;
+      console.log("[Hero] Fallback sprite + marker at 150,500");
     }
   } else {
     // Spine плагин не загружен — fallback
+    console.log("[Hero] NO SPINE PLUGIN AVAILABLE!");
     hero = createHeroSprite(this, 150, 500, 0x3366cc);
-    hero.setDepth(100);
+    hero.setDepth(500);
     window.heroSpine = hero;
-    console.log("[Hero] No Spine plugin, fallback at 150,500");
+    // Add marker for fallback too
+    const heroMarker = this.add.rectangle(150, 500, 100, 150, 0xff0000, 0.5);
+    heroMarker.setDepth(999);
+    window.heroMarker = heroMarker;
+    console.log("[Hero] Fallback sprite + marker at 150,500");
   }
 
   // герой в городе (используем Spine если есть)
