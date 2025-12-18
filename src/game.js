@@ -446,8 +446,8 @@ function preload() {
   this.load.audio("city_theme", "assets/audio/city_theme.mp3");
   this.load.audio("battle_theme", "assets/audio/battle_theme.mp3");
 
-  // Фоны (город - новый webp)
-  this.load.image("talkingisland_main", "assets/backgrounds/talking_island.webp");
+  // Фоны (город - высокое разрешение PNG)
+  this.load.image("talkingisland_main", "assets/backgrounds/talking_island.png");
   this.load.image("obelisk_of_victory", "assets/backgrounds/obelisk_of_victory.png");
   this.load.image("northern_territory", "assets/backgrounds/northern_territory.png");
   this.load.image("elven_ruins", "assets/backgrounds/elven_ruins.png");
@@ -495,40 +495,6 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
-  // === ON-SCREEN DEBUG ===
-  const debugDiv = document.createElement('div');
-  debugDiv.id = 'debug-overlay';
-  debugDiv.style.cssText = `
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    background: rgba(0,0,0,0.85);
-    color: #0f0;
-    font-family: monospace;
-    font-size: 11px;
-    padding: 8px;
-    z-index: 99999;
-    max-height: 40vh;
-    overflow-y: auto;
-    border-radius: 4px;
-    pointer-events: none;
-  `;
-  document.body.appendChild(debugDiv);
-
-  window.debugLog = (msg) => {
-    const line = document.createElement('div');
-    line.textContent = msg;
-    debugDiv.appendChild(line);
-    console.log(msg);
-  };
-
-  // Log initial state
-  debugLog('[ENV] tgPlatform: ' + (window.Telegram?.WebApp?.platform || 'none'));
-  debugLog('[ENV] isMobile: ' + isMobile);
-  debugLog('[ENV] RESOLUTION: ' + RESOLUTION);
-  debugLog('[ENV] DPR: ' + window.devicePixelRatio);
-
   // Canvas reference (with null check)
   const c = this.game.canvas;
   if (!c) {
@@ -536,11 +502,6 @@ function create() {
     return;
   }
   const r = c.getBoundingClientRect();
-
-  // Canvas info for debug overlay
-  debugLog('[DPI] backing: ' + c.width + 'x' + c.height);
-  debugLog('[DPI] css: ' + r.width.toFixed(0) + 'x' + r.height.toFixed(0));
-  debugLog('[RENDER] type: ' + (this.game.renderer?.type === 2 ? 'WebGL' : 'Canvas'));
 
   // === DIAGNOSTIC LOGS (DPI CHECK) ===
   console.log("[DPI CHECK]", {
@@ -569,11 +530,6 @@ function create() {
   // Force CSS smoothing
   c.style.imageRendering = "auto";
   c.style.setProperty("image-rendering", "auto");
-
-  // Force LINEAR texture filtering (per-texture, setDefaultFilter doesn't exist in this build)
-  try {
-    this.textures.each((t) => t?.setFilter?.(Phaser.Textures.FilterMode.LINEAR));
-  } catch (_) {}
 
   loadGame();
 
@@ -732,15 +688,20 @@ function create() {
 
         const { bottomPanel, fightBtn, icons } = ui;
 
-        // === PANEL ===
+        // === PANEL (CHANGE 3: snap by bounds, not y) ===
         if (bottomPanel) {
           bottomPanel.setOrigin(0.5, 1);
           bottomPanel.x = safe.centerX;
           bottomPanel.y = safe.bottom - pad;
 
           const baseW = bottomPanel.width || 1;
-          const scale = Math.min(1, safe.width / baseW);
-          bottomPanel.setScale(scale);
+          bottomPanel.setScale(Math.min(1, safe.width / baseW));
+
+          // Snap flush using bounds to eliminate gap
+          const b = bottomPanel.getBounds();
+          const targetBottom = safe.bottom - pad;
+          const delta = b.bottom - targetBottom;
+          bottomPanel.y -= delta; // snap flush
         }
 
         // Получаем реальные границы панели после scale
@@ -795,20 +756,35 @@ function create() {
 
     console.log("[UI] CITY_CLEAN baseline ready");
 
-    // === TEXTURE DIAGNOSTICS ===
+    // === TEXTURE DIAGNOSTICS (with effective device pixels) ===
+    const RES = this.game?.config?.resolution || window.devicePixelRatio || 1;
+
     const logTex = (key, obj) => {
       const t = this.textures.get(key);
       const img = t?.getSourceImage?.();
       const sw = img?.width, sh = img?.height;
+
       const dw = obj?.displayWidth ?? obj?.width;
       const dh = obj?.displayHeight ?? obj?.height;
-      const sx = (sw && dw) ? (dw / sw).toFixed(2) : "na";
-      const sy = (sh && dh) ? (dh / sh).toFixed(2) : "na";
+
+      const effW = (dw && RES) ? dw * RES : null;
+      const effH = (dh && RES) ? dh * RES : null;
+
+      const upX = (sw && effW) ? (effW / sw).toFixed(2) : "na";
+      const upY = (sh && effH) ? (effH / sh).toFixed(2) : "na";
+
       console.log("[TEX]", key, {
         source: [sw, sh],
-        display: [Math.round(dw), Math.round(dh)],
-        scale: [sx, sy]
+        displayGame: [dw?.toFixed?.(1), dh?.toFixed?.(1)],
+        res: RES,
+        displayDevicePx: [effW?.toFixed?.(0), effH?.toFixed?.(0)],
+        upscale: [upX, upY],
       });
+
+      // CHANGE 4: Warn if asset is being upscaled significantly
+      if (parseFloat(upX) > 1.1 || parseFloat(upY) > 1.1) {
+        console.warn("[TEX] UPSCALE detected -> asset too small for retina:", key);
+      }
     };
 
     // Log all loaded textures
@@ -825,17 +801,13 @@ function create() {
       }
     });
 
-    // Also force LINEAR filter on all UI textures
+    // CHANGE 2: Apply LINEAR filter to specific textures we render large
     const forceLinear = (key) => {
       const tex = this.textures.get(key);
-      if (tex?.setFilter) {
-        tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
-        console.log("[FILTER] Set LINEAR:", key);
-      }
+      if (tex?.setFilter) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      console.log("[FILTER] LINEAR", key);
     };
-
-    // Apply to common UI keys
-    ["city_bg", "talkingisland_main", "ui_bottom_panel", "ui_bottom", "ui_btn_fight"].forEach(forceLinear);
+    ["talkingisland_main", "ui_bottom", "ui_btn_fight"].forEach(forceLinear);
 
     // Log specific objects
     if (window.cityBg) logTex("talkingisland_main", window.cityBg);
