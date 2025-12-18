@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-PHASER-3.80");
+console.log("GAMEJS BUILD: 2025-12-19-9SLICE");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1554,22 +1554,37 @@ function createBottomUI(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
 
-  // Панель с фиксированной высотой (NO RESAMPLE - simple and clean)
-  const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom')
-    .setOrigin(0.5, 1)
-    .setDepth(100)
-    .setScrollFactor(0);
-
-  // FIXED-HEIGHT uniform scale (UI height independent of screen width)
+  // FIXED-HEIGHT for panel
   const TARGET_UI_H = 96;  // fixed UI height in game units
-  const panelScale = TARGET_UI_H / bottomPanel.height;
-  bottomPanel.setScale(panelScale);
 
-  // Snap to whole pixels
-  bottomPanel.x = Math.round(w / 2);
-  bottomPanel.y = Math.round(h);
+  // Get original texture dimensions
+  const origTex = scene.textures.get('ui_bottom');
+  const origW = origTex?.source[0]?.width || 1408;
+  const origH = origTex?.source[0]?.height || 768;
 
-  const panelHeight = bottomPanel.displayHeight;
+  // Calculate display width maintaining aspect ratio
+  const panelScale = TARGET_UI_H / origH;
+  const displayW = Math.round(origW * panelScale);
+  const displayH = TARGET_UI_H;
+
+  // 9-slice panel - corners stay sharp, center stretches
+  // Margins: left, right, top, bottom (corner sizes that won't stretch)
+  const MARGIN = 64;  // Adjust based on panel border thickness
+  const bottomPanel = scene.add.nineslice(
+    Math.round(w / 2),     // x
+    Math.round(h),         // y
+    'ui_bottom',           // texture key
+    undefined,             // frame
+    displayW,              // width
+    displayH,              // height
+    MARGIN, MARGIN,        // leftWidth, rightWidth
+    MARGIN, MARGIN         // topHeight, bottomHeight
+  );
+  bottomPanel.setOrigin(0.5, 1);
+  bottomPanel.setDepth(100);
+  bottomPanel.setScrollFactor(0);
+
+  const panelHeight = displayH;
   const panelCenterX = w / 2;
 
   console.log("[UI] Panel: pos=", bottomPanel.x, bottomPanel.y, "scale=", panelScale.toFixed(3), "height=", panelHeight);
