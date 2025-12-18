@@ -122,20 +122,62 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// Retina backing + runtime fallback
+// Retina backing + runtime fallback (with hard guards)
 function applyResolutionSafe(game, res) {
+  if (!game || !game.canvas) {
+    console.warn("[DPI] applyResolutionSafe skipped: no canvas yet");
+    return;
+  }
+
   try {
+    // set config resolution
     try { game.config.resolution = res; } catch (_) {}
-    try { if (game.renderer && "resolution" in game.renderer) game.renderer.resolution = res; } catch (_) {}
-    if (game?.renderer?.resize) {
-      try { game.renderer.resize(BASE_W, BASE_H, res); } catch (_) {}
-    }
-  } catch (_) {}
-  game.scale?.refresh();
+    // renderer may not have .resolution in Phaser 3.80; use config instead
+    try { if (game.renderer?.config) game.renderer.config.resolution = res; } catch (_) {}
+
+    // if renderer.resize exists, call it (WebGL usually has it)
+    try { game.renderer?.resize?.(BASE_W, BASE_H, res); } catch (_) {}
+
+  } catch (e) {
+    console.warn("[DPI] applyResolutionSafe error", e);
+  }
+
+  try { game.scale?.refresh?.(); } catch (e) {
+    console.warn("[DPI] refresh failed", e);
+  }
 }
 
-// Delay to ensure renderer is ready
-setTimeout(() => applyResolutionSafe(game, RESOLUTION), 0);
+// Wait for game to be fully ready before applying resolution
+game.events.once("ready", () => {
+  console.log("[READY] canvas?", !!game.canvas, game.canvas?.width, game.canvas?.height);
+
+  // Renderer capability logs
+  const r = game.renderer;
+  console.log("[RENDERER]", {
+    ctor: r?.constructor?.name,
+    type: r?.type,
+    hasGL: !!r?.gl,
+    renderType: game.config?.renderType,
+    resCfg: game.config?.resolution,
+    rCfgRes: r?.config?.resolution,
+  });
+
+  applyResolutionSafe(game, RESOLUTION);
+
+  // Fallback: if backing is still BASE size while we wanted HiDPI, force it
+  if (RESOLUTION > 1) {
+    const c = game.canvas;
+    const wantW = Math.round(BASE_W * RESOLUTION);
+    const wantH = Math.round(BASE_H * RESOLUTION);
+    if (c.width === BASE_W && c.height === BASE_H) {
+      console.warn("[DPI] resolution ignored, forcing backing store:", wantW, wantH);
+      c.width = wantW;
+      c.height = wantH;
+      try { game.renderer?.resize?.(BASE_W, BASE_H, RESOLUTION); } catch (_) {}
+      try { game.scale?.refresh?.(); } catch (_) {}
+    }
+  }
+});
 
 // GPU auto-guard: prevent render surface blow-up (DESKTOP ONLY)
 setTimeout(() => {
@@ -453,6 +495,40 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
+  // === ON-SCREEN DEBUG ===
+  const debugDiv = document.createElement('div');
+  debugDiv.id = 'debug-overlay';
+  debugDiv.style.cssText = `
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.85);
+    color: #0f0;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 8px;
+    z-index: 99999;
+    max-height: 40vh;
+    overflow-y: auto;
+    border-radius: 4px;
+    pointer-events: none;
+  `;
+  document.body.appendChild(debugDiv);
+
+  window.debugLog = (msg) => {
+    const line = document.createElement('div');
+    line.textContent = msg;
+    debugDiv.appendChild(line);
+    console.log(msg);
+  };
+
+  // Log initial state
+  debugLog('[ENV] tgPlatform: ' + (window.Telegram?.WebApp?.platform || 'none'));
+  debugLog('[ENV] isMobile: ' + isMobile);
+  debugLog('[ENV] RESOLUTION: ' + RESOLUTION);
+  debugLog('[ENV] DPR: ' + window.devicePixelRatio);
+
   // Canvas reference (with null check)
   const c = this.game.canvas;
   if (!c) {
@@ -461,18 +537,22 @@ function create() {
   }
   const r = c.getBoundingClientRect();
 
-  // === DIAGNOSTIC LOGS (A) ===
-  console.log("[DPI CHECK]",
-    "dpr", window.devicePixelRatio,
-    "config.resolution", this.game.config?.resolution,
-    "renderer.resolution", this.game.renderer?.resolution,
-    "canvas backing", c.width, c.height,
-    "canvas css", r.width.toFixed(1), r.height.toFixed(1),
-    "scale", { w: this.scale.width, h: this.scale.height, dw: this.scale.displaySize.width, dh: this.scale.displaySize.height }
-  );
+  // Canvas info for debug overlay
+  debugLog('[DPI] backing: ' + c.width + 'x' + c.height);
+  debugLog('[DPI] css: ' + r.width.toFixed(0) + 'x' + r.height.toFixed(0));
+  debugLog('[RENDER] type: ' + (this.game.renderer?.type === 2 ? 'WebGL' : 'Canvas'));
 
-  // === DIAGNOSTIC LOGS (RENDERER) ===
-  console.log("[RENDERER]", this.game.renderer?.type, this.game.renderer);
+  // === DIAGNOSTIC LOGS (DPI CHECK) ===
+  console.log("[DPI CHECK]", {
+    dpr: window.devicePixelRatio,
+    isMobile,
+    desiredRes: RESOLUTION,
+    backing: [c.width, c.height],
+    css: [r.width.toFixed(1), r.height.toFixed(1)],
+    cfgRes: this.game.config?.resolution,
+    rCfgRes: this.game.renderer?.config?.resolution,
+    hasGL: !!this.game.renderer?.gl,
+  });
 
   // === DIAGNOSTIC LOGS (SCALE MODE) ===
   console.log("[SCALE MODE]", this.scale.scaleMode);
@@ -490,12 +570,10 @@ function create() {
   c.style.imageRendering = "auto";
   c.style.setProperty("image-rendering", "auto");
 
-  // Force LINEAR texture filtering
+  // Force LINEAR texture filtering (per-texture, setDefaultFilter doesn't exist in this build)
   try {
-    this.textures.setDefaultFilter(Phaser.Textures.FilterMode.LINEAR);
-  } catch (e) {
-    console.warn("[DPI] setDefaultFilter not available", e);
-  }
+    this.textures.each((t) => t?.setFilter?.(Phaser.Textures.FilterMode.LINEAR));
+  } catch (_) {}
 
   loadGame();
 
