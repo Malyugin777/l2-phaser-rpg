@@ -634,29 +634,45 @@ function create() {
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
 
-  // Mipmap generation for smooth downscale (only works for POT textures)
-  function isPOT(n) { return (n & (n - 1)) === 0; }
+  // === SAFE MIPMAP GENERATION (no crash) ===
+  const BG_KEY = "talkingisland_main";
 
-  const key = "talkingisland_main";
-  const tex = this.textures.get(key);
-  const src = tex?.source?.[0];
-  const img = src?.image;
-  const gl = this.game.renderer?.gl;
-  const glTex = src?.glTexture;
+  function isPOT(n) { return n > 0 && (n & (n - 1)) === 0; }
 
-  if (gl && img && glTex) {
-    const w = img.width, h = img.height;
+  this.events.once(Phaser.Scenes.Events.POST_RENDER, () => {
+    try {
+      const r = this.game.renderer;
+      if (!r || r.type !== Phaser.WEBGL || !r.gl) {
+        console.log("[MIPMAP] SKIP (not WebGL)");
+        return;
+      }
 
-    if (isPOT(w) && isPOT(h)) {
+      const tex = this.textures.get(BG_KEY);
+      const src = tex?.source?.[0];
+      const img = src?.image;
+      const glTex = src?.glTexture;
+      const gl = r.gl;
+
+      if (!img) { console.log("[MIPMAP] SKIP (no img)"); return; }
+      if (!isPOT(img.width) || !isPOT(img.height)) {
+        console.log("[MIPMAP] SKIP (NPOT)", img.width, img.height);
+        return;
+      }
+      if (!(glTex instanceof WebGLTexture)) {
+        console.log("[MIPMAP] SKIP (glTexture not ready)", glTex);
+        return;
+      }
+
       gl.bindTexture(gl.TEXTURE_2D, glTex);
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       gl.bindTexture(gl.TEXTURE_2D, null);
-      console.log("[MIPMAP] OK", key, w, h);
-    } else {
-      console.log("[MIPMAP] SKIP (NPOT)", key, w, h);
+
+      console.log("[MIPMAP] OK", BG_KEY, img.width, img.height);
+    } catch (e) {
+      console.log("[MIPMAP] ERROR (ignored)", e);
     }
-  }
+  });
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
