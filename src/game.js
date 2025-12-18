@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-TUNE-SAVE");
+console.log("GAMEJS BUILD: 2025-12-19-RESAMPLE-FIX");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1682,63 +1682,79 @@ function createBottomUI(scene) {
 
   console.log("[UI] Icons created at y=", iconY, "scale=", iconScale.toFixed(3));
 
-  // === RESAMPLE UI ELEMENTS FOR RETINA QUALITY ===
-  if (typeof makeResampledBg === "function" && dprCap > 1) {
-    // Resample bottom panel
-    if (bottomPanel && bottomPanel.texture) {
-      const panelW = Math.round(bottomPanel.displayWidth * dprCap);
-      const panelH = Math.round(bottomPanel.displayHeight * dprCap);
-      const panelRs = makeResampledBg(scene, "ui_bottom", "ui_bottom_rs", panelW, panelH);
-      if (panelRs) {
-        const oldX = bottomPanel.x, oldY = bottomPanel.y;
-        bottomPanel.setTexture(panelRs);
-        bottomPanel.setScale(bottomPanel.scaleX / dprCap);
-        bottomPanel.setPosition(oldX, oldY);
-        console.log("[RESAMPLE] ui_bottom:", panelW, "x", panelH);
-      }
-    }
+  // === RESAMPLE UI ELEMENTS FOR QUALITY (use 50% of original texture size) ===
+  if (typeof makeResampledBg === "function") {
+    // Resample bottom panel - use ORIGINAL texture size
+    if (bottomPanel) {
+      const origTex = scene.textures.get("ui_bottom");
+      if (origTex && origTex.source[0]) {
+        const origW = origTex.source[0].width;
+        const origH = origTex.source[0].height;
+        const targetW = Math.round(origW * 0.5);
+        const targetH = Math.round(origH * 0.5);
+        const oldDisplayW = bottomPanel.displayWidth;
+        const oldDisplayH = bottomPanel.displayHeight;
 
-    // Resample fight button
-    if (fightBtn && fightBtn.texture) {
-      const btnW = Math.round(fightBtn.displayWidth * dprCap);
-      const btnH = Math.round(fightBtn.displayHeight * dprCap);
-      const btnRs = makeResampledBg(scene, "ui_btn_fight", "ui_btn_fight_rs", btnW, btnH);
-      if (btnRs) {
-        const oldX = fightBtn.x, oldY = fightBtn.y;
-        fightBtn.setTexture(btnRs);
-        fightBtn.setScale(fightBtn.scaleX / dprCap);
-        fightBtn.setPosition(oldX, oldY);
-        // Update tween target scale
-        if (fightBtnTween) {
-          fightBtnTween.stop();
-          const newScale = fightBtn.scaleX;
-          scene.tweens.add({
-            targets: fightBtn,
-            scale: newScale * 1.05,
-            yoyo: true,
-            repeat: -1,
-            duration: 800,
-            ease: 'Sine.easeInOut'
-          });
+        const panelRs = makeResampledBg(scene, "ui_bottom", "ui_bottom_rs", targetW, targetH);
+        if (panelRs) {
+          bottomPanel.setTexture(panelRs);
+          bottomPanel.setDisplaySize(oldDisplayW, oldDisplayH);
+          console.log("[RESAMPLE] ui_bottom:", targetW, "x", targetH, "display:", oldDisplayW.toFixed(0));
         }
-        console.log("[RESAMPLE] ui_btn_fight:", btnW, "x", btnH);
       }
     }
 
-    // Resample icons
+    // Resample fight button - use ORIGINAL texture size
+    if (fightBtn) {
+      const origTex = scene.textures.get("ui_btn_fight");
+      if (origTex && origTex.source[0]) {
+        const origW = origTex.source[0].width;
+        const origH = origTex.source[0].height;
+        const targetW = Math.round(origW * 0.5);
+        const targetH = Math.round(origH * 0.5);
+        const oldDisplayW = fightBtn.displayWidth;
+        const oldDisplayH = fightBtn.displayHeight;
+
+        const btnRs = makeResampledBg(scene, "ui_btn_fight", "ui_btn_fight_rs", targetW, targetH);
+        if (btnRs) {
+          fightBtn.setTexture(btnRs);
+          fightBtn.setDisplaySize(oldDisplayW, oldDisplayH);
+          // Update tween target scale
+          if (fightBtnTween) {
+            fightBtnTween.stop();
+            const newScale = fightBtn.scaleX;
+            scene.tweens.add({
+              targets: fightBtn,
+              scale: newScale * 1.05,
+              yoyo: true,
+              repeat: -1,
+              duration: 800,
+              ease: 'Sine.easeInOut'
+            });
+          }
+          console.log("[RESAMPLE] ui_btn_fight:", targetW, "x", targetH);
+        }
+      }
+    }
+
+    // Resample icons - use ORIGINAL texture size
     const iconKeys = ["icon_helmet", "icon_anvil", "icon_store", "icon_map"];
     createdIcons.forEach((icon, i) => {
-      if (icon && icon.texture) {
-        const key = iconKeys[i];
-        const iw = Math.round(icon.displayWidth * dprCap);
-        const ih = Math.round(icon.displayHeight * dprCap);
-        const rsKey = makeResampledBg(scene, key, key + "_rs", iw, ih);
+      const key = iconKeys[i];
+      const origTex = scene.textures.get(key);
+      if (origTex && origTex.source[0]) {
+        const origW = origTex.source[0].width;
+        const origH = origTex.source[0].height;
+        const targetW = Math.round(origW * 0.5);
+        const targetH = Math.round(origH * 0.5);
+        const oldDisplayW = icon.displayWidth;
+        const oldDisplayH = icon.displayHeight;
+
+        const rsKey = makeResampledBg(scene, key, key + "_rs", targetW, targetH);
         if (rsKey) {
-          const oldX = icon.x, oldY = icon.y;
           icon.setTexture(rsKey);
-          icon.setScale(icon.scaleX / dprCap);
-          icon.setPosition(oldX, oldY);
-          console.log("[RESAMPLE]", key + ":", iw, "x", ih);
+          icon.setDisplaySize(oldDisplayW, oldDisplayH);
+          console.log("[RESAMPLE]", key + ":", targetW, "x", targetH);
         }
       }
     });
