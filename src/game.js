@@ -733,8 +733,24 @@ function create() {
     const baseScale = cityBg.scaleX;
     let selectedElement = 'bg'; // 'bg', 'panel', 'hero', 'btn', 'icon0', 'icon1', 'icon2', 'icon3'
 
+    // Store BASE positions (will be set after bottomUI exists)
+    const basePositions = {
+      bgX: this.cameras.main.centerX,
+      bgY: this.cameras.main.centerY,
+      panelX: this.scale.width / 2,
+      panelY: this.scale.height,
+      heroX: heroStartX,
+      heroY: heroStartY,
+      btnX: 0, btnY: 0, // Set later
+      icon0X: 0, icon0Y: 0,
+      icon1X: 0, icon1Y: 0,
+      icon2X: 0, icon2Y: 0,
+      icon3X: 0, icon3Y: 0
+    };
+    window.tuneBasePositions = basePositions;
+
     // Store references for tune mode
-    window.tuneRefs = { cityBg, baseScale };
+    window.tuneRefs = { cityBg, baseScale, tune };
 
     // Overlay
     const overlay = document.createElement('div');
@@ -778,33 +794,54 @@ function create() {
     };
 
     const applyTune = () => {
+      const bp = window.tuneBasePositions;
+
+      // Capture base positions for btn/icons on first run (after bottomUI exists)
+      if (window.bottomUI && bp.btnX === 0 && bp.btnY === 0) {
+        bp.btnX = window.bottomUI.fightBtn?.x || 0;
+        bp.btnY = window.bottomUI.fightBtn?.y || 0;
+        const icons = window.bottomUI.icons || [];
+        icons.forEach((icon, i) => {
+          bp[`icon${i}X`] = icon?.x || 0;
+          bp[`icon${i}Y`] = icon?.y || 0;
+        });
+        console.log('[TUNE] Base positions captured:', JSON.stringify(bp));
+      }
+
       // Background
       cityBg.setScale(baseScale * tune.bgZoom);
-      cityBg.x = Math.round(this.cameras.main.centerX + tune.bgPanX);
-      cityBg.y = Math.round(this.cameras.main.centerY + tune.bgPanY);
+      cityBg.x = Math.round(bp.bgX + tune.bgPanX);
+      cityBg.y = Math.round(bp.bgY + tune.bgPanY);
 
-      // Panel (applied later when bottomUI exists)
+      // Panel
       if (window.bottomUI?.bottomPanel) {
         const p = window.bottomUI.bottomPanel;
-        p.x = Math.round(this.scale.width / 2 + tune.panelX);
-        p.y = Math.round(this.scale.height + tune.panelY);
+        p.x = Math.round(bp.panelX + tune.panelX);
+        p.y = Math.round(bp.panelY + tune.panelY);
       }
 
       // Hero
       if (window.spineHero) {
-        window.spineHero.x = Math.round(heroStartX + tune.heroX);
-        window.spineHero.y = Math.round(heroStartY + tune.heroY);
+        window.spineHero.x = Math.round(bp.heroX + tune.heroX);
+        window.spineHero.y = Math.round(bp.heroY + tune.heroY);
         window.spineHero.setScale(0.7 * tune.heroScale);
       }
 
-      // Fight button
-      if (window.bottomUI?.fightBtn) {
-        const btn = window.bottomUI.fightBtn;
-        // btnX/btnY are relative offsets
-        btn.x = Math.round(btn.x + tune.btnX);
-        btn.y = Math.round(btn.y + tune.btnY);
-        tune.btnX = 0; tune.btnY = 0; // Reset after applying to avoid accumulation
+      // Fight button (absolute position, no reset!)
+      if (window.bottomUI?.fightBtn && bp.btnX !== 0) {
+        window.fightBtnTween?.stop();
+        window.bottomUI.fightBtn.x = Math.round(bp.btnX + tune.btnX);
+        window.bottomUI.fightBtn.y = Math.round(bp.btnY + tune.btnY);
       }
+
+      // Icons (absolute positions)
+      const icons = window.bottomUI?.icons || [];
+      icons.forEach((icon, i) => {
+        if (icon && bp[`icon${i}X`] !== 0) {
+          icon.x = Math.round(bp[`icon${i}X`] + tune[`icon${i}X`]);
+          icon.y = Math.round(bp[`icon${i}Y`] + tune[`icon${i}Y`]);
+        }
+      });
 
       updateOverlay();
     };
