@@ -1,15 +1,19 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-STABLE");
+console.log("GAMEJS BUILD: 2025-12-19-TUNE-FIXED");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
 
-// === TUNE MODE (DISABLED) ===
-const TUNE_ENABLED = false;
-const TUNE_KEY = 'TUNE_SETTINGS';
+// === TUNE MODE (enabled via ?tune=1) ===
+const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
+if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
+
+// Base positions for tune mode calculations
+const HERO_BASE = { x: 150, y: 500, scale: 0.7 };
 
 function getTuneSettings() {
-  const defaults = {
+  // Always return fresh defaults (no localStorage issues)
+  return {
     bgZoom: 1.0, bgPanX: 0, bgPanY: 0,
     panelX: 0, panelY: 0, panelScale: 1.0,
     heroX: 0, heroY: 0, heroScale: 1.0,
@@ -19,26 +23,6 @@ function getTuneSettings() {
     icon2X: 0, icon2Y: 0,
     icon3X: 0, icon3Y: 0
   };
-  if (!TUNE_ENABLED) return defaults;
-  try {
-    const saved = localStorage.getItem(TUNE_KEY);
-    console.log('[TUNE] Raw from localStorage:', saved);
-    if (saved) {
-      const parsed = { ...defaults, ...JSON.parse(saved) };
-      console.log('[TUNE] Loaded settings:', JSON.stringify(parsed));
-      return parsed;
-    }
-    console.log('[TUNE] No saved settings, using defaults');
-    return defaults;
-  } catch (e) {
-    console.error('[TUNE] Failed to parse settings:', e);
-    return defaults;
-  }
-}
-
-function saveTuneSettings(settings) {
-  localStorage.setItem(TUNE_KEY, JSON.stringify(settings));
-  console.log('[TUNE] Saved:', JSON.stringify(settings));
 }
 
 // ============================================================
@@ -759,21 +743,6 @@ function create() {
     };
     window.tuneBasePositions = basePositions;
 
-    // Store ORIGINAL positions that NEVER change (for reset)
-    window.tuneOriginalPositions = {
-      bgX: this.cameras.main.centerX,
-      bgY: this.cameras.main.centerY,
-      panelX: this.scale.width / 2,
-      panelY: this.scale.height,
-      heroX: null, // Set when spineHero is first captured
-      heroY: null,
-      btnX: null, btnY: null,
-      icon0X: null, icon0Y: null,
-      icon1X: null, icon1Y: null,
-      icon2X: null, icon2Y: null,
-      icon3X: null, icon3Y: null
-    };
-
     // Store references for tune mode
     window.tuneRefs = { cityBg, baseScale, tune };
 
@@ -799,73 +768,39 @@ function create() {
     `;
     document.body.appendChild(overlay);
 
-    // Attach button handlers ONCE
+    // Button handlers - SAVE just copies to clipboard (no localStorage)
     document.getElementById('tune-save').onclick = () => {
-      const data = JSON.stringify(tune);
-      localStorage.setItem(TUNE_KEY, data);
-      console.log('[TUNE] SAVED to localStorage:', data);
-      // Verify it was saved
-      const verify = localStorage.getItem(TUNE_KEY);
-      console.log('[TUNE] Verify read-back:', verify);
-      if (verify === data) {
-        alert('Saved successfully!\n' + data);
-      } else {
-        alert('ERROR: Save may have failed!\nExpected: ' + data + '\nGot: ' + verify);
-      }
+      const json = JSON.stringify(tune, null, 2);
+      console.log("[TUNE] Current settings:\n" + json);
+      navigator.clipboard?.writeText(json);
+      alert("Settings copied to clipboard!\n\n" + json);
     };
     document.getElementById('tune-reset').onclick = () => {
-      console.log('[TUNE] RESET: Before:', JSON.stringify(tune));
-
       // Reset tune values to defaults
       Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0, icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0});
-      console.log('[TUNE] RESET: After assign:', JSON.stringify(tune));
-
-      localStorage.removeItem(TUNE_KEY);
-
-      // Reset base positions to ORIGINAL values (not 0!)
-      const orig = window.tuneOriginalPositions;
-      const bp = window.tuneBasePositions;
-      if (orig.heroX !== null) {
-        bp.heroX = orig.heroX;
-        bp.heroY = orig.heroY;
-      }
-      if (orig.btnX !== null) {
-        bp.btnX = orig.btnX;
-        bp.btnY = orig.btnY;
-        for (let i = 0; i < 4; i++) {
-          bp[`icon${i}X`] = orig[`icon${i}X`];
-          bp[`icon${i}Y`] = orig[`icon${i}Y`];
-        }
-      }
-      console.log('[TUNE] RESET: Base positions restored to originals:', JSON.stringify(bp));
-
       applyTune();
-      console.log('[TUNE] RESET: Hero actual scale:', window.spineHero?.scaleX);
-      alert('Reset!');
+      alert('Reset to defaults!');
     };
     document.getElementById('tune-copy').onclick = () => {
-      const data = JSON.stringify(tune);
-      navigator.clipboard?.writeText(data);
-      alert('Copied!\n' + data);
+      const json = JSON.stringify(tune, null, 2);
+      navigator.clipboard?.writeText(json);
+      alert('Copied!\n' + json);
     };
 
     const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f', icon0: '#f80', icon1: '#f80', icon2: '#f80', icon3: '#f80' };
 
     const updateOverlay = () => {
-      const bp = window.tuneBasePositions || {};
       const hero = window.spineHero;
       const btn = window.bottomUI?.fightBtn;
       const icons = window.bottomUI?.icons || [];
-      const hbScale = window.HERO_BASE?.scale || 0.7;
-      const hbX = window.HERO_BASE?.x || 97;
-      const hbY = window.HERO_BASE?.y || 549;
 
       document.getElementById('tune-sel').innerHTML = `<span style="color:${selColors[selectedElement] || '#fff'}">${selectedElement}</span>`;
       document.getElementById('tune-values').innerHTML = `
-        <b style="color:#0f0">1.BG:</b> z:${tune.bgZoom.toFixed(2)} pos:${cityBg?.x?.toFixed(0)},${cityBg?.y?.toFixed(0)} <small>(ofs:${tune.bgPanX},${tune.bgPanY})</small><br>
-        <b style="color:#ff0">2.Panel:</b> ${window.bottomUI?.bottomPanel?.x?.toFixed(0) || '?'},${window.bottomUI?.bottomPanel?.y?.toFixed(0) || '?'} s:${tune.panelScale.toFixed(2)} <small>(ofs:${tune.panelX},${tune.panelY})</small><br>
-        <b style="color:#0ff">3.Hero:</b> ${hero?.x?.toFixed(0) || '?'},${hero?.y?.toFixed(0) || '?'} s:${(hbScale * tune.heroScale).toFixed(2)} <small>(base:${hbX},${hbY} ×${tune.heroScale.toFixed(2)} ofs:${tune.heroX},${tune.heroY})</small><br>
-        <b style="color:#f0f">4.Btn:</b> ${btn?.x?.toFixed(0) || '?'},${btn?.y?.toFixed(0) || '?'} <small>(ofs:${tune.btnX},${tune.btnY})</small><br>
+        <b style="color:#0f0">1.BG:</b> z:${tune.bgZoom.toFixed(2)} pos:${cityBg?.x?.toFixed(0)},${cityBg?.y?.toFixed(0)}<br>
+        <b style="color:#ff0">2.Panel:</b> ${window.bottomUI?.bottomPanel?.x?.toFixed(0) || '?'},${window.bottomUI?.bottomPanel?.y?.toFixed(0) || '?'}<br>
+        <b style="color:#0ff">3.Hero:</b> ${hero?.x?.toFixed(0) || '?'},${hero?.y?.toFixed(0) || '?'} s:${(HERO_BASE.scale * tune.heroScale).toFixed(2)}<br>
+        <small>&nbsp;base:${HERO_BASE.x},${HERO_BASE.y} ofs:${tune.heroX},${tune.heroY}</small><br>
+        <b style="color:#f0f">4.Btn:</b> ${btn?.x?.toFixed(0) || '?'},${btn?.y?.toFixed(0) || '?'}<br>
         <b style="color:#f80">5-8.Icons:</b><br>
         &nbsp;🪖${icons[0]?.x?.toFixed(0) || '?'},${icons[0]?.y?.toFixed(0) || '?'} ⚒️${icons[1]?.x?.toFixed(0) || '?'},${icons[1]?.y?.toFixed(0) || '?'}<br>
         &nbsp;🏪${icons[2]?.x?.toFixed(0) || '?'},${icons[2]?.y?.toFixed(0) || '?'} 🗺️${icons[3]?.x?.toFixed(0) || '?'},${icons[3]?.y?.toFixed(0) || '?'}
@@ -874,103 +809,47 @@ function create() {
 
     const applyTune = () => {
       const bp = window.tuneBasePositions;
-      console.log('[TUNE] applyTune called. tune=', JSON.stringify(tune));
-      console.log('[TUNE] basePositions=', JSON.stringify(bp));
-      console.log('[TUNE] spineHero exists:', !!window.spineHero, 'bottomUI exists:', !!window.bottomUI);
-
-      const orig = window.tuneOriginalPositions;
-
-      // Capture ORIGINAL hero position ONCE (never changes after this)
-      if (window.spineHero && orig.heroX === null) {
-        orig.heroX = window.spineHero.x;
-        orig.heroY = window.spineHero.y;
-        console.log('[TUNE] Hero ORIGINAL captured (never changes):', orig.heroX, orig.heroY);
-      }
-
-      // Capture base positions for hero on first run (after spineHero exists)
-      if (window.spineHero && (bp.heroX === 0 || bp.heroX === undefined)) {
-        bp.heroX = orig.heroX || window.spineHero.x;
-        bp.heroY = orig.heroY || window.spineHero.y;
-        console.log('[TUNE] Hero base set to:', bp.heroX, bp.heroY);
-      }
-
-      // Capture ORIGINAL btn/icons positions ONCE
-      if (window.bottomUI && orig.btnX === null) {
-        orig.btnX = window.bottomUI.fightBtn?.x || 0;
-        orig.btnY = window.bottomUI.fightBtn?.y || 0;
-        const icons = window.bottomUI.icons || [];
-        icons.forEach((icon, i) => {
-          orig[`icon${i}X`] = icon?.x || 0;
-          orig[`icon${i}Y`] = icon?.y || 0;
-        });
-        console.log('[TUNE] UI ORIGINAL positions captured:', JSON.stringify(orig));
-      }
 
       // Capture base positions for btn/icons on first run (after bottomUI exists)
       if (window.bottomUI && bp.btnX === 0 && bp.btnY === 0) {
-        bp.btnX = orig.btnX || window.bottomUI.fightBtn?.x || 0;
-        bp.btnY = orig.btnY || window.bottomUI.fightBtn?.y || 0;
+        bp.btnX = window.bottomUI.fightBtn?.x || 0;
+        bp.btnY = window.bottomUI.fightBtn?.y || 0;
         const icons = window.bottomUI.icons || [];
         icons.forEach((icon, i) => {
-          bp[`icon${i}X`] = orig[`icon${i}X`] || icon?.x || 0;
-          bp[`icon${i}Y`] = orig[`icon${i}Y`] || icon?.y || 0;
+          bp[`icon${i}X`] = icon?.x || 0;
+          bp[`icon${i}Y`] = icon?.y || 0;
         });
-        console.log('[TUNE] UI base positions set to:', JSON.stringify(bp));
       }
 
       // Background
       cityBg.setScale(baseScale * tune.bgZoom);
       cityBg.x = Math.round(bp.bgX + tune.bgPanX);
       cityBg.y = Math.round(bp.bgY + tune.bgPanY);
-      console.log('[TUNE] BG applied: base=', bp.bgX, bp.bgY, 'offset=', tune.bgPanX, tune.bgPanY, '-> final=', cityBg.x, cityBg.y);
 
       // Panel
       if (window.bottomUI?.bottomPanel) {
         const p = window.bottomUI.bottomPanel;
-        const oldX = p.x, oldY = p.y;
         p.x = Math.round(bp.panelX + tune.panelX);
         p.y = Math.round(bp.panelY + tune.panelY);
-        console.log('[TUNE] Panel applied: base=', bp.panelX, bp.panelY, 'offset=', tune.panelX, tune.panelY, '-> final=', p.x, p.y);
       }
 
-      // Hero - use HERO_BASE constants for reliable positioning
+      // Hero - use HERO_BASE constants (offset-based positioning)
       if (window.spineHero) {
-        const hb = window.HERO_BASE || { x: 97, y: 549, scale: 0.7 };
-        const heroBaseX = hb.x;
-        const heroBaseY = hb.y;
-        const heroBaseScale = hb.scale;
-
-        const newX = Math.round(heroBaseX + tune.heroX);
-        const newY = Math.round(heroBaseY + tune.heroY);
-        const finalScale = heroBaseScale * tune.heroScale;
-
-        console.log('[TUNE] Hero: base=', heroBaseX, heroBaseY, 'offset=', tune.heroX, tune.heroY, '-> pos=', newX, newY);
-        console.log('[TUNE] Hero scale: base=', heroBaseScale, '× mult=', tune.heroScale, '= final=', finalScale);
-
-        window.spineHero.x = newX;
-        window.spineHero.y = newY;
-        window.spineHero.setScale(finalScale);
+        window.spineHero.x = Math.round(HERO_BASE.x + tune.heroX);
+        window.spineHero.y = Math.round(HERO_BASE.y + tune.heroY);
+        window.spineHero.setScale(HERO_BASE.scale * tune.heroScale);
         window.spineHero.setVisible(true);
-        window.spineHero.setDepth(10);
-
-        // Warn if hero is off-screen
-        const screenW = window.gameRef?.scale.width || 390;
-        const screenH = window.gameRef?.scale.height || 844;
-        if (newX < 0 || newX > screenW || newY < 0 || newY > screenH) {
-          console.warn('[TUNE] Hero off-screen! Pos:', newX, newY, '- Click RESET to fix');
-        }
+        window.spineHero.setDepth(50);
       }
 
-      // Fight button (absolute position, no reset!)
+      // Fight button
       if (window.bottomUI?.fightBtn && bp.btnX !== 0) {
         window.fightBtnTween?.stop();
-        const btn = window.bottomUI.fightBtn;
-        btn.x = Math.round(bp.btnX + tune.btnX);
-        btn.y = Math.round(bp.btnY + tune.btnY);
-        console.log('[TUNE] Btn applied: base=', bp.btnX, bp.btnY, 'offset=', tune.btnX, tune.btnY, '-> final=', btn.x, btn.y);
+        window.bottomUI.fightBtn.x = Math.round(bp.btnX + tune.btnX);
+        window.bottomUI.fightBtn.y = Math.round(bp.btnY + tune.btnY);
       }
 
-      // Icons (absolute positions)
+      // Icons
       const icons = window.bottomUI?.icons || [];
       icons.forEach((icon, i) => {
         if (icon && bp[`icon${i}X`] !== 0) {
@@ -978,12 +857,8 @@ function create() {
           icon.y = Math.round(bp[`icon${i}Y`] + tune[`icon${i}Y`]);
         }
       });
-      if (icons.length > 0) {
-        console.log('[TUNE] Icons applied:', icons.map((ic, i) => `icon${i}:${ic?.x},${ic?.y}`).join(' '));
-      }
 
       updateOverlay();
-      console.log('[TUNE] applyTune complete');
     };
 
     // Click to select element
@@ -1245,18 +1120,9 @@ function create() {
       const bottomUI = createBottomUI(this);
       window.bottomUI = bottomUI;
 
-      // Apply saved tune settings after UI is created
+      // Apply tune settings after UI is created
       if (TUNE_ENABLED && window.applyTune) {
-        console.log('[TUNE] Scheduling applyTune after bottomUI created...');
-        setTimeout(() => {
-          console.log('[TUNE] Delayed applyTune executing (100ms after bottomUI)');
-          window.applyTune();
-        }, 100);
-        // Safety: call again after 500ms in case Spine wasn't ready
-        setTimeout(() => {
-          console.log('[TUNE] Safety applyTune executing (500ms)');
-          window.applyTune();
-        }, 500);
+        setTimeout(() => window.applyTune(), 100);
       }
 
       // 1) Set depth/scrollFactor FIRST
