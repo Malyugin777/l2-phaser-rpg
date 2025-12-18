@@ -164,20 +164,7 @@ game.events.once("ready", () => {
 
   applyResolutionSafe(game, RESOLUTION);
 
-  // Force canvas backing to match DPR (Phaser 3.80 ignores resolution config)
-  if (RESOLUTION > 1 && game.canvas) {
-    const wantW = Math.round(BASE_W * RESOLUTION);
-    const wantH = Math.round(BASE_H * RESOLUTION);
-    if (game.canvas.width < wantW) {
-      game.canvas.width = wantW;
-      game.canvas.height = wantH;
-      // Update renderer to match new backing size
-      if (game.renderer?.gl) {
-        game.renderer.gl.viewport(0, 0, wantW, wantH);
-      }
-      console.log("[DPI] forced backing:", wantW, wantH);
-    }
-  }
+  // NOTE: Forced backing removed - breaks layout. Keep backing at game units (390x844)
 });
 
 // GPU auto-guard: prevent render surface blow-up (DESKTOP ONLY)
@@ -664,16 +651,16 @@ function create() {
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
 
-  // Apply resampled texture to city background (device pixels for retina)
-  const dpr = this.game.renderer.resolution || window.devicePixelRatio || 1;
-  const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", cityBg.displayWidth * dpr, cityBg.displayHeight * dpr);
+  // Apply resampled texture to city background (match canvas backing)
+  const canvasW = this.game.canvas.width;
+  const canvasH = this.game.canvas.height;
+  const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", canvasW, canvasH);
   if (rsKey) {
     cityBg.setTexture(rsKey);
-    cityBg.setScale(1 / dpr);
-    cityBg.x = Math.round(this.cameras.main.centerX);
-    cityBg.y = Math.round(this.cameras.main.centerY);
+    cityBg.setDisplaySize(canvasW, canvasH);
+    cityBg.setPosition(canvasW / 2, canvasH / 2);
 
-    console.log("[RESAMPLE] applied to cityBg, dpr:", dpr, "scale:", (1/dpr).toFixed(3));
+    console.log("[RESAMPLE] applied to cityBg", canvasW, canvasH);
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
