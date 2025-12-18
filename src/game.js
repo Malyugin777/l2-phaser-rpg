@@ -938,6 +938,7 @@ function create() {
       }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale += 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
+        window.fightBtnTween?.stop(); // Stop animation
         const btn = window.bottomUI.fightBtn;
         btn.setScale(btn.scaleX * 1.05, btn.scaleY * 1.05);
       }
@@ -957,6 +958,7 @@ function create() {
       }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale -= 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
+        window.fightBtnTween?.stop(); // Stop animation
         const btn = window.bottomUI.fightBtn;
         btn.setScale(btn.scaleX * 0.95, btn.scaleY * 0.95);
       }
@@ -1571,7 +1573,7 @@ function createBottomUI(scene) {
     console.log("[RESAMPLE] ui_btn_fight applied, scale:", finalBtnScale.toFixed(3));
   }
 
-  scene.tweens.add({
+  const fightBtnTween = scene.tweens.add({
     targets: fightBtn,
     scale: finalBtnScale * 1.05,
     yoyo: true,
@@ -1579,6 +1581,8 @@ function createBottomUI(scene) {
     duration: 800,
     ease: 'Sine.easeInOut'
   });
+  // Store tween for tune mode
+  window.fightBtnTween = fightBtnTween;
 
   fightBtn.on('pointerdown', () => {
     console.log('[UI] Fight button clicked!');
