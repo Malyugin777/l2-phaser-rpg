@@ -634,43 +634,55 @@ function create() {
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
 
-  // === SAFE MIPMAP GENERATION (no crash) ===
-  const BG_KEY = "talkingisland_main";
+  // === MIPMAP GENERATION (delayed for GPU upload) ===
+  console.log("[MIPMAP] setup");
 
-  function isPOT(n) { return n > 0 && (n & (n - 1)) === 0; }
+  this.time.delayedCall(300, () => {
+    console.log("[MIPMAP] try");
 
-  this.events.once(Phaser.Scenes.Events.POST_RENDER, () => {
     try {
-      const r = this.game.renderer;
-      if (!r || r.type !== Phaser.WEBGL || !r.gl) {
-        console.log("[MIPMAP] SKIP (not WebGL)");
+      const gl = this.game.renderer?.gl;
+      if (!gl) {
+        console.log("[MIPMAP] SKIP (no GL)");
         return;
       }
 
-      const tex = this.textures.get(BG_KEY);
+      const tex = this.textures.get("talkingisland_main");
       const src = tex?.source?.[0];
       const img = src?.image;
       const glTex = src?.glTexture;
-      const gl = r.gl;
 
-      if (!img) { console.log("[MIPMAP] SKIP (no img)"); return; }
+      if (!img) {
+        console.log("[MIPMAP] SKIP (no image)");
+        return;
+      }
+
+      console.log("[MIPMAP] size:", img.width, "x", img.height);
+
+      // Check POT
+      const isPOT = (n) => n > 0 && (n & (n - 1)) === 0;
       if (!isPOT(img.width) || !isPOT(img.height)) {
         console.log("[MIPMAP] SKIP (NPOT)", img.width, img.height);
         return;
       }
-      if (!(glTex instanceof WebGLTexture)) {
-        console.log("[MIPMAP] SKIP (glTexture not ready)", glTex);
+
+      // Check glTexture ready
+      if (!glTex || !(glTex instanceof WebGLTexture)) {
+        console.log("[MIPMAP] SKIP (glTexture not ready)", typeof glTex);
         return;
       }
 
+      // Generate mipmaps
       gl.bindTexture(gl.TEXTURE_2D, glTex);
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.bindTexture(gl.TEXTURE_2D, null);
 
-      console.log("[MIPMAP] OK", BG_KEY, img.width, img.height);
+      console.log("[MIPMAP] OK", img.width, img.height);
+
     } catch (e) {
-      console.log("[MIPMAP] ERROR (ignored)", e);
+      console.log("[MIPMAP] ERROR", e.message);
     }
   });
 
