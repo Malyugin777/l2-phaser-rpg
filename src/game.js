@@ -83,7 +83,7 @@ const isMobile = isTgMobile || _isCoarse || _isSmall;
 console.log("[ENV]", { tgPlatform, isTgMobile, _isCoarse, _isSmall, isMobile });
 
 const getScaleMode = () => {
-  return Phaser.Scale.ENVELOP;
+  return Phaser.Scale.FIT;  // FIT keeps canvas inside container (no overflow)
 };
 
 const RESOLUTION = isMobile ? (window.devicePixelRatio || 1) : 1;
