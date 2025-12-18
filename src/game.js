@@ -634,55 +634,61 @@ function create() {
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
 
-  // === MIPMAP GENERATION (delayed for GPU upload) ===
+  // === MIPMAP RETRY (won't crash, will log) ===
+  const BG_KEY = "talkingisland_main";
+
+  const tryMips = () => {
+    const r = this.game.renderer;
+    const gl = r && r.gl;
+    if (!r || r.type !== Phaser.WEBGL || !gl) {
+      console.log("[MIPMAP] SKIP not WebGL");
+      return { done: true };
+    }
+
+    const tex = this.textures.get(BG_KEY);
+    const src = tex?.source?.[0];
+    const img = src?.image;
+    const glTex = src?.glTexture;
+
+    console.log("[MIPMAP] try", {
+      img: img ? [img.width, img.height] : null,
+      glTexType: glTex?.constructor?.name || typeof glTex,
+    });
+
+    if (!img || !(glTex instanceof WebGLTexture)) {
+      return { done: false };
+    }
+
+    // POT check
+    const isPOT = (n) => n > 0 && (n & (n - 1)) === 0;
+    if (!isPOT(img.width) || !isPOT(img.height)) {
+      console.log("[MIPMAP] SKIP NPOT", img.width, img.height);
+      return { done: true };
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, glTex);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    console.log("[MIPMAP] OK", img.width, img.height);
+    return { done: true };
+  };
+
+  // Retry 10 times every 150ms
   console.log("[MIPMAP] setup");
-
-  this.time.delayedCall(300, () => {
-    console.log("[MIPMAP] try");
-
-    try {
-      const gl = this.game.renderer?.gl;
-      if (!gl) {
-        console.log("[MIPMAP] SKIP (no GL)");
-        return;
+  let tries = 0;
+  const mipTimer = this.time.addEvent({
+    delay: 150,
+    loop: true,
+    callback: () => {
+      tries++;
+      const res = tryMips();
+      if (res.done || tries >= 10) {
+        if (tries >= 10) console.log("[MIPMAP] GIVE UP");
+        mipTimer.remove(false);
       }
-
-      const tex = this.textures.get("talkingisland_main");
-      const src = tex?.source?.[0];
-      const img = src?.image;
-      const glTex = src?.glTexture;
-
-      if (!img) {
-        console.log("[MIPMAP] SKIP (no image)");
-        return;
-      }
-
-      console.log("[MIPMAP] size:", img.width, "x", img.height);
-
-      // Check POT
-      const isPOT = (n) => n > 0 && (n & (n - 1)) === 0;
-      if (!isPOT(img.width) || !isPOT(img.height)) {
-        console.log("[MIPMAP] SKIP (NPOT)", img.width, img.height);
-        return;
-      }
-
-      // Check glTexture ready
-      if (!glTex || !(glTex instanceof WebGLTexture)) {
-        console.log("[MIPMAP] SKIP (glTexture not ready)", typeof glTex);
-        return;
-      }
-
-      // Generate mipmaps
-      gl.bindTexture(gl.TEXTURE_2D, glTex);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.bindTexture(gl.TEXTURE_2D, null);
-
-      console.log("[MIPMAP] OK", img.width, img.height);
-
-    } catch (e) {
-      console.log("[MIPMAP] ERROR", e.message);
     }
   });
 
