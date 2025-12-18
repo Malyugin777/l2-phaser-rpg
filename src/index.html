@@ -95,6 +95,38 @@
     };
   </script>
 
+  <div id="viewport-debug" style="
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: blue;
+    color: yellow;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 10px;
+    z-index: 999999;
+  ">Loading viewport info...</div>
+
+  <script>
+    function updateViewportDebug() {
+      var el = document.getElementById('viewport-debug');
+      var container = document.getElementById('game-container');
+      var canvas = document.querySelector('canvas');
+
+      var info = [];
+      info.push('WIN: ' + window.innerWidth + 'x' + window.innerHeight);
+      info.push('CONT: ' + (container ? container.clientWidth + 'x' + container.clientHeight : 'NO'));
+      info.push('CANVAS: ' + (canvas ? canvas.clientWidth + 'x' + canvas.clientHeight : 'NO'));
+      info.push('--app-h: ' + getComputedStyle(document.documentElement).getPropertyValue('--app-height'));
+
+      el.innerHTML = info.join(' | ');
+    }
+
+    updateViewportDebug();
+    setInterval(updateViewportDebug, 1000);
+  </script>
+
   <!-- Pre-Entry Overlay (Loader + Intro) -->
   <div id="preEntry">
     <div id="preLoader">
@@ -163,7 +195,7 @@
 <script src="ui/skillsPanel.js"></script>
 
 <!-- MAIN -->
-<script src="game.js?v=20241220b"></script>
+<script src="game.js?v=20241220c"></script>
 
 </body>
 </html>
