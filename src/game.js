@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-SIMPLE-PANEL");
+console.log("GAMEJS BUILD: 2025-12-19-QUALITY-DIAG");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -584,6 +584,17 @@ function create() {
   });
   console.log("[BACKING] actual:", this.game.canvas.width, this.game.canvas.height);
   console.log("[RESOLUTION] config:", this.game.config.resolution, "renderer:", this.game.renderer.resolution);
+
+  // === QUALITY DIAGNOSTIC ===
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = r.width;
+  const cssH = r.height;
+  const physicalPixelsNeeded = Math.round(cssW * dpr);
+  const qualityRatio = (c.width / physicalPixelsNeeded * 100).toFixed(0);
+  console.log("[QUALITY] Canvas backing:", c.width, "x", c.height);
+  console.log("[QUALITY] CSS size:", Math.round(cssW), "x", Math.round(cssH));
+  console.log("[QUALITY] Physical pixels needed:", physicalPixelsNeeded, "(DPR:", dpr + ")");
+  console.log("[QUALITY] Quality ratio:", qualityRatio + "% ← " + (qualityRatio < 80 ? "LOW QUALITY!" : "OK"));
 
   // === DIAGNOSTIC LOGS (SCALE MODE) ===
   console.log("[SCALE MODE]", this.scale.scaleMode);
