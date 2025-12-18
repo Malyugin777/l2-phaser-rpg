@@ -920,6 +920,7 @@ function create() {
     this.input.on('pointerup', () => { dragging = false; });
 
     // Helper to move icon
+    const STEP = 1; // Arrow key step size in pixels
     const moveIcon = (delta, axis) => {
       if (selectedElement.startsWith('icon')) {
         const idx = parseInt(selectedElement.replace('icon', ''));
@@ -931,37 +932,37 @@ function create() {
       }
     };
 
-    // Arrow keys for fine tune selected element
+    // Arrow keys for fine tune selected element (1px steps)
     this.input.keyboard.on('keydown-UP', () => {
-      if (selectedElement === 'bg') { tune.bgPanY -= 5; cityBg.y -= 5; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY -= 5; window.bottomUI.bottomPanel.y -= 5; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY -= 5; window.spineHero.y -= 5; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY -= 5; window.bottomUI.fightBtn.y -= 5; }
-      else moveIcon(-5, 'Y');
+      if (selectedElement === 'bg') { tune.bgPanY -= STEP; cityBg.y -= STEP; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY -= STEP; window.bottomUI.bottomPanel.y -= STEP; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY -= STEP; window.spineHero.y -= STEP; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY -= STEP; window.bottomUI.fightBtn.y -= STEP; }
+      else moveIcon(-STEP, 'Y');
       updateOverlay();
     });
     this.input.keyboard.on('keydown-DOWN', () => {
-      if (selectedElement === 'bg') { tune.bgPanY += 5; cityBg.y += 5; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY += 5; window.bottomUI.bottomPanel.y += 5; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY += 5; window.spineHero.y += 5; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY += 5; window.bottomUI.fightBtn.y += 5; }
-      else moveIcon(5, 'Y');
+      if (selectedElement === 'bg') { tune.bgPanY += STEP; cityBg.y += STEP; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY += STEP; window.bottomUI.bottomPanel.y += STEP; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY += STEP; window.spineHero.y += STEP; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY += STEP; window.bottomUI.fightBtn.y += STEP; }
+      else moveIcon(STEP, 'Y');
       updateOverlay();
     });
     this.input.keyboard.on('keydown-LEFT', () => {
-      if (selectedElement === 'bg') { tune.bgPanX -= 5; cityBg.x -= 5; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX -= 5; window.bottomUI.bottomPanel.x -= 5; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX -= 5; window.spineHero.x -= 5; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX -= 5; window.bottomUI.fightBtn.x -= 5; }
-      else moveIcon(-5, 'X');
+      if (selectedElement === 'bg') { tune.bgPanX -= STEP; cityBg.x -= STEP; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX -= STEP; window.bottomUI.bottomPanel.x -= STEP; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX -= STEP; window.spineHero.x -= STEP; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX -= STEP; window.bottomUI.fightBtn.x -= STEP; }
+      else moveIcon(-STEP, 'X');
       updateOverlay();
     });
     this.input.keyboard.on('keydown-RIGHT', () => {
-      if (selectedElement === 'bg') { tune.bgPanX += 5; cityBg.x += 5; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX += 5; window.bottomUI.bottomPanel.x += 5; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX += 5; window.spineHero.x += 5; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX += 5; window.bottomUI.fightBtn.x += 5; }
-      else moveIcon(5, 'X');
+      if (selectedElement === 'bg') { tune.bgPanX += STEP; cityBg.x += STEP; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX += STEP; window.bottomUI.bottomPanel.x += STEP; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX += STEP; window.spineHero.x += STEP; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX += STEP; window.bottomUI.fightBtn.x += STEP; }
+      else moveIcon(STEP, 'X');
       updateOverlay();
     });
 
