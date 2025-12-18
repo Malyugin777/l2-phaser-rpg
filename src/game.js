@@ -83,7 +83,7 @@ const isMobile = isTgMobile || _isCoarse || _isSmall;
 console.log("[ENV]", { tgPlatform, isTgMobile, _isCoarse, _isSmall, isMobile });
 
 const getScaleMode = () => {
-  return Phaser.Scale.FIT;  // FIT keeps canvas inside container (no overflow)
+  return Phaser.Scale.ENVELOP;  // ENVELOP fills screen, crops edges (no black bars)
 };
 
 const RESOLUTION = isMobile ? (window.devicePixelRatio || 1) : 1;
@@ -268,9 +268,13 @@ function fitBackground(bg, scene) {
   if (!bg || !scene) return;
   var w = scene.scale.width;
   var h = scene.scale.height;
+
+  // ENVELOP: uniform scale, fills screen (may crop)
   var scale = Math.max(w / bg.width, h / bg.height);
-  bg.setScale(scale);
-  bg.setPosition(w / 2, h / 2);
+  bg.setScale(scale, scale);  // uniform scale
+
+  // Snap to whole pixels (retina fix)
+  bg.setPosition(Math.round(w / 2), Math.round(h / 2));
   bg.setOrigin(0.5, 0.5);
   bg.setScrollFactor(0);
 }
@@ -640,6 +644,19 @@ function create() {
   console.log("[RENDER] Background:", typeof cityBg, "visible:", cityBg?.visible, "alpha:", cityBg?.alpha);
   console.log("[RENDER] cityBg position:", cityBg?.x, cityBg?.y, "scale:", cityBg?.scaleX, cityBg?.scaleY);
 
+  // === DIAGNOSTIC: Background scaling ===
+  const bgTex = this.textures.get("talkingisland_main");
+  const bgSrc = bgTex?.getSourceImage();
+  console.log("[BG]", {
+    texSize: [bgSrc?.width, bgSrc?.height],
+    scaleX: cityBg.scaleX.toFixed(3),
+    scaleY: cityBg.scaleY.toFixed(3),
+    uniform: cityBg.scaleX === cityBg.scaleY,
+    displaySize: [cityBg.displayWidth.toFixed(1), cityBg.displayHeight.toFixed(1)],
+    pos: [cityBg.x.toFixed(1), cityBg.y.toFixed(1)],
+    filterMode: bgTex?.filterMode,
+  });
+
   // герой/враг для локации (логические координаты)
   heroStartX = w * 0.25;
   heroStartY = h * 0.65;
@@ -763,32 +780,35 @@ function create() {
 
         const { bottomPanel, fightBtn, icons } = ui;
 
-        // === PANEL (CHANGE 3: snap by bounds, not y) ===
+        // === PANEL (uniform scale + pixel snap) ===
         if (bottomPanel) {
           bottomPanel.setOrigin(0.5, 1);
-          bottomPanel.x = safe.centerX;
-          bottomPanel.y = safe.bottom - pad;
 
           const baseW = bottomPanel.width || 1;
-          bottomPanel.setScale(Math.min(1, safe.width / baseW));
+          const scale = Math.min(1, safe.width / baseW);
+          bottomPanel.setScale(scale, scale);  // UNIFORM
+
+          // Pixel-snapped position
+          bottomPanel.x = Math.round(safe.centerX);
+          bottomPanel.y = Math.round(safe.bottom - pad);
 
           // Snap flush using bounds to eliminate gap
           const b = bottomPanel.getBounds();
           const targetBottom = safe.bottom - pad;
           const delta = b.bottom - targetBottom;
-          bottomPanel.y -= delta; // snap flush
+          bottomPanel.y = Math.round(bottomPanel.y - delta);
         }
 
         // Получаем реальные границы панели после scale
         const panelB = bottomPanel?.getBounds?.();
         const panelMidY = panelB ? (panelB.top + panelB.bottom) / 2 : (safe.bottom - 60);
 
-        // === FIGHT BTN (справа ВНУТРИ панели) ===
+        // === FIGHT BTN (pixel-snapped) ===
         if (fightBtn && panelB) {
           const rightPad = 80;
           fightBtn.setOrigin(0.5, 0.5);
-          fightBtn.x = panelB.right - rightPad;
-          fightBtn.y = panelMidY;
+          fightBtn.x = Math.round(panelB.right - rightPad);
+          fightBtn.y = Math.round(panelMidY);
         }
 
         // === ICONS (слева до fightBtn) ===
@@ -804,8 +824,8 @@ function create() {
           icons.forEach((ic, i) => {
             if (!ic) return;
             ic.setOrigin(0.5, 0.5);
-            ic.x = startX + step * i;
-            ic.y = panelMidY;
+            ic.x = Math.round(startX + step * i);
+            ic.y = Math.round(panelMidY);
           });
         }
 
@@ -895,6 +915,37 @@ function create() {
       }
       logTexFilter(this, k);
     });
+
+    // === DIAGNOSTIC: UI panel scaling ===
+    if (window.bottomUI?.bottomPanel) {
+      const p = window.bottomUI.bottomPanel;
+      const pTex = this.textures.get("ui_bottom");
+      const pSrc = pTex?.getSourceImage();
+      console.log("[UI-PANEL]", {
+        texSize: [pSrc?.width, pSrc?.height],
+        scaleX: p.scaleX.toFixed(3),
+        scaleY: p.scaleY.toFixed(3),
+        uniform: Math.abs(p.scaleX - p.scaleY) < 0.001,
+        displaySize: [p.displayWidth.toFixed(1), p.displayHeight.toFixed(1)],
+        pos: [p.x.toFixed(1), p.y.toFixed(1)],
+        filterMode: pTex?.filterMode,
+      });
+    }
+
+    if (window.bottomUI?.fightBtn) {
+      const btn = window.bottomUI.fightBtn;
+      const btnTex = this.textures.get("ui_btn_fight");
+      const btnSrc = btnTex?.getSourceImage();
+      console.log("[UI-BTN]", {
+        texSize: [btnSrc?.width, btnSrc?.height],
+        scaleX: btn.scaleX.toFixed(3),
+        scaleY: btn.scaleY.toFixed(3),
+        uniform: Math.abs(btn.scaleX - btn.scaleY) < 0.001,
+        displaySize: [btn.displayWidth.toFixed(1), btn.displayHeight.toFixed(1)],
+        pos: [btn.x.toFixed(1), btn.y.toFixed(1)],
+        filterMode: btnTex?.filterMode,
+      });
+    }
 
     // Log specific objects
     if (window.cityBg) logTex("talkingisland_main", window.cityBg);
@@ -1113,9 +1164,9 @@ function createBottomUI(scene) {
     .setDepth(100)
     .setScrollFactor(0);
 
-  // Масштаб: панель 1408px → экран 390px
+  // UNIFORM scale for retina smoothness
   const panelScale = w / 1408;  // ≈ 0.277
-  bottomPanel.setScale(panelScale);
+  bottomPanel.setScale(panelScale, panelScale);  // scaleX = scaleY
 
   const panelHeight = 768 * panelScale;  // ≈ 213px
   const panelTop = h - panelHeight;
@@ -1127,11 +1178,12 @@ function createBottomUI(scene) {
   const fightBtnX = panelCenterX + 123 * panelScale * 3.6;  // смещение вправо
   const fightBtnY = h - panelHeight / 2;  // по центру панели по высоте
 
+  const fightBtnScale = panelScale * 1.2;
   const fightBtn = scene.add.image(fightBtnX, fightBtnY, 'ui_btn_fight')
     .setOrigin(0.5, 0.5)
     .setDepth(110)
     .setScrollFactor(0)
-    .setScale(panelScale * 1.2)  // чуть больше
+    .setScale(fightBtnScale, fightBtnScale)  // uniform scale
     .setInteractive({ useHandCursor: true });
 
   scene.tweens.add({
