@@ -164,19 +164,20 @@ game.events.once("ready", () => {
 
   applyResolutionSafe(game, RESOLUTION);
 
-  // TEMPORARILY DISABLED: Manual canvas size changes can cause black screen on iOS
-  // if (RESOLUTION > 1) {
-  //   const c = game.canvas;
-  //   const wantW = Math.round(BASE_W * RESOLUTION);
-  //   const wantH = Math.round(BASE_H * RESOLUTION);
-  //   if (c.width === BASE_W && c.height === BASE_H) {
-  //     console.warn("[DPI] resolution ignored, forcing backing store:", wantW, wantH);
-  //     c.width = wantW;
-  //     c.height = wantH;
-  //     try { game.renderer?.resize?.(BASE_W, BASE_H, RESOLUTION); } catch (_) {}
-  //     try { game.scale?.refresh?.(); } catch (_) {}
-  //   }
-  // }
+  // Force canvas backing to match DPR (Phaser 3.80 ignores resolution config)
+  if (RESOLUTION > 1 && game.canvas) {
+    const wantW = Math.round(BASE_W * RESOLUTION);
+    const wantH = Math.round(BASE_H * RESOLUTION);
+    if (game.canvas.width < wantW) {
+      game.canvas.width = wantW;
+      game.canvas.height = wantH;
+      // Update renderer to match new backing size
+      if (game.renderer?.gl) {
+        game.renderer.gl.viewport(0, 0, wantW, wantH);
+      }
+      console.log("[DPI] forced backing:", wantW, wantH);
+    }
+  }
 });
 
 // GPU auto-guard: prevent render surface blow-up (DESKTOP ONLY)
