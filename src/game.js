@@ -888,13 +888,21 @@ function create() {
     // Q/E for scale (+ and - don't work in Phaser)
     this.input.keyboard.on('keydown-E', () => {
       if (selectedElement === 'bg') { tune.bgZoom += 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
-      else if (selectedElement === 'panel') { tune.panelScale += 0.05; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) {
+        tune.panelScale += 0.05;
+        const p = window.bottomUI.bottomPanel;
+        p.setScale(p.scaleX * 1.05, p.scaleY * 1.05);
+      }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale += 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
       updateOverlay();
     });
     this.input.keyboard.on('keydown-Q', () => {
       if (selectedElement === 'bg') { tune.bgZoom -= 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
-      else if (selectedElement === 'panel') { tune.panelScale -= 0.05; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) {
+        tune.panelScale -= 0.05;
+        const p = window.bottomUI.bottomPanel;
+        p.setScale(p.scaleX * 0.95, p.scaleY * 0.95);
+      }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale -= 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
       updateOverlay();
     });
