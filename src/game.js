@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-CUSTOM9SLICE");
+console.log("GAMEJS BUILD: 2025-12-19-SIMPLE-PANEL");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1172,17 +1172,11 @@ function create() {
 
         const { bottomPanel, fightBtn, icons } = ui;
 
-        // === PANEL (uniform scale + pixel snap) ===
+        // === PANEL (Image with origin 0.5, 1) ===
         if (bottomPanel) {
-          // Container doesn't have setOrigin - position directly
-          // bottomPanel is now a Container with origin (0,0)
-
-          const panelW = bottomPanel.displayWidth || bottomPanel.width || 390;
-          const panelH = bottomPanel.displayHeight || bottomPanel.height || 96;
-
-          // Position at bottom center (Container origin is top-left)
-          bottomPanel.x = Math.round(safe.centerX - panelW / 2);
-          bottomPanel.y = Math.round(safe.bottom - pad - panelH);
+          bottomPanel.setOrigin(0.5, 1);
+          bottomPanel.x = Math.round(safe.centerX);
+          bottomPanel.y = Math.round(safe.bottom - pad);
         }
 
         // Получаем реальные границы панели после scale
@@ -1542,85 +1536,6 @@ function create() {
   updateHeroUI();
 }
 
-// ================== 9-SLICE HELPER (no plugins) ==================
-
-function createNineSlice(scene, key, slice, x, y, w, h) {
-  const tex = scene.textures.get(key);
-  const srcW = tex.source[0].width;
-  const srcH = tex.source[0].height;
-  const s = slice;
-
-  // Apply LINEAR filter for smooth scaling
-  tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
-
-  const container = scene.add.container(x, y);
-  const parts = [];
-
-  // Corner sizes in display (fixed, no stretch)
-  const cornerW = s;
-  const cornerH = s;
-
-  // Center/edge sizes (stretched)
-  const centerW = w - s * 2;
-  const centerH = h - s * 2;
-  const srcCenterW = srcW - s * 2;
-  const srcCenterH = srcH - s * 2;
-
-  // Top-left corner
-  const tl = scene.add.image(0, 0, key).setOrigin(0, 0);
-  tl.setCrop(0, 0, s, s);
-  tl.setDisplaySize(cornerW, cornerH);
-
-  // Top edge
-  const t = scene.add.image(Math.round(cornerW), 0, key).setOrigin(0, 0);
-  t.setCrop(s, 0, srcCenterW, s);
-  t.setDisplaySize(centerW, cornerH);
-
-  // Top-right corner
-  const tr = scene.add.image(Math.round(cornerW + centerW), 0, key).setOrigin(0, 0);
-  tr.setCrop(srcW - s, 0, s, s);
-  tr.setDisplaySize(cornerW, cornerH);
-
-  // Left edge
-  const l = scene.add.image(0, Math.round(cornerH), key).setOrigin(0, 0);
-  l.setCrop(0, s, s, srcCenterH);
-  l.setDisplaySize(cornerW, centerH);
-
-  // Center
-  const c = scene.add.image(Math.round(cornerW), Math.round(cornerH), key).setOrigin(0, 0);
-  c.setCrop(s, s, srcCenterW, srcCenterH);
-  c.setDisplaySize(centerW, centerH);
-
-  // Right edge
-  const r = scene.add.image(Math.round(cornerW + centerW), Math.round(cornerH), key).setOrigin(0, 0);
-  r.setCrop(srcW - s, s, s, srcCenterH);
-  r.setDisplaySize(cornerW, centerH);
-
-  // Bottom-left corner
-  const bl = scene.add.image(0, Math.round(cornerH + centerH), key).setOrigin(0, 0);
-  bl.setCrop(0, srcH - s, s, s);
-  bl.setDisplaySize(cornerW, cornerH);
-
-  // Bottom edge
-  const b = scene.add.image(Math.round(cornerW), Math.round(cornerH + centerH), key).setOrigin(0, 0);
-  b.setCrop(s, srcH - s, srcCenterW, s);
-  b.setDisplaySize(centerW, cornerH);
-
-  // Bottom-right corner
-  const br = scene.add.image(Math.round(cornerW + centerW), Math.round(cornerH + centerH), key).setOrigin(0, 0);
-  br.setCrop(srcW - s, srcH - s, s, s);
-  br.setDisplaySize(cornerW, cornerH);
-
-  parts.push(tl, t, tr, l, c, r, bl, b, br);
-  parts.forEach(p => container.add(p));
-
-  container.setSize(w, h);
-
-  console.log("[9SLICE] Created:", key, "size:", w, "x", h, "slice:", s, "src:", srcW, "x", srcH);
-
-  return { container, parts, width: w, height: h };
-}
-
 // ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
 
 function createBottomUI(scene) {
@@ -1630,45 +1545,19 @@ function createBottomUI(scene) {
   // Panel dimensions
   const panelW = w;          // Full screen width
   const panelH = 96;         // Fixed height
-  const SLICE = 36;          // Slice margin (corner size)
 
-  // Create 9-slice panel using custom helper (no plugins)
-  const nineSlice = createNineSlice(scene, 'ui_bottom', SLICE, 0, 0, panelW, panelH);
-  const bottomPanel = nineSlice.container;
+  // Apply LINEAR filter for slightly better quality
+  const tex = scene.textures.get('ui_bottom');
+  if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-  // Position at bottom (Container origin is top-left, so Y = screenH - panelH)
-  const panelX = Math.round(w / 2 - panelW / 2);
-  const panelY = Math.round(h - panelH);
-  bottomPanel.setPosition(panelX, panelY);
+  // Simple Image panel (back to basics)
+  const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom');
+  bottomPanel.setOrigin(0.5, 1);  // Bottom center origin
+  bottomPanel.setDisplaySize(panelW, panelH);
   bottomPanel.setDepth(100);
-  bottomPanel.setVisible(true);
-  bottomPanel.setAlpha(1);
+  bottomPanel.setScrollFactor(0);
 
-  // For layout compatibility (Container doesn't have these natively)
-  bottomPanel.displayWidth = panelW;
-  bottomPanel.displayHeight = panelH;
-  bottomPanel.width = panelW;
-  bottomPanel.height = panelH;
-
-  // Set scrollFactor and ensure visibility on all parts
-  nineSlice.parts.forEach(p => {
-    p.setScrollFactor(0);
-    p.setVisible(true);
-    p.setAlpha(1);
-  });
-
-  // DEBUG: Log panel details
-  console.log("[9SLICE] Screen:", w, "x", h);
-  console.log("[9SLICE] Panel position:", panelX, panelY, "(should be ~0, ~748)");
-  console.log("[9SLICE] Panel size:", panelW, "x", panelH);
-  console.log("[9SLICE] Container visible:", bottomPanel.visible, "alpha:", bottomPanel.alpha, "depth:", bottomPanel.depth);
-  console.log("[9SLICE] Children count:", bottomPanel.list ? bottomPanel.list.length : 'N/A');
-
-  // DEBUG: Red rectangle to show where panel should be
-  const debugRect = scene.add.rectangle(w / 2, h - panelH / 2, panelW, panelH, 0xff0000, 0.3);
-  debugRect.setDepth(999);
-  debugRect.setScrollFactor(0);
-  console.log("[DEBUG] Red rectangle at:", w / 2, h - panelH / 2);
+  console.log("[UI] Panel created:", bottomPanel.x, bottomPanel.y, "size:", bottomPanel.displayWidth, "x", bottomPanel.displayHeight);
 
   const panelHeight = panelH;
   const panelCenterX = w / 2;
