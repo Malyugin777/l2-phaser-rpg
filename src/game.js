@@ -794,6 +794,54 @@ function create() {
     }
 
     console.log("[UI] CITY_CLEAN baseline ready");
+
+    // === TEXTURE DIAGNOSTICS ===
+    const logTex = (key, obj) => {
+      const t = this.textures.get(key);
+      const img = t?.getSourceImage?.();
+      const sw = img?.width, sh = img?.height;
+      const dw = obj?.displayWidth ?? obj?.width;
+      const dh = obj?.displayHeight ?? obj?.height;
+      const sx = (sw && dw) ? (dw / sw).toFixed(2) : "na";
+      const sy = (sh && dh) ? (dh / sh).toFixed(2) : "na";
+      console.log("[TEX]", key, {
+        source: [sw, sh],
+        display: [Math.round(dw), Math.round(dh)],
+        scale: [sx, sy]
+      });
+    };
+
+    // Log all loaded textures
+    console.log("[TEX] === Texture Analysis ===");
+
+    // Background - find the key used for city background
+    this.textures.list && Object.keys(this.textures.list).forEach(key => {
+      if (key.includes('bg') || key.includes('city') || key.includes('island') || key.includes('panel') || key.includes('bottom') || key.includes('btn')) {
+        const t = this.textures.get(key);
+        const img = t?.getSourceImage?.();
+        if (img) {
+          console.log("[TEX]", key, "source:", img.width + "x" + img.height);
+        }
+      }
+    });
+
+    // Also force LINEAR filter on all UI textures
+    const forceLinear = (key) => {
+      const tex = this.textures.get(key);
+      if (tex?.setFilter) {
+        tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        console.log("[FILTER] Set LINEAR:", key);
+      }
+    };
+
+    // Apply to common UI keys
+    ["city_bg", "talkingisland_main", "ui_bottom_panel", "ui_bottom", "ui_btn_fight"].forEach(forceLinear);
+
+    // Log specific objects
+    if (window.cityBg) logTex("talkingisland_main", window.cityBg);
+    if (window.bottomUI?.bottomPanel) logTex("ui_bottom", window.bottomUI.bottomPanel);
+    if (window.bottomUI?.fightBtn) logTex("ui_btn_fight", window.bottomUI.fightBtn);
+
     return;
   }
 
