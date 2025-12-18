@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-TEX-ANALYSIS");
+console.log("GAMEJS BUILD: 2025-12-19-FIX-HERO-ICONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -8,8 +8,8 @@ window.UI_MODE = UI_MODE;
 const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
 
-// Base positions for tune mode calculations
-const HERO_BASE = { x: 150, y: 500, scale: 0.7 };
+// Base positions for tune mode calculations (scaled for 780×1688)
+const HERO_BASE = { x: 300, y: 1000, scale: 1.4 };
 let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
@@ -1052,25 +1052,26 @@ function create() {
 
   // герой/враг для локации - FIXED POSITION (no tune mode)
   // Hero position (working values)
-  heroStartX = 150;
-  heroStartY = 500;
+  heroStartX = HERO_BASE.x;
+  heroStartY = HERO_BASE.y;
 
-  // Создаём Spine героя
+  // Создаём Spine героя (используем HERO_BASE для позиции и масштаба)
   if (this.spine) {
     try {
-      spineHero = this.add.spine(150, 500, 'hero', 'idle', true);
-      spineHero.setScale(0.7);
+      spineHero = this.add.spine(HERO_BASE.x, HERO_BASE.y, 'hero', 'idle', true);
+      spineHero.setScale(HERO_BASE.scale);
       spineHero.setDepth(50);
       spineHero.setVisible(true);
       window.spineHero = spineHero;
       hero = spineHero;
+      console.log("[HERO] Created at", HERO_BASE.x, HERO_BASE.y, "scale", HERO_BASE.scale);
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
-      hero = createHeroSprite(this, 150, 500, 0x3366cc);
+      hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
       hero.setDepth(50);
     }
   } else {
-    hero = createHeroSprite(this, 150, 500, 0x3366cc);
+    hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
     hero.setDepth(50);
   }
 
@@ -1661,6 +1662,16 @@ function createBottomUI(scene) {
 
   const createdIcons = icons.map((iconData, i) => {
     const x = Math.round(panelCenterX + slotOffsets[i] * panelScale);
+
+    // Check if texture exists
+    const tex = scene.textures.exists(iconData.key);
+    console.log(`[ICON] ${iconData.key}: exists=${tex}, x=${x}, y=${iconY}`);
+
+    if (!tex) {
+      console.error(`[ICON] Missing texture: ${iconData.key}`);
+      return null;
+    }
+
     const icon = scene.add.image(x, iconY, iconData.key)
       .setDepth(110)
       .setScrollFactor(0)
@@ -1672,9 +1683,9 @@ function createBottomUI(scene) {
     });
 
     return icon;
-  });
+  }).filter(Boolean);
 
-  console.log("[UI] Icons created at y=", iconY, "scale=", iconScale.toFixed(3));
+  console.log("[UI] Icons created:", createdIcons.length, "at y=", iconY, "scale=", iconScale.toFixed(3));
 
   // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
