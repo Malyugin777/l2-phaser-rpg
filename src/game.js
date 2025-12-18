@@ -1531,6 +1531,16 @@ function createBottomUI(scene) {
       .setScale(iconScale, iconScale)  // uniform scale
       .setInteractive({ useHandCursor: true });
 
+    // RESAMPLE icon for retina
+    const iconTargetW = Math.round(icon.displayWidth * dprCap);
+    const iconTargetH = Math.round(icon.displayHeight * dprCap);
+    const iconRsKey = makeResampledBg(scene, iconData.key, iconData.key + "_rs", iconTargetW, iconTargetH);
+    if (iconRsKey) {
+      icon.setTexture(iconRsKey);
+      icon.setScale(iconScale / dprCap);
+      console.log("[RESAMPLE]", iconData.key, ":", iconTargetW, iconTargetH);
+    }
+
     icon.on('pointerdown', () => {
       console.log(`[UI] Icon clicked: ${iconData.action}`);
     });
