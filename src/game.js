@@ -1,16 +1,12 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-RESET");
+console.log("GAMEJS BUILD: 2025-12-19-STABLE");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
 
-// === TUNE MODE (DISABLED - fix later) ===
-const TUNE_ENABLED = false; // Disabled until fixed
+// === TUNE MODE (DISABLED) ===
+const TUNE_ENABLED = false;
 const TUNE_KEY = 'TUNE_SETTINGS';
-
-// Clear any broken tune settings from localStorage
-localStorage.removeItem(TUNE_KEY);
-console.log("[RESET] Cleared TUNE_SETTINGS from localStorage");
 
 function getTuneSettings() {
   const defaults = {
@@ -1201,88 +1197,31 @@ function create() {
   });
 
   // герой/враг для локации - FIXED POSITION (no tune mode)
-  const HERO_X = 100;
-  const HERO_Y = 550;
-  const HERO_SCALE = 0.7;
-  heroStartX = HERO_X;
-  heroStartY = HERO_Y;
+  // Hero position (working values)
+  heroStartX = 150;
+  heroStartY = 500;
 
-  console.log("[HERO] Creating at FIXED position:", HERO_X, HERO_Y, "scale:", HERO_SCALE);
-
-  // Создаём Spine героя (ГЛАВНЫЙ персонаж)
+  // Создаём Spine героя
   if (this.spine) {
     try {
-      spineHero = this.add.spine(HERO_X, HERO_Y, 'hero', 'idle', true);
-      console.log("[HERO] Spine created, now forcing...");
-
-      // EMERGENCY: Force hero visible at known position
-      console.log("[HERO] EMERGENCY CHECK - Before force:");
-      console.log("[HERO]   Position:", spineHero.x, spineHero.y);
-      console.log("[HERO]   Scale:", spineHero.scaleX, spineHero.scaleY);
-      console.log("[HERO]   Visible:", spineHero.visible, "Alpha:", spineHero.alpha);
-      console.log("[HERO]   Depth:", spineHero.depth);
-
-      // FORCE correct values
-      spineHero.setPosition(150, 500);
+      spineHero = this.add.spine(150, 500, 'hero', 'idle', true);
       spineHero.setScale(0.7);
+      spineHero.setDepth(50);
       spineHero.setVisible(true);
-      spineHero.setAlpha(1);
-      spineHero.setDepth(500);  // VERY high depth to be on top of everything
-
-      console.log("[HERO] FORCED to: 150,500 scale:0.7 depth:500");
-      console.log("[HERO] After force:", spineHero.x, spineHero.y, "scale:", spineHero.scaleX, "visible:", spineHero.visible);
-
-      // DEBUG: Check Spine internal state
-      console.log("[HERO] Spine state:", spineHero.state ? "HAS STATE" : "NO STATE");
-      console.log("[HERO] Spine skeleton:", spineHero.skeleton ? "HAS SKELETON" : "NO SKELETON");
-      console.log("[HERO] Spine plugin:", spineHero.plugin ? "HAS PLUGIN" : "NO PLUGIN");
-
-      // DEBUG: Add RED RECTANGLE marker at hero position
-      const heroMarker = this.add.rectangle(spineHero.x, spineHero.y, 100, 150, 0xff0000, 0.5);
-      heroMarker.setDepth(999);
-      heroMarker.setStrokeStyle(3, 0xffff00);  // Yellow border
-      window.heroMarker = heroMarker;
-      console.log("[HERO] RED MARKER added at:", spineHero.x, spineHero.y);
-
-      // DEBUG: Check depths
-      console.log("[DEPTH] cityBg:", cityBg?.depth);
-      console.log("[DEPTH] heroSpine:", spineHero.depth);
-      console.log("[DEPTH] heroMarker:", heroMarker.depth);
-
       window.spineHero = spineHero;
-      window.heroSpine = spineHero;  // Alias for debugging
       hero = spineHero;
     } catch (e) {
-      console.warn("[Spine] Failed:", e.message, e);
-      // Fallback на заглушку
+      console.warn("[Spine] Failed:", e.message);
       hero = createHeroSprite(this, 150, 500, 0x3366cc);
-      hero.setDepth(500);
-      window.heroSpine = hero;
-      // Add marker for fallback too
-      const heroMarker = this.add.rectangle(150, 500, 100, 150, 0xff0000, 0.5);
-      heroMarker.setDepth(999);
-      window.heroMarker = heroMarker;
-      console.log("[Hero] Fallback sprite + marker at 150,500");
+      hero.setDepth(50);
     }
   } else {
-    // Spine плагин не загружен — fallback
-    console.log("[Hero] NO SPINE PLUGIN AVAILABLE!");
     hero = createHeroSprite(this, 150, 500, 0x3366cc);
-    hero.setDepth(500);
-    window.heroSpine = hero;
-    // Add marker for fallback too
-    const heroMarker = this.add.rectangle(150, 500, 100, 150, 0xff0000, 0.5);
-    heroMarker.setDepth(999);
-    window.heroMarker = heroMarker;
-    console.log("[Hero] Fallback sprite + marker at 150,500");
+    hero.setDepth(50);
   }
 
-  // герой в городе (используем Spine если есть)
-  if (window.spineHero) {
-    cityHero = window.spineHero;
-  } else {
-    cityHero = hero;  // Use whatever hero we created
-  }
+  // герой в городе
+  cityHero = window.spineHero || hero;
 
   // === CITY_CLEAN MODE: Skip all UI, baseline only ===
   if (window.UI_MODE === "CITY_CLEAN") {
@@ -1763,22 +1702,6 @@ function create() {
   }
 
   updateHeroUI();
-
-  // FINAL HERO CHECK at end of create()
-  console.log("=".repeat(50));
-  console.log("[HERO] FINAL STATE at end of create():");
-  if (window.heroSpine) {
-    console.log("[HERO]   x:", window.heroSpine.x);
-    console.log("[HERO]   y:", window.heroSpine.y);
-    console.log("[HERO]   scaleX:", window.heroSpine.scaleX);
-    console.log("[HERO]   scaleY:", window.heroSpine.scaleY);
-    console.log("[HERO]   visible:", window.heroSpine.visible);
-    console.log("[HERO]   alpha:", window.heroSpine.alpha);
-    console.log("[HERO]   depth:", window.heroSpine.depth);
-  } else {
-    console.log("[HERO]   NOT FOUND! window.heroSpine is:", window.heroSpine);
-  }
-  console.log("=".repeat(50));
 }
 
 // ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
