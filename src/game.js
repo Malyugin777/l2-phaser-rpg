@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-9SLICE");
+console.log("GAMEJS BUILD: 2025-12-19-CUSTOM9SLICE");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1548,46 +1548,114 @@ function create() {
   updateHeroUI();
 }
 
+// ================== 9-SLICE HELPER (no plugins) ==================
+
+function createNineSlice(scene, key, slice, x, y, w, h) {
+  const tex = scene.textures.get(key);
+  const srcW = tex.source[0].width;
+  const srcH = tex.source[0].height;
+  const s = slice;
+
+  // Apply LINEAR filter for smooth scaling
+  tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+
+  const container = scene.add.container(x, y);
+  const parts = [];
+
+  // Corner sizes in display (fixed, no stretch)
+  const cornerW = s;
+  const cornerH = s;
+
+  // Center/edge sizes (stretched)
+  const centerW = w - s * 2;
+  const centerH = h - s * 2;
+  const srcCenterW = srcW - s * 2;
+  const srcCenterH = srcH - s * 2;
+
+  // Top-left corner
+  const tl = scene.add.image(0, 0, key).setOrigin(0, 0);
+  tl.setCrop(0, 0, s, s);
+  tl.setDisplaySize(cornerW, cornerH);
+
+  // Top edge
+  const t = scene.add.image(Math.round(cornerW), 0, key).setOrigin(0, 0);
+  t.setCrop(s, 0, srcCenterW, s);
+  t.setDisplaySize(centerW, cornerH);
+
+  // Top-right corner
+  const tr = scene.add.image(Math.round(cornerW + centerW), 0, key).setOrigin(0, 0);
+  tr.setCrop(srcW - s, 0, s, s);
+  tr.setDisplaySize(cornerW, cornerH);
+
+  // Left edge
+  const l = scene.add.image(0, Math.round(cornerH), key).setOrigin(0, 0);
+  l.setCrop(0, s, s, srcCenterH);
+  l.setDisplaySize(cornerW, centerH);
+
+  // Center
+  const c = scene.add.image(Math.round(cornerW), Math.round(cornerH), key).setOrigin(0, 0);
+  c.setCrop(s, s, srcCenterW, srcCenterH);
+  c.setDisplaySize(centerW, centerH);
+
+  // Right edge
+  const r = scene.add.image(Math.round(cornerW + centerW), Math.round(cornerH), key).setOrigin(0, 0);
+  r.setCrop(srcW - s, s, s, srcCenterH);
+  r.setDisplaySize(cornerW, centerH);
+
+  // Bottom-left corner
+  const bl = scene.add.image(0, Math.round(cornerH + centerH), key).setOrigin(0, 0);
+  bl.setCrop(0, srcH - s, s, s);
+  bl.setDisplaySize(cornerW, cornerH);
+
+  // Bottom edge
+  const b = scene.add.image(Math.round(cornerW), Math.round(cornerH + centerH), key).setOrigin(0, 0);
+  b.setCrop(s, srcH - s, srcCenterW, s);
+  b.setDisplaySize(centerW, cornerH);
+
+  // Bottom-right corner
+  const br = scene.add.image(Math.round(cornerW + centerW), Math.round(cornerH + centerH), key).setOrigin(0, 0);
+  br.setCrop(srcW - s, srcH - s, s, s);
+  br.setDisplaySize(cornerW, cornerH);
+
+  parts.push(tl, t, tr, l, c, r, bl, b, br);
+  parts.forEach(p => container.add(p));
+
+  container.setSize(w, h);
+
+  console.log("[9SLICE] Created:", key, "size:", w, "x", h, "slice:", s, "src:", srcW, "x", srcH);
+
+  return { container, parts, width: w, height: h };
+}
+
 // ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
 
 function createBottomUI(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
 
-  // FIXED-HEIGHT for panel
-  const TARGET_UI_H = 96;  // fixed UI height in game units
+  // Panel dimensions
+  const panelW = w;          // Full screen width
+  const panelH = 96;         // Fixed height
+  const SLICE = 36;          // Slice margin (corner size)
 
-  // Get original texture dimensions
-  const origTex = scene.textures.get('ui_bottom');
-  const origW = origTex?.source[0]?.width || 1408;
-  const origH = origTex?.source[0]?.height || 768;
+  // Create 9-slice panel using custom helper (no plugins)
+  const nineSlice = createNineSlice(scene, 'ui_bottom', SLICE, 0, 0, panelW, panelH);
+  const bottomPanel = nineSlice.container;
 
-  // Calculate display width maintaining aspect ratio
-  const panelScale = TARGET_UI_H / origH;
-  const displayW = Math.round(origW * panelScale);
-  const displayH = TARGET_UI_H;
-
-  // 9-slice panel - corners stay sharp, center stretches
-  // Margins must be SMALLER than half the display size!
-  const MARGIN = 16;  // Small margin for thin borders
-  const bottomPanel = scene.add.nineslice(
-    Math.round(w / 2),     // x
-    Math.round(h),         // y
-    'ui_bottom',           // texture key
-    undefined,             // frame
-    displayW,              // width
-    displayH,              // height
-    MARGIN, MARGIN,        // leftWidth, rightWidth
-    MARGIN, MARGIN         // topHeight, bottomHeight
-  );
-  bottomPanel.setOrigin(0.5, 1);
+  // Position at bottom center
+  bottomPanel.setPosition(Math.round(w / 2 - panelW / 2), Math.round(h - panelH));
   bottomPanel.setDepth(100);
-  bottomPanel.setScrollFactor(0);
 
-  const panelHeight = displayH;
+  // For layout compatibility
+  bottomPanel.displayWidth = panelW;
+  bottomPanel.displayHeight = panelH;
+
+  // Set scrollFactor on all parts
+  nineSlice.parts.forEach(p => p.setScrollFactor(0));
+
+  const panelHeight = panelH;
   const panelCenterX = w / 2;
-
-  console.log("[9SLICE] panel size:", displayW, "x", displayH, "margin:", MARGIN, "orig:", origW, "x", origH);
+  const panelScale = panelH / 768;  // For button/icon scaling
 
   // === КРАСНАЯ КНОПКА БОЯ ===
   const fightBtnScale = panelScale * 1.2;
