@@ -11,11 +11,9 @@ const TUNE_KEY = 'TUNE_SETTINGS';
 function getTuneSettings() {
   const defaults = {
     bgZoom: 1.0, bgPanX: 0, bgPanY: 0,
-    uiYOffset: 0,
-    panelScale: 1.0,
-    heroScale: 1.0,
-    heroX: 0,
-    heroY: 0
+    panelX: 0, panelY: 0, panelScale: 1.0,
+    heroX: 0, heroY: 0, heroScale: 1.0,
+    btnX: 0, btnY: 0
   };
   if (!TUNE_ENABLED) return defaults;
   try {
@@ -729,79 +727,179 @@ function create() {
   if (TUNE_ENABLED) {
     const tune = getTuneSettings();
     const baseScale = cityBg.scaleX;
+    let selectedElement = 'bg'; // 'bg', 'panel', 'hero', 'btn'
+
+    // Store references for tune mode
+    window.tuneRefs = { cityBg, baseScale };
 
     // Overlay
     const overlay = document.createElement('div');
     overlay.id = 'tune-overlay';
-    overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font:12px monospace;z-index:99999;border-radius:5px;';
+    overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font:12px monospace;z-index:99999;border-radius:5px;max-width:200px;';
     document.body.appendChild(overlay);
 
     const updateOverlay = () => {
+      const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f' };
       overlay.innerHTML = `
-        <b>TUNE MODE</b><br>
-        <b>Background:</b><br>
-        bgZoom: ${tune.bgZoom.toFixed(2)}<br>
-        bgPanX: ${tune.bgPanX}<br>
-        bgPanY: ${tune.bgPanY}<br>
-        <b>UI:</b><br>
-        uiYOffset: ${tune.uiYOffset}<br>
-        panelScale: ${tune.panelScale.toFixed(2)}<br>
-        <b>Hero:</b><br>
-        heroScale: ${tune.heroScale.toFixed(2)}<br>
-        heroX: ${tune.heroX}<br>
-        heroY: ${tune.heroY}<br>
+        <b>TUNE MODE</b> [<span style="color:${selColors[selectedElement]}">${selectedElement}</span>]<br>
+        <hr style="border-color:#333">
+        <b style="color:#0f0">BG:</b> zoom:${tune.bgZoom.toFixed(2)} x:${tune.bgPanX} y:${tune.bgPanY}<br>
+        <b style="color:#ff0">Panel:</b> x:${tune.panelX} y:${tune.panelY} s:${tune.panelScale.toFixed(2)}<br>
+        <b style="color:#0ff">Hero:</b> x:${tune.heroX} y:${tune.heroY} s:${tune.heroScale.toFixed(2)}<br>
+        <b style="color:#f0f">Btn:</b> x:${tune.btnX} y:${tune.btnY}<br>
+        <hr style="border-color:#333">
+        <small>Click element to select<br>Drag to move, +/- to scale</small>
         <div style="margin-top:8px;">
-          <button id="tune-save">💾 Save</button>
-          <button id="tune-reset">🔄 Reset</button>
-          <button id="tune-copy">📋 Copy</button>
+          <button id="tune-save">💾</button>
+          <button id="tune-reset">🔄</button>
+          <button id="tune-copy">📋</button>
         </div>
       `;
-      // Attach event listeners after innerHTML update
       document.getElementById('tune-save')?.addEventListener('click', () => {
         saveTuneSettings(tune);
-        alert('Saved! Settings: ' + JSON.stringify(tune));
+        alert('Saved!');
       });
       document.getElementById('tune-reset')?.addEventListener('click', () => {
-        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, uiYOffset:0, panelScale:1, heroScale:1, heroX:0, heroY:0});
+        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0});
         applyTune();
       });
       document.getElementById('tune-copy')?.addEventListener('click', () => {
-        const json = JSON.stringify(tune);
-        navigator.clipboard?.writeText(json);
-        alert('Copied: ' + json);
+        navigator.clipboard?.writeText(JSON.stringify(tune));
+        alert('Copied!');
       });
     };
 
     const applyTune = () => {
+      // Background
       cityBg.setScale(baseScale * tune.bgZoom);
       cityBg.x = Math.round(this.cameras.main.centerX + tune.bgPanX);
       cityBg.y = Math.round(this.cameras.main.centerY + tune.bgPanY);
+
+      // Panel (applied later when bottomUI exists)
+      if (window.bottomUI?.bottomPanel) {
+        const p = window.bottomUI.bottomPanel;
+        p.x = Math.round(this.scale.width / 2 + tune.panelX);
+        p.y = Math.round(this.scale.height + tune.panelY);
+      }
+
+      // Hero
+      if (window.spineHero) {
+        window.spineHero.x = Math.round(heroStartX + tune.heroX);
+        window.spineHero.y = Math.round(heroStartY + tune.heroY);
+        window.spineHero.setScale(0.7 * tune.heroScale);
+      }
+
+      // Fight button
+      if (window.bottomUI?.fightBtn) {
+        const btn = window.bottomUI.fightBtn;
+        // btnX/btnY are relative offsets
+        btn.x = Math.round(btn.x + tune.btnX);
+        btn.y = Math.round(btn.y + tune.btnY);
+        tune.btnX = 0; tune.btnY = 0; // Reset after applying to avoid accumulation
+      }
+
       updateOverlay();
     };
 
-
-    // Drag to pan
+    // Click to select element
     let dragging = false, startX, startY;
-    this.input.on('pointerdown', (p) => { dragging = true; startX = p.x; startY = p.y; });
+
+    this.input.on('pointerdown', (p) => {
+      // Check what was clicked (in order of depth)
+      if (window.bottomUI?.fightBtn?.getBounds()?.contains(p.x, p.y)) {
+        selectedElement = 'btn';
+      } else if (window.bottomUI?.bottomPanel?.getBounds()?.contains(p.x, p.y)) {
+        selectedElement = 'panel';
+      } else if (window.spineHero?.getBounds()?.contains(p.x, p.y)) {
+        selectedElement = 'hero';
+      } else {
+        selectedElement = 'bg';
+      }
+      updateOverlay();
+      dragging = true;
+      startX = p.x;
+      startY = p.y;
+    });
+
     this.input.on('pointermove', (p) => {
       if (!dragging) return;
-      tune.bgPanX += Math.round(p.x - startX);
-      tune.bgPanY += Math.round(p.y - startY);
-      startX = p.x; startY = p.y;
-      applyTune();
+      const dx = Math.round(p.x - startX);
+      const dy = Math.round(p.y - startY);
+      startX = p.x;
+      startY = p.y;
+
+      if (selectedElement === 'bg') {
+        tune.bgPanX += dx;
+        tune.bgPanY += dy;
+        cityBg.x += dx;
+        cityBg.y += dy;
+      } else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) {
+        tune.panelX += dx;
+        tune.panelY += dy;
+        window.bottomUI.bottomPanel.x += dx;
+        window.bottomUI.bottomPanel.y += dy;
+      } else if (selectedElement === 'hero' && window.spineHero) {
+        tune.heroX += dx;
+        tune.heroY += dy;
+        window.spineHero.x += dx;
+        window.spineHero.y += dy;
+      } else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
+        tune.btnX += dx;
+        tune.btnY += dy;
+        window.bottomUI.fightBtn.x += dx;
+        window.bottomUI.fightBtn.y += dy;
+      }
+      updateOverlay();
     });
+
     this.input.on('pointerup', () => { dragging = false; });
 
-    // Arrow keys for fine tune
-    this.input.keyboard.on('keydown-UP', () => { tune.bgPanY -= 5; applyTune(); });
-    this.input.keyboard.on('keydown-DOWN', () => { tune.bgPanY += 5; applyTune(); });
-    this.input.keyboard.on('keydown-LEFT', () => { tune.bgPanX -= 5; applyTune(); });
-    this.input.keyboard.on('keydown-RIGHT', () => { tune.bgPanX += 5; applyTune(); });
-    this.input.keyboard.on('keydown-PLUS', () => { tune.bgZoom += 0.05; applyTune(); });
-    this.input.keyboard.on('keydown-MINUS', () => { tune.bgZoom -= 0.05; applyTune(); });
+    // Arrow keys for fine tune selected element
+    this.input.keyboard.on('keydown-UP', () => {
+      if (selectedElement === 'bg') { tune.bgPanY -= 5; cityBg.y -= 5; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY -= 5; window.bottomUI.bottomPanel.y -= 5; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY -= 5; window.spineHero.y -= 5; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY -= 5; window.bottomUI.fightBtn.y -= 5; }
+      updateOverlay();
+    });
+    this.input.keyboard.on('keydown-DOWN', () => {
+      if (selectedElement === 'bg') { tune.bgPanY += 5; cityBg.y += 5; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY += 5; window.bottomUI.bottomPanel.y += 5; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY += 5; window.spineHero.y += 5; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY += 5; window.bottomUI.fightBtn.y += 5; }
+      updateOverlay();
+    });
+    this.input.keyboard.on('keydown-LEFT', () => {
+      if (selectedElement === 'bg') { tune.bgPanX -= 5; cityBg.x -= 5; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX -= 5; window.bottomUI.bottomPanel.x -= 5; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX -= 5; window.spineHero.x -= 5; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX -= 5; window.bottomUI.fightBtn.x -= 5; }
+      updateOverlay();
+    });
+    this.input.keyboard.on('keydown-RIGHT', () => {
+      if (selectedElement === 'bg') { tune.bgPanX += 5; cityBg.x += 5; }
+      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX += 5; window.bottomUI.bottomPanel.x += 5; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX += 5; window.spineHero.x += 5; }
+      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX += 5; window.bottomUI.fightBtn.x += 5; }
+      updateOverlay();
+    });
+
+    // +/- for scale
+    this.input.keyboard.on('keydown-PLUS', () => {
+      if (selectedElement === 'bg') { tune.bgZoom += 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
+      else if (selectedElement === 'panel') { tune.panelScale += 0.05; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale += 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
+      updateOverlay();
+    });
+    this.input.keyboard.on('keydown-MINUS', () => {
+      if (selectedElement === 'bg') { tune.bgZoom -= 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
+      else if (selectedElement === 'panel') { tune.panelScale -= 0.05; }
+      else if (selectedElement === 'hero' && window.spineHero) { tune.heroScale -= 0.05; window.spineHero.setScale(0.7 * tune.heroScale); }
+      updateOverlay();
+    });
 
     applyTune();
-    console.log('[TUNE] Mode enabled. Drag to pan, arrows for fine tune, +/- for zoom');
+    console.log('[TUNE] Mode enabled. Click to select, drag to move, arrows for fine tune, +/- for scale');
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
