@@ -495,6 +495,39 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
+  // === RENDER DIAG (pixelated root-cause) ===
+  const canvas = this.game?.canvas;
+  if (canvas) {
+    const cs = window.getComputedStyle(canvas);
+    console.log("[RENDER][CSS]", {
+      imageRendering: cs.imageRendering,
+      transform: cs.transform,
+      width: cs.width,
+      height: cs.height,
+    });
+  } else {
+    console.warn("[RENDER] canvas missing in create()");
+  }
+
+  console.log("[RENDER][CFG]", {
+    rendererType: this.game?.renderer?.type, // 2=WebGL, 1=Canvas
+    antialiasCfg: this.game?.config?.render?.antialias,
+    pixelArtCfg: this.game?.config?.render?.pixelArt,
+    roundPixelsCfg: this.game?.config?.render?.roundPixels,
+    cameraRoundPixels: this.cameras?.main?.roundPixels,
+  });
+
+  // Helper to inspect texture filter modes
+  function logTexFilter(scene, key) {
+    const t = scene.textures?.get(key);
+    if (!t) return console.warn("[TEX] missing:", key);
+    // Phaser stores filterMode on Texture in WebGL builds
+    console.log("[TEX][FILTER]", key, {
+      filterMode: t.filterMode, // expect LINEAR (1) not NEAREST (0)
+      source: t.source?.[0] ? [t.source[0].width, t.source[0].height] : "na",
+    });
+  }
+
   // Canvas reference (with null check)
   const c = this.game.canvas;
   if (!c) {
@@ -527,9 +560,16 @@ function create() {
     "vv", vv ? [vv.width, vv.height, vv.offsetTop] : null
   );
 
-  // Force CSS smoothing
-  c.style.imageRendering = "auto";
-  c.style.setProperty("image-rendering", "auto");
+  // === FORCE SMOOTHING ===
+  if (canvas) {
+    canvas.style.imageRendering = "auto";
+    canvas.style.setProperty("image-rendering", "auto");
+    canvas.style.setProperty("-ms-interpolation-mode", "bicubic");
+  }
+
+  if (this.cameras?.main) {
+    this.cameras.main.roundPixels = false;
+  }
 
   loadGame();
 
@@ -801,13 +841,25 @@ function create() {
       }
     });
 
-    // CHANGE 2: Apply LINEAR filter to specific textures we render large
-    const forceLinear = (key) => {
-      const tex = this.textures.get(key);
-      if (tex?.setFilter) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
-      console.log("[FILTER] LINEAR", key);
-    };
-    ["talkingisland_main", "ui_bottom", "ui_btn_fight"].forEach(forceLinear);
+    // === FORCE LINEAR FILTER for bg + UI ===
+    const LINEAR = Phaser.Textures.FilterMode.LINEAR;
+
+    const smoothKeys = [
+      "talkingisland_main",   // background
+      "ui_bottom",            // bottom panel
+      "ui_btn_fight",         // fight button
+    ];
+
+    smoothKeys.forEach((k) => {
+      const t = this.textures.get(k);
+      if (t?.setFilter) {
+        t.setFilter(LINEAR);
+        console.log("[FILTER] LINEAR set:", k);
+      } else {
+        console.warn("[FILTER] cannot setFilter for:", k, "type:", t?.constructor?.name);
+      }
+      logTexFilter(this, k);
+    });
 
     // Log specific objects
     if (window.cityBg) logTex("talkingisland_main", window.cityBg);
