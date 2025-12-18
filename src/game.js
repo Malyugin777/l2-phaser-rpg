@@ -662,9 +662,24 @@ function create() {
 
   // фоны
   cityBg = this.add.image(w / 2, h / 2, "talkingisland_main");
+
+  // STEP 1: Before any scaling
+  console.log("[BG] step1 - texture:", cityBg.texture.source[0].width, "x", cityBg.texture.source[0].height);
+  console.log("[BG] step1 - natural size:", cityBg.width, "x", cityBg.height);
+
   fitBackground(cityBg, this);
+
+  // STEP 2: After fit scale
+  console.log("[BG] step2 - after fit scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
+  console.log("[BG] step2 - scaleX === scaleY?", cityBg.scaleX === cityBg.scaleY);
+  console.log("[BG] step2 - display:", cityBg.displayWidth.toFixed(1), "x", cityBg.displayHeight.toFixed(1));
+
   cityBg.setDepth(-5);
   window.cityBg = cityBg;
+
+  // STEP 3: Before resample
+  console.log("[BG] step3 - before resample display:", cityBg.displayWidth.toFixed(1), "x", cityBg.displayHeight.toFixed(1));
+  console.log("[BG] step3 - ratio:", (cityBg.displayWidth / cityBg.displayHeight).toFixed(4));
 
   // Resample in DEVICE PIXELS
   const targetWpx = Math.round(cityBg.displayWidth * dprCap);
@@ -678,7 +693,11 @@ function create() {
     cityBg.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
     cityBg.x = Math.round(cityBg.x);
     cityBg.y = Math.round(cityBg.y);
-    console.log("[RESAMPLE] applied scale:", cityBg.scaleX.toFixed(3));
+
+    // STEP 4: After resample
+    console.log("[BG] step4 - after resample scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
+    console.log("[BG] step4 - display:", cityBg.displayWidth.toFixed(1), "x", cityBg.displayHeight.toFixed(1));
+    console.log("[BG] step4 - ratio:", (cityBg.displayWidth / cityBg.displayHeight).toFixed(4));
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
