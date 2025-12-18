@@ -9,7 +9,14 @@ const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 const TUNE_KEY = 'TUNE_SETTINGS';
 
 function getTuneSettings() {
-  const defaults = { bgZoom: 1.0, bgPanX: 0, bgPanY: 0, uiYOffset: 0 };
+  const defaults = {
+    bgZoom: 1.0, bgPanX: 0, bgPanY: 0,
+    uiYOffset: 0,
+    panelScale: 1.0,
+    heroScale: 1.0,
+    heroX: 0,
+    heroY: 0
+  };
   if (!TUNE_ENABLED) return defaults;
   try {
     const saved = localStorage.getItem(TUNE_KEY);
@@ -732,10 +739,17 @@ function create() {
     const updateOverlay = () => {
       overlay.innerHTML = `
         <b>TUNE MODE</b><br>
+        <b>Background:</b><br>
         bgZoom: ${tune.bgZoom.toFixed(2)}<br>
         bgPanX: ${tune.bgPanX}<br>
         bgPanY: ${tune.bgPanY}<br>
-        uiY: ${tune.uiYOffset}<br>
+        <b>UI:</b><br>
+        uiYOffset: ${tune.uiYOffset}<br>
+        panelScale: ${tune.panelScale.toFixed(2)}<br>
+        <b>Hero:</b><br>
+        heroScale: ${tune.heroScale.toFixed(2)}<br>
+        heroX: ${tune.heroX}<br>
+        heroY: ${tune.heroY}<br>
         <div style="margin-top:8px;">
           <button id="tune-save">💾 Save</button>
           <button id="tune-reset">🔄 Reset</button>
@@ -748,7 +762,7 @@ function create() {
         alert('Saved! Settings: ' + JSON.stringify(tune));
       });
       document.getElementById('tune-reset')?.addEventListener('click', () => {
-        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, uiYOffset:0});
+        Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, uiYOffset:0, panelScale:1, heroScale:1, heroX:0, heroY:0});
         applyTune();
       });
       document.getElementById('tune-copy')?.addEventListener('click', () => {
@@ -1329,11 +1343,21 @@ function createBottomUI(scene) {
   const panelScale = TARGET_UI_H / bottomPanel.height;
   bottomPanel.setScale(panelScale, panelScale);  // scaleX = scaleY
 
+  // RESAMPLE bottom panel for retina
+  const panelTargetW = Math.round(bottomPanel.displayWidth * dprCap);
+  const panelTargetH = Math.round(bottomPanel.displayHeight * dprCap);
+  const panelRsKey = makeResampledBg(scene, "ui_bottom", "ui_bottom_rs", panelTargetW, panelTargetH);
+  if (panelRsKey) {
+    bottomPanel.setTexture(panelRsKey);
+    bottomPanel.setScale(panelScale / dprCap);
+    console.log("[RESAMPLE] ui_bottom applied, scale:", (panelScale / dprCap).toFixed(3));
+  }
+
   // Snap to whole pixels
   bottomPanel.x = Math.round(w / 2);
   bottomPanel.y = Math.round(h);
 
-  const panelHeight = bottomPanel.height * panelScale;
+  const panelHeight = bottomPanel.height * (panelRsKey ? panelScale / dprCap : panelScale);
   const panelTop = h - panelHeight;
   const panelCenterX = w / 2;
 
@@ -1349,9 +1373,21 @@ function createBottomUI(scene) {
     .setScale(fightBtnScale, fightBtnScale)  // uniform scale
     .setInteractive({ useHandCursor: true });
 
+  // RESAMPLE fight button for retina
+  const btnTargetW = Math.round(fightBtn.displayWidth * dprCap);
+  const btnTargetH = Math.round(fightBtn.displayHeight * dprCap);
+  const btnRsKey = makeResampledBg(scene, "ui_btn_fight", "ui_btn_fight_rs", btnTargetW, btnTargetH);
+  let finalBtnScale = fightBtnScale;
+  if (btnRsKey) {
+    fightBtn.setTexture(btnRsKey);
+    finalBtnScale = fightBtnScale / dprCap;
+    fightBtn.setScale(finalBtnScale);
+    console.log("[RESAMPLE] ui_btn_fight applied, scale:", finalBtnScale.toFixed(3));
+  }
+
   scene.tweens.add({
     targets: fightBtn,
-    scale: panelScale * 1.25,
+    scale: finalBtnScale * 1.05,
     yoyo: true,
     repeat: -1,
     duration: 800,
