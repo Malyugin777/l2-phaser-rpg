@@ -1568,8 +1568,8 @@ function createBottomUI(scene) {
   const displayH = TARGET_UI_H;
 
   // 9-slice panel - corners stay sharp, center stretches
-  // Margins: left, right, top, bottom (corner sizes that won't stretch)
-  const MARGIN = 64;  // Adjust based on panel border thickness
+  // Margins must be SMALLER than half the display size!
+  const MARGIN = 16;  // Small margin for thin borders
   const bottomPanel = scene.add.nineslice(
     Math.round(w / 2),     // x
     Math.round(h),         // y
@@ -1587,7 +1587,7 @@ function createBottomUI(scene) {
   const panelHeight = displayH;
   const panelCenterX = w / 2;
 
-  console.log("[UI] Panel: pos=", bottomPanel.x, bottomPanel.y, "scale=", panelScale.toFixed(3), "height=", panelHeight);
+  console.log("[9SLICE] panel size:", displayW, "x", displayH, "margin:", MARGIN, "orig:", origW, "x", origH);
 
   // === КРАСНАЯ КНОПКА БОЯ ===
   const fightBtnScale = panelScale * 1.2;
