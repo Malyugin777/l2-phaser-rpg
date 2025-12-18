@@ -594,6 +594,8 @@ function create() {
     rCfgRes: this.game.renderer?.config?.resolution,
     hasGL: !!this.game.renderer?.gl,
   });
+  console.log("[BACKING] actual:", this.game.canvas.width, this.game.canvas.height);
+  console.log("[RESOLUTION] config:", this.game.config.resolution, "renderer:", this.game.renderer.resolution);
 
   // === DIAGNOSTIC LOGS (SCALE MODE) ===
   console.log("[SCALE MODE]", this.scale.scaleMode);
