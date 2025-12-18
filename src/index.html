@@ -81,63 +81,6 @@
     </style>
   </head>
  <body>
-  <div id="error-display" style="
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: red;
-    color: white;
-    font-size: 12px;
-    padding: 10px;
-    z-index: 999999;
-    white-space: pre-wrap;
-  "></div>
-
-  <script>
-    window.onerror = function(msg, url, line) {
-      var el = document.getElementById('error-display');
-      el.style.display = 'block';
-      el.innerHTML += msg + ' (line ' + line + ')\n';
-    };
-  </script>
-
-  <div id="viewport-debug" style="
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: blue;
-    color: yellow;
-    font-family: monospace;
-    font-size: 14px;
-    padding: 10px;
-    z-index: 999999;
-  ">Loading viewport info...</div>
-
-  <script>
-    function updateViewportDebug() {
-      var el = document.getElementById('viewport-debug');
-      var container = document.getElementById('game-container');
-      var canvases = document.querySelectorAll('canvas');
-      var canvas = canvases[0];
-
-      var info = [];
-      info.push('WIN: ' + window.innerWidth + 'x' + window.innerHeight);
-      info.push('CONT: ' + (container ? container.clientWidth + 'x' + container.clientHeight : 'NO'));
-      info.push('CANVAS: ' + (canvas ? canvas.clientWidth + 'x' + canvas.clientHeight : 'NO'));
-      info.push('NUM_CANVAS: ' + canvases.length);
-      info.push('VISIBLE: ' + (canvas ? getComputedStyle(canvas).visibility : 'NO'));
-      info.push('OPACITY: ' + (canvas ? getComputedStyle(canvas).opacity : 'NO'));
-
-      el.innerHTML = info.join(' | ');
-    }
-
-    updateViewportDebug();
-    setInterval(updateViewportDebug, 1000);
-  </script>
-
   <!-- Pre-Entry Overlay (Loader + Intro) -->
   <div id="preEntry">
     <div id="preLoader">
@@ -206,7 +149,7 @@
 <script src="ui/skillsPanel.js"></script>
 
 <!-- MAIN -->
-<script src="game.js?v=20241220f"></script>
+<script src="game.js?v=20241220g"></script>
 
 </body>
 </html>

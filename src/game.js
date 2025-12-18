@@ -1,39 +1,4 @@
 "use strict";
-
-// === ON-SCREEN DEBUG HUD (visible on mobile) ===
-(function () {
-  if (window.__HUD) return;
-  const hud = document.createElement("pre");
-  hud.id = "hud";
-  hud.style.cssText = [
-    "position:fixed",
-    "left:0","top:0",
-    "max-width:100vw","max-height:45vh",
-    "overflow:auto",
-    "z-index:999999",
-    "margin:0","padding:6px",
-    "background:rgba(0,0,0,.85)",
-    "color:#0f0",
-    "font:12px/1.2 monospace",
-    "pointer-events:none",
-    "white-space:pre-wrap"
-  ].join(";");
-  document.body.appendChild(hud);
-  const buf = [];
-  const push = (m) => {
-    buf.push(m);
-    if (buf.length > 60) buf.shift();
-    hud.textContent = buf.join("\n");
-  };
-  window.__HUD = { push };
-  const origLog = console.log.bind(console);
-  const origErr = console.error.bind(console);
-  console.log = (...a) => { origLog(...a); push("[LOG] " + a.map(String).join(" ")); };
-  console.error = (...a) => { origErr(...a); push("[ERR] " + a.map(String).join(" ")); };
-  window.addEventListener("error", (e) => push("[WINERR] " + (e.message || e.type)));
-  window.addEventListener("unhandledrejection", (e) => push("[REJ] " + (e.reason?.message || e.reason || "unknown")));
-})();
-
 console.log("GAMEJS BUILD: 2025-12-15-CITY-CLEAN-HOTFIX");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
