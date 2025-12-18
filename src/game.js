@@ -1174,21 +1174,15 @@ function create() {
 
         // === PANEL (uniform scale + pixel snap) ===
         if (bottomPanel) {
-          bottomPanel.setOrigin(0.5, 1);
+          // Container doesn't have setOrigin - position directly
+          // bottomPanel is now a Container with origin (0,0)
 
-          const baseW = bottomPanel.width || 1;
-          const scale = Math.min(1, safe.width / baseW);
-          bottomPanel.setScale(scale, scale);  // UNIFORM
+          const panelW = bottomPanel.displayWidth || bottomPanel.width || 390;
+          const panelH = bottomPanel.displayHeight || bottomPanel.height || 96;
 
-          // Pixel-snapped position
-          bottomPanel.x = Math.round(safe.centerX);
-          bottomPanel.y = Math.round(safe.bottom - pad);
-
-          // Snap flush using bounds to eliminate gap
-          const b = bottomPanel.getBounds();
-          const targetBottom = safe.bottom - pad;
-          const delta = b.bottom - targetBottom;
-          bottomPanel.y = Math.round(bottomPanel.y - delta);
+          // Position at bottom center (Container origin is top-left)
+          bottomPanel.x = Math.round(safe.centerX - panelW / 2);
+          bottomPanel.y = Math.round(safe.bottom - pad - panelH);
         }
 
         // Получаем реальные границы панели после scale
@@ -1646,12 +1640,16 @@ function createBottomUI(scene) {
   bottomPanel.setPosition(Math.round(w / 2 - panelW / 2), Math.round(h - panelH));
   bottomPanel.setDepth(100);
 
-  // For layout compatibility
+  // For layout compatibility (Container doesn't have these natively)
   bottomPanel.displayWidth = panelW;
   bottomPanel.displayHeight = panelH;
+  bottomPanel.width = panelW;
+  bottomPanel.height = panelH;
 
   // Set scrollFactor on all parts
   nineSlice.parts.forEach(p => p.setScrollFactor(0));
+
+  console.log("[9SLICE] Panel at:", bottomPanel.x, bottomPanel.y, "size:", panelW, "x", panelH);
 
   const panelHeight = panelH;
   const panelCenterX = w / 2;
