@@ -12,21 +12,25 @@ const UI_LAYOUT = {
   button: { x: 0, y: -215, scale: 0.54 },
   icons: {
     scale: 0.66,
+    // Positions go RIGHT to LEFT (x: 68 is rightmost, x: -41 is leftmost)
     positions: [
-      { x: 68, y: -62, scale: 0.70 },   // helmet → inventory
-      { x: 17, y: -68, scale: 0.60 },   // anvil → forge
-      { x: -22, y: -71, scale: 0.66 },  // store → shop
-      { x: -41, y: -66, scale: 0.66 }   // map → map
+      { x: 68, y: -62, scale: 0.70 },   // rightmost position
+      { x: 17, y: -68, scale: 0.60 },   // right of center
+      { x: -22, y: -71, scale: 0.66 },  // left of center
+      { x: -41, y: -66, scale: 0.66 }   // leftmost position
     ]
   }
 };
 
-// Icon action mapping
-const ICON_ACTIONS = [
-  { name: 'inventory', panel: 'inventory' },
-  { name: 'forge', panel: 'forge' },
-  { name: 'shop', panel: 'shop' },
-  { name: 'map', panel: 'map' }
+// Icon keys and actions - ordered RIGHT to LEFT to match positions
+// Screen shows: [helmet] [anvil] [FIGHT] [store] [map]
+//               LEFT                              RIGHT
+// So rightmost (x:68) = map, leftmost (x:-41) = helmet
+const ICON_CONFIG = [
+  { key: 'icon_map',    action: 'map',       name: 'map' },       // x: 68 (rightmost)
+  { key: 'icon_store',  action: 'shop',      name: 'shop' },      // x: 17
+  { key: 'icon_anvil',  action: 'forge',     name: 'forge' },     // x: -22
+  { key: 'icon_helmet', action: 'inventory', name: 'inventory' }  // x: -41 (leftmost)
 ];
 
 function createBottomUI(scene) {
@@ -53,9 +57,8 @@ function createBottomUI(scene) {
   const btnCfg = UI_LAYOUT.button;
   const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
   fightBtn.setScale(btnCfg.scale);
-  fightBtn.setDepth(205); // Below icons (210)
+  fightBtn.setDepth(205);
 
-  // Limit button hit area to prevent covering icons
   const btnHitSize = 80;
   fightBtn.setInteractive({
     useHandCursor: true,
@@ -64,8 +67,6 @@ function createBottomUI(scene) {
   });
   panelContainer.add(fightBtn);
 
-  console.log('[BOTTOMUI] Fight button at', btnCfg.x, btnCfg.y, 'size:', fightBtn.width, 'x', fightBtn.height);
-
   fightBtn.on('pointerdown', () => {
     console.log('[UI] Fight button clicked!');
     onFightButtonClick(scene);
@@ -73,56 +74,51 @@ function createBottomUI(scene) {
 
   // === ICONS ===
   const iconsCfg = UI_LAYOUT.icons;
-  const iconKeys = ['icon_helmet', 'icon_anvil', 'icon_store', 'icon_map'];
-
-  console.log("[BOTTOMUI] Creating icons...");
-
   const icons = [];
-  const iconHitSize = 50; // Small hit area for each icon
+  const iconHitSize = 50;
 
-  iconsCfg.positions.forEach((pos, i) => {
-    console.log("[BOTTOMUI] Creating icon", i, iconKeys[i], "at", pos.x, pos.y);
+  console.log("[BOTTOMUI] Creating icons (right to left)...");
 
-    const icon = scene.add.image(pos.x, pos.y, iconKeys[i]);
+  ICON_CONFIG.forEach((cfg, i) => {
+    const pos = iconsCfg.positions[i];
+    
+    console.log("[BOTTOMUI] Icon", i, cfg.key, "at x:", pos.x, "→", cfg.name);
+
+    const icon = scene.add.image(pos.x, pos.y, cfg.key);
     icon.setScale(pos.scale || iconsCfg.scale);
-    icon.setDepth(210 + i); // Each icon on its own layer
+    icon.setDepth(210 + i);
 
-    // Small hit area to prevent overlap
     icon.setInteractive({
       useHandCursor: true,
       hitArea: new Phaser.Geom.Rectangle(-iconHitSize/2, -iconHitSize/2, iconHitSize, iconHitSize),
       hitAreaCallback: Phaser.Geom.Rectangle.Contains
     });
 
-    icon.setData('action', ICON_ACTIONS[i]);
+    icon.setData('action', cfg.action);
+    icon.setData('name', cfg.name);
     icon.setData('index', i);
 
     // Click handler
     icon.on('pointerdown', () => {
-      const action = icon.getData('action');
-      console.log('[UI] Icon', i, 'clicked:', action.name);
-      onIconClick(scene, action.panel);
+      console.log('[UI] Clicked:', cfg.name, '→ panel:', cfg.action);
+      onIconClick(scene, cfg.action);
     });
 
     // Hover effects
     icon.on('pointerover', () => {
       icon.setTint(0xaaaaaa);
-      console.log('[UI] Hover icon', i);
     });
     icon.on('pointerout', () => icon.clearTint());
 
     icons.push(icon);
-
-    console.log("[BOTTOMUI] Icon", i, "hitArea:", iconHitSize, "x", iconHitSize);
   });
 
-  // Add icons to container
   icons.forEach(icon => panelContainer.add(icon));
 
-  console.log("[BOTTOMUI] All icons added to container");
   window.panelContainer = panelContainer;
 
-  console.log("[BOTTOMUI] Created - Icons:", icons.length);
+  console.log("[BOTTOMUI] Created - Panel + Button + Icons:", icons.length);
+  console.log("[BOTTOMUI] Icon order (R→L): map, shop, forge, inventory");
 
   return { bottomPanel, fightBtn, icons, container: panelContainer };
 }
@@ -135,7 +131,6 @@ function onFightButtonClick(scene) {
   console.log('[UI] Fight button → Arena');
   if (typeof hideAllPanels === 'function') hideAllPanels();
 
-  // Open arena
   if (typeof isArenaOpen !== 'undefined' && isArenaOpen) {
     if (typeof hideArenaPanel === 'function') hideArenaPanel();
   } else {
@@ -150,7 +145,6 @@ function onFightButtonClick(scene) {
 function onIconClick(scene, panelName) {
   console.log('[UI] Opening panel:', panelName);
 
-  // Toggle behavior: if panel is open, close it; otherwise open it
   switch (panelName) {
     case 'inventory':
       if (typeof isInventoryOpen !== 'undefined' && isInventoryOpen) {
