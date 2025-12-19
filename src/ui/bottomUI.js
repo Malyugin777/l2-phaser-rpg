@@ -78,15 +78,21 @@ function createBottomUI(scene) {
   console.log("[BOTTOMUI] Creating icons...");
 
   const icons = [];
+  const iconHitSize = 50; // Small hit area for each icon
+
   iconsCfg.positions.forEach((pos, i) => {
     console.log("[BOTTOMUI] Creating icon", i, iconKeys[i], "at", pos.x, pos.y);
 
     const icon = scene.add.image(pos.x, pos.y, iconKeys[i]);
     icon.setScale(pos.scale || iconsCfg.scale);
-    icon.setDepth(210); // Above panel and button
+    icon.setDepth(210 + i); // Each icon on its own layer
 
-    // Simple interactive - full image bounds
-    icon.setInteractive({ useHandCursor: true });
+    // Small hit area to prevent overlap
+    icon.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-iconHitSize/2, -iconHitSize/2, iconHitSize, iconHitSize),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains
+    });
 
     icon.setData('action', ICON_ACTIONS[i]);
     icon.setData('index', i);
@@ -107,7 +113,7 @@ function createBottomUI(scene) {
 
     icons.push(icon);
 
-    console.log("[BOTTOMUI] Icon", i, "created, size:", icon.width, "x", icon.height);
+    console.log("[BOTTOMUI] Icon", i, "hitArea:", iconHitSize, "x", iconHitSize);
   });
 
   // Add icons to container
