@@ -73,7 +73,6 @@ function createBottomUI(scene) {
   // === ICONS ===
   const iconsCfg = UI_LAYOUT.icons;
   const icons = [];
-  const iconHitSize = 60; // Larger hit area
 
   console.log("[BOTTOMUI] Creating icons...");
 
@@ -85,11 +84,7 @@ function createBottomUI(scene) {
     const icon = scene.add.image(pos.x, pos.y, cfg.key);
     icon.setScale(pos.scale || iconsCfg.scale);
 
-    icon.setInteractive({
-      useHandCursor: true,
-      hitArea: new Phaser.Geom.Rectangle(-iconHitSize/2, -iconHitSize/2, iconHitSize, iconHitSize),
-      hitAreaCallback: Phaser.Geom.Rectangle.Contains
-    });
+    icon.setInteractive({ useHandCursor: true });
 
     icon.setData('action', cfg.action);
 
