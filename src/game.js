@@ -37,7 +37,7 @@ function getTuneSettings() {
   };
 
   // Clear old tune settings - now adaptive (v6)
-  const TUNE_VERSION = 'v8';
+  const TUNE_VERSION = 'v9';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
@@ -700,10 +700,10 @@ function create() {
   const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", targetWpx, targetHpx);
   if (rsKey) {
     cityBg.setTexture(rsKey);
-    cityBg.setScale(0.46);  // Tuned scale (base 0.5 * 0.92)
+    cityBg.setScale(0.48);  // Tuned scale
     // Adaptive background position (center + offset)
-    // offset: -19 X, +225 Y from center
-    cityBg.setPosition(w / 2 - 19, h / 2 + 225);
+    // offset: +2 X, +225 Y from center
+    cityBg.setPosition(w / 2 + 2, h / 2 + 225);
 
     // STEP 4: After resample
     console.log("[BG] step4 - after resample scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
