@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-CONTAINER-FIX2");
+console.log("GAMEJS BUILD: 2025-12-19-TUNE-CLEAN");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -703,357 +703,199 @@ function create() {
 
   // === TUNE MODE CONTROLS ===
   if (TUNE_ENABLED) {
-    const tune = getTuneSettings();
-    const baseScale = cityBg.scaleX;
-    let selectedElement = 'bg'; // 'bg', 'panel', 'hero', 'btn', 'icon0', 'icon1', 'icon2', 'icon3'
+    const bgBaseScale = cityBg.scaleX;
+    let selectedElement = 'bg'; // 'bg', 'panel', 'hero', 'btn', 'icon0'-'icon3'
+    const STEP = 1;
+    const SCALE_STEP = 0.02;
 
-    // Store BASE positions (will be set after bottomUI exists)
-    const basePositions = {
-      bgX: this.cameras.main.centerX,
-      bgY: this.cameras.main.centerY,
-      panelX: this.scale.width / 2,
-      panelY: this.scale.height,
-      heroX: heroStartX,
-      heroY: heroStartY,
-      btnX: 0, btnY: 0, // Set later
-      icon0X: 0, icon0Y: 0,
-      icon1X: 0, icon1Y: 0,
-      icon2X: 0, icon2Y: 0,
-      icon3X: 0, icon3Y: 0
-    };
-    window.tuneBasePositions = basePositions;
-
-    // Store references for tune mode
-    window.tuneRefs = { cityBg, baseScale, tune };
-
-    // Overlay - create once, update text only
+    // Overlay
     const overlay = document.createElement('div');
     overlay.id = 'tune-overlay';
-    overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#0f0;padding:10px;font:12px monospace;z-index:99999;border-radius:5px;max-width:220px;';
-    overlay.addEventListener('pointerdown', (e) => e.stopPropagation());
-    overlay.addEventListener('click', (e) => e.stopPropagation());
-
-    // Static HTML with spans for dynamic values
+    overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:12px;font:11px monospace;z-index:99999;border-radius:5px;min-width:240px;';
+    overlay.addEventListener('pointerdown', e => e.stopPropagation());
     overlay.innerHTML = `
-      <b>TUNE</b> [<span id="tune-sel">bg</span>]<br>
-      <hr style="border-color:#333">
-      <span id="tune-values"></span>
-      <hr style="border-color:#333">
-      <small>1-8: select | Arrows: move | Q/E: scale</small>
-      <div style="margin-top:8px;">
-        <button id="tune-save">💾 SAVE</button>
-        <button id="tune-reset">🔄</button>
-        <button id="tune-copy">📋</button>
+      <b>🎮 TUNE MODE</b> [<span id="tune-sel" style="color:#ff0">bg</span>]<br>
+      <hr style="border-color:#333;margin:5px 0">
+      <div id="tune-values" style="line-height:1.4"></div>
+      <hr style="border-color:#333;margin:5px 0">
+      <small>1-8: select | Arrows: move | Q/E: scale</small><br>
+      <small>Drag: move | Click: select</small>
+      <div style="margin-top:10px;display:flex;gap:5px;">
+        <button id="tune-save" style="flex:1;padding:5px;cursor:pointer">💾 SAVE</button>
+        <button id="tune-reset" style="padding:5px;cursor:pointer">🔄</button>
+        <button id="tune-copy" style="padding:5px;cursor:pointer">📋</button>
       </div>
     `;
     document.body.appendChild(overlay);
 
-    // Button handlers - SAVE to localStorage + clipboard (with ALL scales)
-    document.getElementById('tune-save').onclick = () => {
-      const ui = window.bottomUI;
-      const hero = window.spineHero;
-      const cont = window.panelContainer;
-      const bp = window.tuneBasePositions;
+    const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80' };
 
-      // Build settings with all current values
-      const settings = {
-        bgZoom: tune.bgZoom,
-        bgPanX: tune.bgPanX,
-        bgPanY: tune.bgPanY,
-        panelX: cont ? cont.x - bp.panelX : tune.panelX,
-        panelY: cont ? cont.y - bp.panelY : tune.panelY,
-        panelScale: ui?.bottomPanel?.scaleX || 1,
-        heroX: tune.heroX,
-        heroY: tune.heroY,
-        heroScale: hero?.scaleX || 1.4,
-        btnX: tune.btnX,
-        btnY: tune.btnY,
-        btnScale: ui?.fightBtn?.scaleX || 0.5,
-        iconScale: ui?.icons?.[0]?.scaleX || 0.1,
-        icon0X: tune.icon0X || 0,
-        icon0Y: tune.icon0Y || 0,
-        icon1X: tune.icon1X || 0,
-        icon1Y: tune.icon1Y || 0,
-        icon2X: tune.icon2X || 0,
-        icon2Y: tune.icon2Y || 0,
-        icon3X: tune.icon3X || 0,
-        icon3Y: tune.icon3Y || 0
-      };
-
-      const json = JSON.stringify(settings, null, 2);
-      localStorage.setItem('TUNE_SETTINGS', JSON.stringify(settings));
-      navigator.clipboard?.writeText(json);
-      console.log("[TUNE] Saved to localStorage and clipboard:\n" + json);
-      alert("Saved to localStorage!\n\n" + json);
-    };
-    document.getElementById('tune-reset').onclick = () => {
-      // Reset tune values to defaults and clear localStorage
-      Object.assign(tune, {
-        bgZoom:1, bgPanX:0, bgPanY:0,
-        panelX:0, panelY:0, panelScale:1,
-        heroX:0, heroY:0, heroScale:1,
-        btnX:0, btnY:0, btnScale:0.18,
-        iconScale:0.09,
-        icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0
-      });
-      localStorage.removeItem('TUNE_SETTINGS');
-      applyTune();
-      console.log("[TUNE] Reset to defaults, localStorage cleared");
-      alert('Reset to defaults!');
-    };
-    document.getElementById('tune-copy').onclick = () => {
-      const json = JSON.stringify(tune, null, 2);
-      navigator.clipboard?.writeText(json);
-      alert('Copied!\n' + json);
-    };
-
-    const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f', icon0: '#f80', icon1: '#f80', icon2: '#f80', icon3: '#f80' };
+    // Get current UI state (call fresh each time)
+    const getUI = () => ({
+      cont: window.panelContainer,
+      panel: window.bottomUI?.bottomPanel,
+      btn: window.bottomUI?.fightBtn,
+      icons: window.bottomUI?.icons || [],
+      hero: window.spineHero
+    });
 
     const updateOverlay = () => {
-      const t = getTuneSettings();
-      const ui = window.bottomUI;
-      const hero = window.spineHero;
-      const btn = ui?.fightBtn;
-      const icons = ui?.icons || [];
-      const cont = window.panelContainer;
+      const { cont, panel, btn, icons, hero } = getUI();
+      document.getElementById('tune-sel').style.color = selColors[selectedElement] || '#fff';
+      document.getElementById('tune-sel').textContent = selectedElement;
 
-      document.getElementById('tune-sel').innerHTML = `<span style="color:${selColors[selectedElement] || '#fff'}">${selectedElement}</span>`;
-
-      let html = '';
-      // BG
-      html += `<b style="color:#0f0">1.BG:</b> z:${tune.bgZoom.toFixed(2)} pos:${cityBg?.x?.toFixed(0)},${cityBg?.y?.toFixed(0)}<br>`;
-      // Panel (container position + panel scale)
-      html += `<b style="color:#ff0">2.Panel:</b> ${cont?.x?.toFixed(0) || '?'},${cont?.y?.toFixed(0) || '?'} s:${ui?.bottomPanel?.scaleX?.toFixed(2) || '?'}<br>`;
-      // Hero
-      html += `<b style="color:#0ff">3.Hero:</b> ${hero?.x?.toFixed(0) || '?'},${hero?.y?.toFixed(0) || '?'} s:${hero?.scaleX?.toFixed(2) || '?'}<br>`;
-      // Button
-      html += `<b style="color:#f0f">4.Btn:</b> ${btn?.x?.toFixed(0) || '?'},${btn?.y?.toFixed(0) || '?'} s:${btn?.scaleX?.toFixed(2) || '?'}<br>`;
-      // Icons (show scale)
-      html += `<b style="color:#f80">5-8.Icons:</b><br>`;
-      const emojis = ['🎩', '⚒️', '🏪', '🗺️'];
+      let h = '';
+      h += `<b style="color:#0f0">1.BG:</b> ${cityBg.x.toFixed(0)},${cityBg.y.toFixed(0)} s:${cityBg.scaleX.toFixed(2)}<br>`;
+      h += `<b style="color:#ff0">2.Panel:</b> cont(${cont?.x.toFixed(0)},${cont?.y.toFixed(0)}) s:${panel?.scaleX.toFixed(2)}<br>`;
+      h += `<b style="color:#0ff">3.Hero:</b> ${hero?.x.toFixed(0)},${hero?.y.toFixed(0)} s:${hero?.scaleX.toFixed(2)}<br>`;
+      h += `<b style="color:#f0f">4.Btn:</b> ${btn?.x.toFixed(0)},${btn?.y.toFixed(0)} s:${btn?.scaleX.toFixed(2)}<br>`;
+      h += `<b style="color:#f80">5-8.Icons:</b><br>`;
       icons.forEach((ic, i) => {
-        html += `${emojis[i]}${ic.x?.toFixed(0)},${ic.y?.toFixed(0)} s:${ic.scaleX?.toFixed(2)}  `;
-        if (i === 1) html += '<br>';
+        h += `  ${i}: (${ic.x.toFixed(0)},${ic.y.toFixed(0)}) s:${ic.scaleX.toFixed(2)}<br>`;
       });
-
-      document.getElementById('tune-values').innerHTML = html;
+      document.getElementById('tune-values').innerHTML = h;
     };
 
-    const applyTune = () => {
-      const bp = window.tuneBasePositions;
-
-      // Capture base positions for btn/icons on first run (after bottomUI exists)
-      if (window.bottomUI && bp.btnX === 0 && bp.btnY === 0) {
-        bp.btnX = window.bottomUI.fightBtn?.x || 0;
-        bp.btnY = window.bottomUI.fightBtn?.y || 0;
-        const icons = window.bottomUI.icons || [];
-        icons.forEach((icon, i) => {
-          bp[`icon${i}X`] = icon?.x || 0;
-          bp[`icon${i}Y`] = icon?.y || 0;
-        });
-      }
-
-      // Background
-      cityBg.setScale(baseScale * tune.bgZoom);
-      cityBg.x = Math.round(bp.bgX + tune.bgPanX);
-      cityBg.y = Math.round(bp.bgY + tune.bgPanY);
-
-      // Panel Container (moves panel + icons + button together)
-      if (window.panelContainer) {
-        window.panelContainer.x = Math.round(bp.panelX + tune.panelX);
-        window.panelContainer.y = Math.round(bp.panelY + tune.panelY);
-      }
-
-      // Hero - use HERO_BASE constants (offset-based positioning)
-      if (window.spineHero) {
-        window.spineHero.x = Math.round(HERO_BASE.x + tune.heroX);
-        window.spineHero.y = Math.round(HERO_BASE.y + tune.heroY);
-        window.spineHero.setScale(HERO_BASE.scale * tune.heroScale);
-        window.spineHero.setVisible(true);
-        window.spineHero.setDepth(50);
-      }
-
-      // Fight button - use FIGHTBTN_BASE (offset-based positioning)
-      if (window.bottomUI?.fightBtn && FIGHTBTN_BASE) {
-        window.fightBtnTween?.stop();
-        window.bottomUI.fightBtn.x = Math.round(FIGHTBTN_BASE.x + tune.btnX);
-        window.bottomUI.fightBtn.y = Math.round(FIGHTBTN_BASE.y + tune.btnY);
-      }
-
-      // Icons have FIXED positions - not tunable
-
-      updateOverlay();
+    // SAVE - captures ACTUAL current positions
+    document.getElementById('tune-save').onclick = () => {
+      const { cont, panel, btn, icons, hero } = getUI();
+      const settings = {
+        // Background
+        bgX: cityBg.x,
+        bgY: cityBg.y,
+        bgScale: cityBg.scaleX,
+        // Container position
+        containerX: cont?.x,
+        containerY: cont?.y,
+        // Panel scale (inside container)
+        panelScale: panel?.scaleX,
+        // Hero
+        heroX: hero?.x,
+        heroY: hero?.y,
+        heroScale: hero?.scaleX,
+        // Button (relative to container)
+        btnX: btn?.x,
+        btnY: btn?.y,
+        btnScale: btn?.scaleX,
+        // Icons (relative to container)
+        iconScale: icons[0]?.scaleX,
+        icon0: { x: icons[0]?.x, y: icons[0]?.y },
+        icon1: { x: icons[1]?.x, y: icons[1]?.y },
+        icon2: { x: icons[2]?.x, y: icons[2]?.y },
+        icon3: { x: icons[3]?.x, y: icons[3]?.y }
+      };
+      const json = JSON.stringify(settings, null, 2);
+      localStorage.setItem('TUNE_SETTINGS', json);
+      navigator.clipboard?.writeText(json);
+      console.log("[TUNE] SAVED:\n" + json);
+      alert("SAVED!\n\n" + json);
     };
 
-    // Click to select element
-    let dragging = false, startX, startY;
+    document.getElementById('tune-reset').onclick = () => {
+      localStorage.removeItem('TUNE_SETTINGS');
+      alert('localStorage cleared! Reload page.');
+      location.reload();
+    };
+
+    document.getElementById('tune-copy').onclick = () => {
+      const { cont, panel, btn, icons, hero } = getUI();
+      const txt = `Container: ${cont?.x},${cont?.y}\nBtn: ${btn?.x},${btn?.y} s:${btn?.scaleX}\nIcons: ${icons.map(i=>`(${i.x},${i.y})`).join(' ')} s:${icons[0]?.scaleX}`;
+      navigator.clipboard?.writeText(txt);
+      alert('Copied!\n' + txt);
+    };
+
+    // Drag handling
+    let dragging = false, startX = 0, startY = 0;
 
     this.input.on('pointerdown', (p) => {
-      // Check what was clicked (in order of depth - highest first)
-      const icons = window.bottomUI?.icons || [];
-      let iconClicked = -1;
+      const { cont, panel, btn, icons, hero } = getUI();
+
+      // Detect what was clicked
       for (let i = 0; i < icons.length; i++) {
         if (icons[i]?.getBounds()?.contains(p.x, p.y)) {
-          iconClicked = i;
-          break;
+          selectedElement = 'icon' + i;
+          dragging = true; startX = p.x; startY = p.y;
+          updateOverlay(); return;
         }
       }
-
-      if (iconClicked >= 0) {
-        selectedElement = 'icon' + iconClicked;
-      } else if (window.bottomUI?.fightBtn?.getBounds()?.contains(p.x, p.y)) {
+      if (btn?.getBounds()?.contains(p.x, p.y)) {
         selectedElement = 'btn';
-      } else if (window.bottomUI?.bottomPanel?.getBounds()?.contains(p.x, p.y)) {
+      } else if (panel?.getBounds()?.contains(p.x, p.y)) {
         selectedElement = 'panel';
-      } else if (window.spineHero?.getBounds()?.contains(p.x, p.y)) {
+      } else if (hero?.getBounds()?.contains(p.x, p.y)) {
         selectedElement = 'hero';
       } else {
         selectedElement = 'bg';
       }
+      dragging = true; startX = p.x; startY = p.y;
       updateOverlay();
-      dragging = true;
-      startX = p.x;
-      startY = p.y;
     });
 
     this.input.on('pointermove', (p) => {
       if (!dragging) return;
-      const dx = Math.round(p.x - startX);
-      const dy = Math.round(p.y - startY);
-      startX = p.x;
-      startY = p.y;
+      const { cont, btn, icons, hero } = getUI();
+      const dx = p.x - startX, dy = p.y - startY;
+      startX = p.x; startY = p.y;
 
       if (selectedElement === 'bg') {
-        tune.bgPanX += dx;
-        tune.bgPanY += dy;
-        cityBg.x += dx;
-        cityBg.y += dy;
-      } else if (selectedElement === 'panel' && window.panelContainer) {
-        tune.panelX += dx;
-        tune.panelY += dy;
-        window.panelContainer.x += dx;
-        window.panelContainer.y += dy;
-      } else if (selectedElement === 'hero' && window.spineHero) {
-        tune.heroX += dx;
-        tune.heroY += dy;
-        window.spineHero.x += dx;
-        window.spineHero.y += dy;
-      } else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
-        tune.btnX += dx;
-        tune.btnY += dy;
-        window.bottomUI.fightBtn.x += dx;
-        window.bottomUI.fightBtn.y += dy;
+        cityBg.x += dx; cityBg.y += dy;
+      } else if (selectedElement === 'panel' && cont) {
+        cont.x += dx; cont.y += dy;
+      } else if (selectedElement === 'hero' && hero) {
+        hero.x += dx; hero.y += dy;
+      } else if (selectedElement === 'btn' && btn) {
+        btn.x += dx; btn.y += dy;
       } else if (selectedElement.startsWith('icon')) {
-        const iconIdx = parseInt(selectedElement.replace('icon', ''));
-        const icon = window.bottomUI?.icons?.[iconIdx];
-        if (icon) {
-          tune[`icon${iconIdx}X`] += dx;
-          tune[`icon${iconIdx}Y`] += dy;
-          icon.x += dx;
-          icon.y += dy;
-        }
+        const i = parseInt(selectedElement[4]);
+        if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
       }
       updateOverlay();
     });
 
     this.input.on('pointerup', () => { dragging = false; });
 
-    // Helper to move icon
-    const STEP = 1; // Arrow key step size in pixels
-    const moveIcon = (delta, axis) => {
-      if (selectedElement.startsWith('icon')) {
-        const idx = parseInt(selectedElement.replace('icon', ''));
-        const icon = window.bottomUI?.icons?.[idx];
-        if (icon) {
-          tune[`icon${idx}${axis}`] += delta;
-          icon[axis.toLowerCase()] += delta;
-        }
+    // Arrow keys
+    const moveSelected = (dx, dy) => {
+      const { cont, btn, icons, hero } = getUI();
+      if (selectedElement === 'bg') { cityBg.x += dx; cityBg.y += dy; }
+      else if (selectedElement === 'panel' && cont) { cont.x += dx; cont.y += dy; }
+      else if (selectedElement === 'hero' && hero) { hero.x += dx; hero.y += dy; }
+      else if (selectedElement === 'btn' && btn) { btn.x += dx; btn.y += dy; }
+      else if (selectedElement.startsWith('icon')) {
+        const i = parseInt(selectedElement[4]);
+        if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
       }
+      updateOverlay();
     };
 
-    // Arrow keys for fine tune selected element (1px steps)
-    this.input.keyboard.on('keydown-UP', () => {
-      if (selectedElement === 'bg') { tune.bgPanY -= STEP; cityBg.y -= STEP; }
-      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelY -= STEP; window.panelContainer.y -= STEP; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY -= STEP; window.spineHero.y -= STEP; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY -= STEP; window.bottomUI.fightBtn.y -= STEP; }
-      else moveIcon(-STEP, 'Y');
-      updateOverlay();
-    });
-    this.input.keyboard.on('keydown-DOWN', () => {
-      if (selectedElement === 'bg') { tune.bgPanY += STEP; cityBg.y += STEP; }
-      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelY += STEP; window.panelContainer.y += STEP; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroY += STEP; window.spineHero.y += STEP; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY += STEP; window.bottomUI.fightBtn.y += STEP; }
-      else moveIcon(STEP, 'Y');
-      updateOverlay();
-    });
-    this.input.keyboard.on('keydown-LEFT', () => {
-      if (selectedElement === 'bg') { tune.bgPanX -= STEP; cityBg.x -= STEP; }
-      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelX -= STEP; window.panelContainer.x -= STEP; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX -= STEP; window.spineHero.x -= STEP; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX -= STEP; window.bottomUI.fightBtn.x -= STEP; }
-      else moveIcon(-STEP, 'X');
-      updateOverlay();
-    });
-    this.input.keyboard.on('keydown-RIGHT', () => {
-      if (selectedElement === 'bg') { tune.bgPanX += STEP; cityBg.x += STEP; }
-      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelX += STEP; window.panelContainer.x += STEP; }
-      else if (selectedElement === 'hero' && window.spineHero) { tune.heroX += STEP; window.spineHero.x += STEP; }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX += STEP; window.bottomUI.fightBtn.x += STEP; }
-      else moveIcon(STEP, 'X');
-      updateOverlay();
-    });
+    this.input.keyboard.on('keydown-UP', () => moveSelected(0, -STEP));
+    this.input.keyboard.on('keydown-DOWN', () => moveSelected(0, STEP));
+    this.input.keyboard.on('keydown-LEFT', () => moveSelected(-STEP, 0));
+    this.input.keyboard.on('keydown-RIGHT', () => moveSelected(STEP, 0));
 
-    // Q/E for scale (+ and - don't work in Phaser)
-    const SCALE_STEP = 0.02;
-    const ui = window.bottomUI;
-
-    this.input.keyboard.on('keydown-E', () => {
+    // Q/E for scale
+    const scaleSelected = (delta) => {
+      const { panel, btn, icons, hero } = getUI();
       if (selectedElement === 'bg') {
-        tune.bgZoom += 0.05;
-        cityBg.setScale(baseScale * tune.bgZoom);
-      }
-      else if (selectedElement === 'panel' && ui?.bottomPanel) {
-        ui.bottomPanel.setScale(ui.bottomPanel.scaleX + SCALE_STEP);
-      }
-      else if (selectedElement === 'hero' && window.spineHero) {
-        window.spineHero.setScale(window.spineHero.scaleX + SCALE_STEP);
-      }
-      else if (selectedElement === 'btn' && ui?.fightBtn) {
+        cityBg.setScale(cityBg.scaleX + delta);
+      } else if (selectedElement === 'panel' && panel) {
+        panel.setScale(panel.scaleX + delta);
+      } else if (selectedElement === 'hero' && hero) {
+        hero.setScale(hero.scaleX + delta);
+      } else if (selectedElement === 'btn' && btn) {
         window.fightBtnTween?.stop();
-        ui.fightBtn.setScale(ui.fightBtn.scaleX + SCALE_STEP);
-      }
-      else if (selectedElement.startsWith('icon')) {
-        // Change ALL icons together
-        ui?.icons?.forEach(ic => ic.setScale(ic.scaleX + SCALE_STEP));
+        btn.setScale(btn.scaleX + delta);
+      } else if (selectedElement.startsWith('icon')) {
+        // Scale ALL icons together
+        icons.forEach(ic => ic.setScale(ic.scaleX + delta));
       }
       updateOverlay();
-    });
+    };
 
-    this.input.keyboard.on('keydown-Q', () => {
-      if (selectedElement === 'bg') {
-        tune.bgZoom -= 0.05;
-        cityBg.setScale(baseScale * tune.bgZoom);
-      }
-      else if (selectedElement === 'panel' && ui?.bottomPanel) {
-        ui.bottomPanel.setScale(ui.bottomPanel.scaleX - SCALE_STEP);
-      }
-      else if (selectedElement === 'hero' && window.spineHero) {
-        window.spineHero.setScale(window.spineHero.scaleX - SCALE_STEP);
-      }
-      else if (selectedElement === 'btn' && ui?.fightBtn) {
-        window.fightBtnTween?.stop();
-        ui.fightBtn.setScale(ui.fightBtn.scaleX - SCALE_STEP);
-      }
-      else if (selectedElement.startsWith('icon')) {
-        // Change ALL icons together
-        ui?.icons?.forEach(ic => ic.setScale(ic.scaleX - SCALE_STEP));
-      }
-      updateOverlay();
-    });
+    this.input.keyboard.on('keydown-E', () => scaleSelected(SCALE_STEP));
+    this.input.keyboard.on('keydown-Q', () => scaleSelected(-SCALE_STEP));
 
-    // Number keys 1-8 to select element directly
+    // Number keys 1-8 to select
     this.input.keyboard.on('keydown-ONE', () => { selectedElement = 'bg'; updateOverlay(); });
     this.input.keyboard.on('keydown-TWO', () => { selectedElement = 'panel'; updateOverlay(); });
     this.input.keyboard.on('keydown-THREE', () => { selectedElement = 'hero'; updateOverlay(); });
@@ -1063,11 +905,10 @@ function create() {
     this.input.keyboard.on('keydown-SEVEN', () => { selectedElement = 'icon2'; updateOverlay(); });
     this.input.keyboard.on('keydown-EIGHT', () => { selectedElement = 'icon3'; updateOverlay(); });
 
-    // Make applyTune globally accessible for later call
-    window.applyTune = applyTune;
+    // Initial overlay update after UI loads
+    setTimeout(updateOverlay, 500);
 
-    applyTune();
-    console.log('[TUNE] Mode enabled. 1-8=select, drag=move, arrows=fine, Q/E=scale');
+    console.log('[TUNE] Ready! Keys: 1-8 select, Arrows move, Q/E scale, Drag to move');
   }
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
