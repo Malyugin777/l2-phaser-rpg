@@ -983,6 +983,7 @@ function create() {
       window.spineHero = spineHero;
       hero = spineHero;
       console.log("[HERO] Adaptive pos:", heroX, heroY, "scale:", HERO_OFFSET.scale);
+      console.log("[HERO] Created:", { visible: spineHero.visible, depth: spineHero.depth, x: spineHero.x, y: spineHero.y });
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
       hero = createHeroSprite(this, heroX, heroY, 0x3366cc);
@@ -1060,6 +1061,12 @@ function create() {
         }
 
         console.log("[TUNE] Production settings applied");
+        console.log("[HERO] After tune:", {
+          visible: window.spineHero?.visible,
+          x: window.spineHero?.x,
+          y: window.spineHero?.y,
+          depth: window.spineHero?.depth
+        });
       }, 150);
 
       // Also trigger applyTune in tune mode for interactive adjustments
