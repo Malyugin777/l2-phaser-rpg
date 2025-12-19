@@ -21,14 +21,15 @@ const UI_LAYOUT = {
   }
 };
 
-// Icon config - keeps original visual positions, correct click actions
-// Visual: [map] [store] [FIGHT] [anvil] [helmet]
-//         LEFT                           RIGHT
+// Icon config - matches visual layout left to right
+// Visual: [helmet] [anvil] [FIGHT] [store] [map]
+//         LEFT                              RIGHT
+// Positions array order: [0]=x:68, [1]=x:17, [2]=x:-22, [3]=x:-41
 const ICON_CONFIG = [
-  { key: 'icon_helmet', action: 'inventory', name: 'helmet' },   // x: 68 → inventory
-  { key: 'icon_anvil',  action: 'forge',     name: 'anvil' },    // x: 17 → forge
-  { key: 'icon_store',  action: 'shop',      name: 'store' },    // x: -22 → shop
-  { key: 'icon_map',    action: 'map',       name: 'map' }       // x: -41 → map
+  { key: 'icon_map',    action: 'map',       name: 'map' },       // pos[0] x:68 (right)
+  { key: 'icon_store',  action: 'shop',      name: 'store' },     // pos[1] x:17
+  { key: 'icon_anvil',  action: 'forge',     name: 'anvil' },     // pos[2] x:-22
+  { key: 'icon_helmet', action: 'inventory', name: 'helmet' }     // pos[3] x:-41 (left)
 ];
 
 function createBottomUI(scene) {
