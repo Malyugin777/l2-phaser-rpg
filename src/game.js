@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-CORRECT-ICONS");
+console.log("GAMEJS BUILD: 2025-12-19-NO-LAYOUT-ICONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1232,23 +1232,7 @@ function create() {
           fightBtn.y = Math.round(panelMidY);
         }
 
-        // === ICONS (слева до fightBtn) ===
-        if (icons?.length && panelB) {
-          const leftPad = 70;
-          const gapToFight = 140;
-          const startX = panelB.left + leftPad;
-          const endX = Math.max(startX, (fightBtn?.x ?? panelB.right) - gapToFight);
-
-          const usable = Math.max(0, endX - startX);
-          const step = usable / Math.max(1, icons.length - 1);
-
-          icons.forEach((ic, i) => {
-            if (!ic) return;
-            ic.setOrigin(0.5, 0.5);
-            ic.x = Math.round(startX + step * i);
-            ic.y = Math.round(panelMidY);
-          });
-        }
+        // Icons stay at HARDCODED positions from createBottomUI() - do not reposition
 
         console.log("[UI] layoutUI done");
       };
