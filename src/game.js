@@ -14,20 +14,21 @@ const HERO_BASE = { x: 336, y: 1492, scale: 1.23 };
 let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
+  // All positions are now hardcoded - tune offsets should be 0
   const defaults = {
-    bgZoom: 0.95,
+    bgZoom: 1,
     bgPanX: 0,
-    bgPanY: 238,
+    bgPanY: 0,
     panelX: 0,
     panelY: 0,
     panelScale: 1.0,
-    heroX: 36,
-    heroY: 0,       // Offset from GROUND_Y (usually 0)
-    heroScale: 1.72,
-    btnX: -246,
-    btnY: 4,
-    btnScale: 0.18,     // Default button scale
-    iconScale: 0.09,    // Default icon scale
+    heroX: 0,
+    heroY: 0,
+    heroScale: 1,
+    btnX: 0,
+    btnY: 0,
+    btnScale: 1,
+    iconScale: 1,
     icon0X: 0, icon0Y: 0,
     icon1X: 0, icon1Y: 0,
     icon2X: 0, icon2Y: 0,
