@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FINAL-FIX");
+console.log("GAMEJS BUILD: 2025-12-19-ICON-CHECK");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1622,6 +1622,12 @@ function create() {
 // ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
 
 function createBottomUI(scene) {
+  // === ICON TEXTURE CHECK ===
+  console.log("[ICON-CHECK] icon_helmet exists:", scene.textures.exists('icon_helmet'));
+  console.log("[ICON-CHECK] icon_anvil exists:", scene.textures.exists('icon_anvil'));
+  console.log("[ICON-CHECK] icon_store exists:", scene.textures.exists('icon_store'));
+  console.log("[ICON-CHECK] icon_map exists:", scene.textures.exists('icon_map'));
+
   const w = scene.scale.width;
   const h = scene.scale.height;
 
