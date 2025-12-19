@@ -5,19 +5,17 @@
 //  With click handlers for panels
 // ============================================================
 
-// UI Layout config for optimized textures
-// Panel: 800x188, Button: 240x240, Icons: 140x140
+// UI Layout config - tuned positions for optimized textures
 const UI_LAYOUT = {
   container: { offsetY: 3 },
-  panel: { scale: 1.0 },
-  button: { x: 0, y: -110, scale: 0.45 },
+  panel: { scale: 0.58 },
+  button: { x: 0, y: -217, scale: 0.55 },
   icons: {
-    // Icons 140x140, scale 0.5 = 70px on screen
     positions: [
-      { x: 280, y: -50, scale: 0.5 },   // helmet (rightmost)
-      { x: 140, y: -50, scale: 0.5 },   // anvil
-      { x: -140, y: -50, scale: 0.5 },  // store
-      { x: -280, y: -50, scale: 0.5 }   // map (leftmost)
+      { x: 98, y: -57, scale: 0.76 },   // helmet → inventory
+      { x: 18, y: -61, scale: 0.76 },   // anvil → forge
+      { x: -14, y: -65, scale: 0.76 },  // store → shop
+      { x: -44, y: -62, scale: 0.76 }   // map → map
     ]
   }
 };
