@@ -966,11 +966,12 @@ function create() {
     try {
       spineHero = this.add.spine(HERO_BASE.x, HERO_BASE.y, 'hero', 'idle', true);
       spineHero.setScale(HERO_BASE.scale);
-      spineHero.setDepth(50);
+      spineHero.setDepth(100);  // Above background (10), below UI (200)
       spineHero.setVisible(true);
+      spineHero.setScrollFactor(0);  // Fixed on screen
       window.spineHero = spineHero;
       hero = spineHero;
-      console.log("[HERO] pos:", HERO_BASE.x, HERO_BASE.y, "scale:", HERO_BASE.scale);
+      console.log("[HERO] Created at:", HERO_BASE.x, HERO_BASE.y, "scale:", HERO_BASE.scale, "depth:", spineHero.depth);
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
       hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
@@ -1030,8 +1031,9 @@ function create() {
           window.cityBg.x += tune.bgPanX;
         }
 
-        // Hero
-        if (window.spineHero) {
+        // Hero - positions are hardcoded, only apply if tune mode
+        if (window.spineHero && TUNE_ENABLED) {
+          console.log("[TUNE] Hero offset:", tune.heroX, tune.heroY, "scale mult:", tune.heroScale);
           window.spineHero.x = HERO_BASE.x + tune.heroX;
           window.spineHero.y = HERO_BASE.y + tune.heroY;
           window.spineHero.setScale(HERO_BASE.scale * tune.heroScale);
