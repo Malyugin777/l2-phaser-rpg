@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FORCE-ICONS");
+console.log("GAMEJS BUILD: 2025-12-19-CORRECT-ICONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1683,14 +1683,14 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  // === ICONS - HARDCODED FINAL POSITIONS - DO NOT CALCULATE ===
-  const icon0 = scene.add.image(120, 1580, 'icon_helmet').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
-  const icon1 = scene.add.image(270, 1580, 'icon_anvil').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
-  const icon2 = scene.add.image(510, 1580, 'icon_store').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
-  const icon3 = scene.add.image(660, 1580, 'icon_map').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  // === ICONS - HARDCODED FINAL POSITIONS ===
+  const icon0 = scene.add.image(461, 1640, 'icon_helmet').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  const icon1 = scene.add.image(405, 1635, 'icon_anvil').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  const icon2 = scene.add.image(378, 1627, 'icon_store').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  const icon3 = scene.add.image(369, 1632, 'icon_map').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
 
   const createdIcons = [icon0, icon1, icon2, icon3];
-  console.log("[UI] Icons HARDCODED at Y=1580");
+  console.log("[UI] Icons at: helmet(461,1640) anvil(405,1635) store(378,1627) map(369,1632)");
 
   // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
