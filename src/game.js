@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-ICON-CHECK");
+console.log("GAMEJS BUILD: 2025-12-19-FINAL");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -510,10 +510,6 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
-  // RESET - clear broken settings
-  localStorage.removeItem('TUNE_SETTINGS');
-  console.log("[TUNE] localStorage cleared");
-
   // === RENDER DIAG (pixelated root-cause) ===
   const canvas = this.game?.canvas;
   if (canvas) {
@@ -1687,22 +1683,17 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  // === ICONS - FINAL POSITIONS (from user tuning) ===
-  const iconScale = 0.15;
-
-  const iconPositions = [
-    { x: 443, y: 1635, key: 'icon_helmet', action: 'inventory' },
-    { x: 397, y: 1630, key: 'icon_anvil', action: 'forge' },
-    { x: 386, y: 1627, key: 'icon_store', action: 'shop' },
-    { x: 370, y: 1627, key: 'icon_map', action: 'map' },
+  // === ICONS - FINAL HARDCODED POSITIONS ===
+  const iconConfigs = [
+    { x: 461, y: 1640, key: 'icon_helmet', action: 'inventory' },
+    { x: 405, y: 1635, key: 'icon_anvil', action: 'forge' },
+    { x: 378, y: 1627, key: 'icon_store', action: 'shop' },
+    { x: 369, y: 1632, key: 'icon_map', action: 'map' },
   ];
 
-  const createdIcons = iconPositions.map((cfg, i) => {
-    if (!scene.textures.exists(cfg.key)) {
-      console.error(`[UI] ❌ Missing texture: ${cfg.key}`);
-      return scene.add.rectangle(cfg.x, cfg.y, 60, 60, 0xff0000).setDepth(110);
-    }
+  const iconScale = 0.08;  // Final working scale
 
+  const createdIcons = iconConfigs.map((cfg, i) => {
     const icon = scene.add.image(cfg.x, cfg.y, cfg.key)
       .setDepth(110)
       .setScrollFactor(0)
@@ -1712,8 +1703,6 @@ function createBottomUI(scene) {
     icon.on('pointerdown', () => console.log('[UI] Click:', cfg.action));
     return icon;
   });
-
-  console.log("[UI] Icons hardcoded at final positions");
 
   // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
