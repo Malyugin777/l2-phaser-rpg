@@ -12,7 +12,7 @@ const UI_LAYOUT = {
   icons: {
     scale: 0.66,
     positions: [
-      { x: 62, y: -62, scale: 0.70 },   // helmet
+      { x: 64, y: -62, scale: 0.70 },   // helmet
       { x: 17, y: -68, scale: 0.60 },   // anvil
       { x: -22, y: -71, scale: 0.66 },  // store
       { x: -41, y: -66, scale: 0.66 }   // map
