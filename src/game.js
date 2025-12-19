@@ -37,7 +37,7 @@ function getTuneSettings() {
   };
 
   // Clear old tune settings - now adaptive (v6)
-  const TUNE_VERSION = 'v9';
+  const TUNE_VERSION = 'v10';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
@@ -1552,10 +1552,10 @@ const UI_LAYOUT = {
     scale: 0.65,
     // positions relative to container center
     positions: [
-      { x: 42, y: -68 },   // helmet
-      { x: 17, y: -68 },   // anvil
-      { x: -22, y: -71 },  // store
-      { x: -41, y: -66 }   // map
+      { x: 42, y: -68, scale: 0.65 },   // helmet
+      { x: 17, y: -68, scale: 0.61 },   // anvil (smaller texture)
+      { x: -22, y: -71, scale: 0.65 },  // store
+      { x: -41, y: -66, scale: 0.65 }   // map
     ]
   }
 };
@@ -1599,7 +1599,7 @@ function createBottomUI(scene) {
   const iconKeys = ['icon_helmet', 'icon_anvil', 'icon_store', 'icon_map'];
   const icons = iconsCfg.positions.map((pos, i) => {
     return scene.add.image(pos.x, pos.y, iconKeys[i])
-      .setScale(iconsCfg.scale)
+      .setScale(pos.scale || iconsCfg.scale)  // individual scale or default
       .setInteractive();
   });
   panelContainer.add(icons);
