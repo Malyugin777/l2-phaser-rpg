@@ -5,11 +5,76 @@
 **Жанр:** Idle RPG / Auto-battler в стиле Lineage 2
 **Платформа:** Telegram Mini App (TMA)
 **Движок:** Phaser 3.80.1 + SpinePlugin 4.1
-**Язык:** Vanilla JavaScript (ES6, strict mode, глобальные переменные)
-**Версия:** 1.6.0
+**Язык:** Vanilla JavaScript (ES6, strict mode, модульная архитектура)
+**Версия:** 1.7.0
 **GitHub:** https://github.com/Malyugin777/l2-phaser-rpg
 **GitHub Pages:** https://malyugin777.github.io/l2-phaser-rpg/src/
 **Telegram:** @Poketlineage_bot
+
+---
+
+## 🏗️ Архитектура проекта (v1.7.0)
+
+### Структура файлов
+
+```
+src/
+├── core/
+│   ├── config.js           # Phaser config, scaling, viewport (132 lines)
+│   └── spineAnimations.js  # Hero animations (118 lines)
+├── state/
+│   ├── heroState.js        # Hero data
+│   ├── itemSystem.js       # Items & equipment
+│   ├── saveSystem.js       # Save/load
+│   ├── statSystem.js       # Stats calculation
+│   ├── tickSystem.js       # Game tick
+│   ├── worldState.js       # World state
+│   ├── combatSystem.js     # Combat logic
+│   ├── skillSystem.js      # Skills
+│   ├── locationSystem.js   # Locations
+│   ├── uiSystem.js         # UI state
+│   ├── uiLayout.js         # UI layout
+│   └── ... (other systems)
+├── ui/
+│   ├── bottomUI.js         # Bottom panel UI (83 lines)
+│   ├── tuneMode.js         # Visual positioning tool (304 lines)
+│   ├── inventoryPanel.js   # Inventory panel
+│   ├── statsPanel.js       # Stats panel
+│   ├── forgePanel.js       # Forge panel
+│   └── ... (other panels)
+├── game.js                 # Main game logic (563 lines)
+├── index.html              # Entry point
+├── preEntry.js             # Loader
+└── preEntry.css            # Loader styles
+```
+
+### Порядок загрузки скриптов (index.html)
+
+```html
+<!-- Phaser -->
+<script src="phaser@3.80.1"></script>
+<script src="SpinePlugin.js"></script>
+
+<!-- PRE-ENTRY -->
+<script src="preEntry.js"></script>
+
+<!-- STATE (data & logic) -->
+<script src="state/heroState.js"></script>
+<script src="state/itemSystem.js"></script>
+<!-- ... other state files ... -->
+
+<!-- CORE (must load before game.js) -->
+<script src="core/config.js"></script>
+<script src="core/spineAnimations.js"></script>
+
+<!-- UI PANELS -->
+<script src="ui/bottomUI.js"></script>
+<script src="ui/tuneMode.js"></script>
+<!-- ... other UI panels ... -->
+
+<!-- MAIN -->
+<script src="game.js"></script>
+```
 
 ---
 
@@ -23,14 +88,14 @@
 | BASE_H | 1688 | Базовая высота игры |
 | RESOLUTION | DPR | devicePixelRatio для ретина |
 
-### Phaser Config (АКТУАЛЬНЫЙ v1.5.0!)
+### Phaser Config (core/config.js)
 
 ```javascript
 const BASE_W = 780;
 const BASE_H = 1688;
 const RESOLUTION = window.devicePixelRatio || 1;
 
-const config = {
+const phaserConfig = {
   type: Phaser.AUTO,
   width: BASE_W,
   height: BASE_H,
@@ -40,130 +105,127 @@ const config = {
   fps: { target: 60, forceSetTimeOut: true },
   render: { antialias: true, antialiasGL: true, pixelArt: false, roundPixels: false },
   scale: { mode: Phaser.Scale.ENVELOP, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: { preload, create, update },
+  scene: null, // Set in game.js
   plugins: {
     scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
   }
 };
+```
 
-// Sleep когда вкладка скрыта
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) game.loop.sleep();
-  else game.loop.wake();
+### Viewport Sync (core/config.js)
+
+```javascript
+function syncAppHeight() {
+  const tg = window.Telegram?.WebApp;
+  const h = tg?.viewportHeight || window.visualViewport?.height || window.innerHeight;
+  document.documentElement.style.setProperty("--app-height", `${Math.round(h)}px`);
+}
+
+// Request fullscreen in TMA
+window.Telegram?.WebApp?.expand?.();
+syncAppHeight();
+window.visualViewport?.addEventListener("resize", syncAppHeight);
+```
+
+### Game Handlers (core/config.js)
+
+```javascript
+function initGameHandlers(game) {
+  window.addEventListener("resize", () => {
+    syncAppHeight();
+    game.scale?.refresh();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) game.loop.sleep();
+    else game.loop.wake();
+  });
+}
+```
+
+---
+
+## 🎮 Game.js Structure (v1.7.0)
+
+### Инициализация
+
+```javascript
+// Set scene handlers
+phaserConfig.scene = { preload, create, update };
+
+// Create game
+const game = new Phaser.Game(phaserConfig);
+
+// Initialize handlers
+game.events.once("ready", () => {
+  initGameHandlers(game);
 });
 ```
 
-**Важные моменты:**
-- **Фиксированный BASE:** 780×1688 для всех устройств
-- **ENVELOP режим:** заполняет экран, может обрезать края
-- **resolution: DPR** — качество для Retina
-- `fps.target: 60` + `forceSetTimeOut` — стабильный FPS
-- `visibilitychange` — экономия ресурсов при скрытой вкладке
+### Create() - Модульная структура
 
-### CSS (index.html)
+```javascript
+function create() {
+  window.gameScene = this;
+  loadGame();
 
-```css
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: #0a0a12;
-  overflow: hidden;
-}
+  // AudioContext fix for TMA
+  this.input.once("pointerdown", () => {
+    if (this.sound?.context?.state === "suspended") {
+      this.sound.context.resume();
+    }
+  });
 
-#game-container {
-  width: 100vw;
-  height: 100vh;
-  max-width: 430px;           /* ограничение для десктопа */
-  margin: 0 auto;
-  position: fixed;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-  background: #0a0a12;
-  overflow: hidden;
-}
+  // === BACKGROUND ===
+  setupBackground(this);
 
-/* На мобиле — fullscreen */
-@media (max-width: 520px) {
-  #game-container {
-    max-width: none;
-    left: 0;
-    transform: none;
+  // === HERO ===
+  setupHero(this);
+
+  // === MODE SELECTION ===
+  if (window.UI_MODE === "CITY_CLEAN") {
+    setupCityCleanMode(this);
+    return;
   }
-}
 
-canvas {
-  display: block;
-  width: 100% !important;
-  height: 100% !important;
-  image-rendering: auto;
+  setupFullUIMode(this);
 }
 ```
 
-### Логические координаты в create()
+### Setup Functions
 
-```javascript
-// Делим на DPR для одинаковой работы на всех устройствах
-const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
-const w = this.scale.width / dpr;   // 390
-const h = this.scale.height / dpr;  // 844
-
-// Позиционирование героя
-heroStartX = w * 0.25;
-heroStartY = h * 0.65;
-spineHero.setScale(0.7);
-```
+| Функция | Описание |
+|---------|----------|
+| `setupBackground(scene)` | Фоны города и локаций |
+| `setupHero(scene)` | Spine герой + fallback |
+| `setupCityCleanMode(scene)` | Минимальный UI режим |
+| `setupFullUIMode(scene)` | Полный UI режим |
+| `setupEventHandlers(scene)` | Обработчики событий |
+| `setupCharacterCreation(scene)` | Создание персонажа |
 
 ---
 
-## 🧪 UI_MODE: Режимы отображения
+## 🎭 Spine Animations (core/spineAnimations.js)
 
-### Флаг режима (game.js)
-
-```javascript
-const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
-window.UI_MODE = UI_MODE;
-```
-
-### CITY_CLEAN Mode
-
-Минимальный режим — только фон + герой + FPS диагностика:
+### Доступные функции
 
 ```javascript
-if (window.UI_MODE === "CITY_CLEAN") {
-  if (window.preEntry?.skip) window.preEntry.skip();
-
-  // FPS счётчик для диагностики
-  fpsText = this.add.text(10, 10, 'FPS: --', {
-    fontSize: '16px',
-    fill: '#00ff00',
-    backgroundColor: '#000000'
-  }).setDepth(9999).setScrollFactor(0);
-
-  // Лог производительности
-  console.log('[PERF] DPR:', window.devicePixelRatio);
-  console.log('[PERF] Canvas:', this.game.canvas.width, 'x', this.game.canvas.height);
-  console.log('[PERF] Textures loaded:', Object.keys(this.textures.list).length);
-  console.log('[PERF] Children count:', this.children.list.length);
-
-  return; // пропускаем весь UI
-}
+heroIdle()           // idle loop
+heroAttack()         // attack → idle (400ms)
+heroHit()            // fall → idle (200ms)
+heroDeath()          // fall (остаётся)
+heroCriticalHit()    // jump → attack → idle
+heroEnterLocation()  // run → idle (1000ms)
+heroRun()            // run loop
+heroWalk()           // walk loop
+heroCrouch()         // crouch loop (rest)
+heroJump()           // jump → idle
+heroHeadTurn()       // head-turn → idle (random city animation)
+moveHeroTo(x, y, anim) // Move + optional animation
+hideHero()           // Hide hero sprite
 ```
 
-**uiLayout.js** также пропускает создание UI:
-```javascript
-function createGameUI(scene) {
-  if (window.UI_MODE === "CITY_CLEAN") return;
-  // ...
-}
-```
-
----
-
-## 🎭 Spine Анимации
-
-### Доступные анимации
+### Анимации
 
 | Анимация | Loop | Использование |
 |----------|------|---------------|
@@ -176,149 +238,66 @@ function createGameUI(scene) {
 | `jump` | No | Крит |
 | `head-turn` | No | Случайный в городе |
 
-### Функции анимаций
-
-```javascript
-heroIdle()           // idle loop
-heroAttack()         // attack → idle (400ms)
-heroHit()            // fall → idle (200ms)
-heroDeath()          // fall (остаётся)
-heroCriticalHit()    // jump → attack → idle
-heroEnterLocation()  // run → idle (1000ms)
-```
-
 ---
 
-## 🐛 Debug
+## 🎛️ Bottom UI (ui/bottomUI.js)
 
-### Консольные логи при загрузке
-
-```javascript
-GAMEJS BUILD: 2025-12-19-ICONS-RELATIVE
-[MOBCHK] BASE 780 1688 scale 780 1688 disp 390 844
-[BOTTOMUI] Dimensions: w=780 h=1688
-[BOTTOMUI] Game config: 780x1688
-[BOTTOMUI] Icons: panelMidY=1475 iconY=1475 iconScale=0.0832 panelScale=0.2773
-[UI] Panel aspect-correct: 780 x 426 aspect: 1.83
-[ICON-DIAG] === FINAL ICON STATE ===
-[ICON-DIAG] Canvas: 780 x 1688
-[ICON-DIAG] Icon 0: { key: 'icon_helmet', pos: [310, 1475], visible: true, alpha: 1 }
-```
-
-### Консольные команды
+### UI_LAYOUT Config
 
 ```javascript
-// Сброс сейва
-localStorage.clear(); location.reload();
-
-// Переключить UI mode
-window.UI_MODE = "LEGACY"; location.reload();
-
-// Тест Spine
-window.spineHero.play('attack', false);
-```
-
----
-
-## 📅 История версий
-
-| Версия | Дата | Изменения |
-|--------|------|-----------|
-| 1.0.0 | 14.12.2024 | PvE Арена, TMA Touch Fix |
-| 1.0.1 | 14.12.2024 | fitBackground, gold buttons |
-| 1.0.2 | 14.12.2024 | Spine setup, SpinePlugin CDN |
-| 1.1.0 | 15.12.2024 | Spine анимации интегрированы |
-| 1.1.1 | 15.12.2024 | Retina fix (zoom) |
-| 1.2.0 | 15.12.2024 | Fullscreen + CITY_CLEAN mode |
-| 1.3.0 | 16.12.2024 | **GPU оптимизация + Bottom UI** |
-| | | - Desktop: FIT mode, DPR=1, max-width 430px |
-| | | - Mobile: ENVELOP fullscreen, DPR=2 |
-| | | - GPU: 61% → ~5-10% на десктопе |
-| | | - fps.target: 60 + forceSetTimeOut |
-| | | - visibilitychange sleep/wake |
-| | | - FPS счётчик в CITY_CLEAN mode |
-| | | - Bottom панель UI (bottom.png) |
-| | | - Кнопка боя + слоты иконок |
-| 1.4.0 | 19.12.2024 | **Tune Mode + Resolution эксперименты** |
-| | | - Tune Mode для визуального позиционирования UI |
-| | | - HERO_BASE / FIGHTBTN_BASE константы |
-| | | - localStorage сохранение настроек tune |
-| | | - Эксперименты с Phaser 3.55.2 (откат) |
-| | | - Попытки resample для качества (убрано) |
-| 1.5.0 | 19.12.2024 | **Фикс иконок + относительное позиционирование** |
-| | | - BASE_W=780, BASE_H=1688 фиксированные |
-| | | - HERO_BASE: 300,1000,1.4 для нового разрешения |
-| | | - Иконки теперь позиционируются ОТНОСИТЕЛЬНО панели |
-| | | - Удалён код repositioning иконок из layoutUI() |
-| | | - getTuneSettings() с hardcoded defaults |
-| | | - Texture diagnostics и LINEAR filter для UI |
-| 1.6.0 | 19.12.2024 | **Container-based Adaptive UI** |
-| | | - UI в контейнере (panelContainer) - panel, button, icons |
-| | | - HERO_OFFSET: адаптивное позиционирование (w/2 + x, h + y) |
-| | | - UI_LAYOUT: конфиг всех UI элементов |
-| | | - Индивидуальный scale для каждой иконки |
-| | | - TUNE_VERSION для сброса localStorage |
-| | | - Позиции адаптируются под разные экраны |
-
----
-
-## 🏗️ Container-based Adaptive UI (v1.6.0)
-
-### Архитектура
-
-Все UI элементы находятся в контейнере `panelContainer`:
-- **Container** позиционируется относительно низа экрана (h + offsetY)
-- **Panel, Button, Icons** - дети контейнера с относительными координатами
-- Позиции адаптируются под любой размер экрана
-
-### Конфиг позиций (game.js)
-
-```javascript
-// Hero position (adaptive offsets from center/bottom)
-// x: w/2 + offsetX, y: h + offsetY
-const HERO_OFFSET = { x: -54, y: -196, scale: 1.23 };
-
-// UI Layout config
 const UI_LAYOUT = {
   container: { offsetY: 3 },  // from bottom (h + offset)
   panel: { scale: 0.574 },
   button: { x: 0, y: -214, scale: 0.54 },
   icons: {
-    scale: 0.65,  // default scale
+    scale: 0.65,
     positions: [
       { x: 42, y: -68, scale: 0.65 },   // helmet
-      { x: 17, y: -68, scale: 0.61 },   // anvil (smaller)
+      { x: 17, y: -68, scale: 0.61 },   // anvil
       { x: -22, y: -71, scale: 0.65 },  // store
       { x: -41, y: -66, scale: 0.65 }   // map
     ]
   }
 };
-
-// Background position (center + offset)
-cityBg.setScale(0.48);
-cityBg.setPosition(w / 2 + 2, h / 2 + 168);
 ```
 
-### Depth слои
-
-| Элемент | Depth | Описание |
-|---------|-------|----------|
-| cityBg | 10 | Фон города |
-| locationBg | 10 | Фон локации |
-| spineHero | 100 | Герой |
-| panelContainer | 200 | UI контейнер |
-
-### TUNE_VERSION
-
-При изменении позиций в коде, нужно обновить `TUNE_VERSION` чтобы сбросить старые localStorage настройки:
+### createBottomUI()
 
 ```javascript
-const TUNE_VERSION = 'v12';  // Bump this to clear localStorage
+function createBottomUI(scene) {
+  const w = scene.scale.width;
+  const h = scene.scale.height;
+
+  // Container (adaptive positioning)
+  const panelContainer = scene.add.container(w / 2, h + UI_LAYOUT.container.offsetY);
+  panelContainer.setDepth(200);
+  panelContainer.setScrollFactor(0);
+
+  // Panel
+  const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
+  bottomPanel.setOrigin(0.5, 1);
+  bottomPanel.setScale(UI_LAYOUT.panel.scale);
+  panelContainer.add(bottomPanel);
+
+  // Fight button
+  const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
+  fightBtn.setScale(btnCfg.scale);
+  panelContainer.add(fightBtn);
+
+  // Icons
+  const icons = iconsCfg.positions.map((pos, i) => {
+    return scene.add.image(pos.x, pos.y, iconKeys[i])
+      .setScale(pos.scale || iconsCfg.scale);
+  });
+  panelContainer.add(icons);
+
+  return { bottomPanel, fightBtn, icons, container: panelContainer };
+}
 ```
 
 ---
 
-## 🎛️ Tune Mode (v1.4.0)
+## 🔧 Tune Mode (ui/tuneMode.js)
 
 ### Описание
 
@@ -340,199 +319,91 @@ https://malyugin777.github.io/l2-phaser-rpg/src/?tune=1
 | 4 | Выбрать Fight Button |
 | 5-8 | Выбрать Icons |
 | Стрелки | Двигать выбранный элемент |
-| Q/E | Масштабировать (hero) |
+| Q/E | Масштабировать |
 | Drag | Перетаскивать мышью |
 
 ### Кнопки
 
 | Кнопка | Действие |
 |--------|----------|
-| 💾 SAVE | Сохранить в localStorage + clipboard |
-| 🔄 RESET | Сбросить все смещения |
-| 📋 COPY | Скопировать JSON в clipboard |
+| SAVE | Сохранить в localStorage + clipboard |
+| RESET | Сбросить все смещения |
+| COPY | Скопировать JSON в clipboard |
 
-### Константы (game.js)
+### TUNE_VERSION
+
+При изменении позиций в коде нужно обновить версию для сброса localStorage:
 
 ```javascript
-// Базовые позиции героя (для 780×1688)
-const HERO_BASE = { x: 300, y: 1000, scale: 1.4 };
-
-// Базовые позиции кнопки (захватываются при создании UI)
-let FIGHTBTN_BASE = null; // { x, y, scale }
-
-// Дефолтные настройки tune (hardcoded для production)
-function getTuneSettings() {
-  const defaults = {
-    bgZoom: 0.95,
-    bgPanX: 0,
-    bgPanY: 238,
-    panelX: 0,
-    panelY: 0,
-    panelScale: 1.0,
-    heroX: 36,
-    heroY: 477,
-    heroScale: 1.77,
-    btnX: -246,
-    btnY: 4
-  };
-  if (!TUNE_ENABLED) return defaults;
-  // В tune mode читаем из localStorage
-  const saved = localStorage.getItem('TUNE_SETTINGS');
-  if (saved) return { ...defaults, ...JSON.parse(saved) };
-  return defaults;
-}
+const TUNE_VERSION = 'v12';  // Bump to clear localStorage
 ```
 
-### Формат настроек
+### API
 
 ```javascript
-{
-  bgZoom: 1.0, bgPanX: 0, bgPanY: 0,
-  panelX: 0, panelY: 0, panelScale: 1.0,
-  heroX: 0, heroY: 0, heroScale: 1.0,  // OFFSETS от HERO_BASE
-  btnX: 0, btnY: 0,                     // OFFSETS от FIGHTBTN_BASE
-  icon0X: 0, icon0Y: 0,
-  icon1X: 0, icon1Y: 0,
-  icon2X: 0, icon2Y: 0,
-  icon3X: 0, icon3Y: 0
-}
-```
+// Check if tune mode enabled
+const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 
-### Как работает позиционирование
+// Get settings (defaults or localStorage in tune mode)
+getTuneSettings()
 
-```javascript
-// Hero: base + offset
-spineHero.x = HERO_BASE.x + tune.heroX;
-spineHero.y = HERO_BASE.y + tune.heroY;
-spineHero.setScale(HERO_BASE.scale * tune.heroScale);
+// Initialize tune controls (only in tune mode)
+initTuneMode(scene, cityBg, HERO_OFFSET)
 
-// Button: base + offset
-fightBtn.x = FIGHTBTN_BASE.x + tune.btnX;
-fightBtn.y = FIGHTBTN_BASE.y + tune.btnY;
+// Apply tune settings
+applyTuneSettings(scene, cityBg, HERO_OFFSET)
 ```
 
 ---
 
-## 🔬 Эксперименты с качеством (19.12.2024)
+## 🧪 UI_MODE: Режимы отображения
 
-### Проблема
-
-Phaser 3.80.1 игнорирует `resolution` в config. Canvas всегда 390×844 независимо от DPR.
-На Retina экранах (DPR=2) изображение выглядит мыльным.
-
-### Попытка 1: Resample через RenderTexture
+### Флаг режима (game.js)
 
 ```javascript
-function makeResampledBg(scene, srcKey, outKey, targetW, targetH) {
-  const rt = scene.make.renderTexture({ width: targetW, height: targetH });
-  rt.draw(srcKey, 0, 0);
-  rt.saveTexture(outKey);
-  rt.destroy();
-  return outKey;
+const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
+window.UI_MODE = UI_MODE;
+```
+
+### CITY_CLEAN Mode
+
+Минимальный режим — фон + герой + нижняя панель:
+
+```javascript
+function setupCityCleanMode(scene) {
+  if (window.preEntry?.skip) window.preEntry.skip();
+
+  // Bottom UI
+  if (typeof createBottomUI === "function") {
+    const bottomUI = createBottomUI(scene);
+    window.bottomUI = bottomUI;
+  }
+
+  // TUNE mode
+  if (typeof initTuneMode === "function") {
+    initTuneMode(scene, cityBg, HERO_OFFSET);
+  }
+  if (typeof applyTuneSettings === "function") {
+    applyTuneSettings(scene, cityBg, HERO_OFFSET);
+  }
+
+  // Force linear filter on textures
+  const LINEAR = Phaser.Textures.FilterMode.LINEAR;
+  ["talkingisland_main", "ui_bottom", "ui_btn_fight", ...]
+    .forEach(k => scene.textures.get(k)?.setFilter(LINEAR));
 }
 ```
 
-**Результат:** Текстуры получаются слишком маленькие (displayWidth × dprCap), качество плохое.
-
-### Попытка 2: Resample 50% от оригинала
-
-```javascript
-const origTex = scene.textures.get("ui_bottom");
-const origW = origTex.source[0].width;   // 1408
-const targetW = Math.round(origW * 0.5); // 704
-```
-
-**Результат:** Качество лучше, но не идеально. Код усложняется.
-
-### Попытка 3: Downgrade до Phaser 3.55.2
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
-```
-
-**Результат:** `resolution` работает! Canvas становится 780×1688. НО Spine plugin несовместим - ошибки при загрузке.
-
-### Итог
-
-Остались на **Phaser 3.80.1**. Качество "как есть". Возможные решения:
-- Ждать фикс в Phaser
-- Использовать более крупные текстуры
-- Canvas downscale через CSS (не помогает)
-
 ---
 
-## ✅ Готово
+## 🎨 Depth слои
 
-- [x] Spine анимации
-- [x] Retina support (DPR × size) - частично
-- [x] Fullscreen без чёрных полос
-- [x] CITY_CLEAN mode
-- [x] Antialias для мультяшки
-- [x] Логические координаты
-- [x] GPU оптимизация (desktop)
-- [x] FPS диагностика
-- [x] Bottom UI панель
-- [x] Tune Mode для позиционирования
-- [x] localStorage сохранение tune настроек
-
-## 📋 TODO
-
-- [ ] Подключить bottom панель к логике (открытие панелей)
-- [ ] Spine для врагов
-- [ ] Эффекты ударов (particles)
-- [ ] Звуки
-- [ ] Найти решение для качества на Retina
-
----
-
-## 🔴 ИЗВЕСТНЫЕ ПРОБЛЕМЫ
-
-### 1. Мыльная картинка (ЧАСТИЧНО РЕШЕНО)
-
-**Проблема:** Phaser 3.80.1 игнорирует `resolution` config. Canvas всегда 390×844.
-
-**Частичное решение:** `antialias: true` немного помогает.
-
-**Не работает:**
-- `resolution: devicePixelRatio` - игнорируется в 3.80.1
-- `renderer.resize(w, h, dpr)` - не влияет на качество
-- Resample через RenderTexture - слишком сложно, не идеально
-
-### 2. Чёрные полосы (РЕШЕНО)
-
-**Решение:** CSS `max-width: none`, `left: 0`, `overflow: hidden`
-
-### 3. iOS дробный DPR
-
-**Решение:** `Math.round(devicePixelRatio)`
-
-### 4. GPU перегрузка на десктопе (РЕШЕНО)
-
-**Проблема:** ENVELOP на горизонтальном экране раздувал canvas до 1707×3694 → GPU 61%
-
-**Решение:**
-- Desktop: FIT mode + DPR=1 + max-width 430px
-- Mobile: ENVELOP fullscreen + DPR=2
-
-### 5. Spine plugin несовместим с Phaser < 3.60
-
-**Проблема:** SpinePlugin 4.1 требует Phaser 3.60+. На 3.55.2 ошибки загрузки.
-
-**Решение:** Остаёмся на Phaser 3.80.1
-
-### 6. Иконки не видны (РЕШЕНО в v1.5.0)
-
-**Проблема:** Иконки были захардкожены на y=1640 (для 1688px), но `scene.scale.height` может вернуть другое значение. На некоторых устройствах иконки оказывались за пределами экрана.
-
-**Решение:** Иконки позиционируются **относительно панели**:
-```javascript
-const panelMidY = h - panelHeight / 2;
-const iconY = panelMidY;  // Вертикальный центр панели
-```
-
-**Также исправлено:**
-- Удалён код в `layoutUI()` который переопределял позиции иконок
-- Добавлены диагностические логи `[BOTTOMUI]` и `[ICON-DIAG]`
+| Элемент | Depth | Описание |
+|---------|-------|----------|
+| cityBg | 10 | Фон города |
+| locationBg | 10 | Фон локации |
+| spineHero | 100 | Герой |
+| panelContainer | 200 | UI контейнер |
 
 ---
 
@@ -548,52 +419,97 @@ const iconY = panelMidY;  // Вертикальный центр панели
 | icon_anvil.png | - | Кузница |
 | icon_store.png | - | Магазин |
 | icon_map.png | - | Карта |
-| slot_empty.png | - | Пустой слот |
 
-### createBottomUI() (game.js) - v1.6.0
+---
 
-```javascript
-function createBottomUI(scene) {
-  const w = scene.scale.width;
-  const h = scene.scale.height;
+## 📅 История версий
 
-  // === CONTAINER (adaptive: center-X, bottom + offset) ===
-  const panelContainer = scene.add.container(
-    w / 2,
-    h + UI_LAYOUT.container.offsetY
-  );
-  panelContainer.setDepth(200);
-  panelContainer.setScrollFactor(0);
+| Версия | Дата | Изменения |
+|--------|------|-----------|
+| 1.0.0 | 14.12.2024 | PvE Арена, TMA Touch Fix |
+| 1.0.1 | 14.12.2024 | fitBackground, gold buttons |
+| 1.0.2 | 14.12.2024 | Spine setup, SpinePlugin CDN |
+| 1.1.0 | 15.12.2024 | Spine анимации интегрированы |
+| 1.1.1 | 15.12.2024 | Retina fix (zoom) |
+| 1.2.0 | 15.12.2024 | Fullscreen + CITY_CLEAN mode |
+| 1.3.0 | 16.12.2024 | GPU оптимизация + Bottom UI |
+| 1.4.0 | 19.12.2024 | Tune Mode + Resolution эксперименты |
+| 1.5.0 | 19.12.2024 | Фикс иконок + относительное позиционирование |
+| 1.6.0 | 19.12.2024 | Container-based Adaptive UI |
+| 1.7.0 | 19.12.2024 | **Modular Architecture** |
+| | | - game.js: 2026 → 563 lines (-72%) |
+| | | - New: core/config.js (Phaser config, scaling) |
+| | | - New: core/spineAnimations.js (hero animations) |
+| | | - New: ui/bottomUI.js (bottom panel) |
+| | | - New: ui/tuneMode.js (visual positioning) |
+| | | - Removed 200+ diagnostic console.logs |
+| | | - Split create() into logical functions |
+| | | - Clean, readable code structure |
 
-  // === PANEL (relative to container) ===
-  const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
-  bottomPanel.setOrigin(0.5, 1);  // Draws UP from container
-  bottomPanel.setScale(UI_LAYOUT.panel.scale);
-  panelContainer.add(bottomPanel);
+---
 
-  // === FIGHT BUTTON (relative to container) ===
-  const btnCfg = UI_LAYOUT.button;
-  const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
-  fightBtn.setScale(btnCfg.scale);
-  fightBtn.setInteractive({ useHandCursor: true });
-  panelContainer.add(fightBtn);
+## 🐛 Debug
 
-  // === ICONS (relative to container, individual scales) ===
-  const iconsCfg = UI_LAYOUT.icons;
-  const iconKeys = ['icon_helmet', 'icon_anvil', 'icon_store', 'icon_map'];
-  const icons = iconsCfg.positions.map((pos, i) => {
-    return scene.add.image(pos.x, pos.y, iconKeys[i])
-      .setScale(pos.scale || iconsCfg.scale)  // individual or default
-      .setInteractive();
-  });
-  panelContainer.add(icons);
+### Консольные логи при загрузке
 
-  window.panelContainer = panelContainer;
-  return { bottomPanel, fightBtn, icons, container: panelContainer };
-}
+```
+[Config] Module loaded
+[SpineAnimations] Module loaded
+[BottomUI] Module loaded
+[TuneMode] Module loaded
+GAMEJS BUILD: 2025-12-19-REFACTOR-FINAL
 ```
 
-**Важно:**
-- Все UI элементы - дети контейнера с относительными координатами
-- Container позиционируется адаптивно: `(w/2, h + offsetY)`
-- Каждая иконка может иметь индивидуальный scale
+### Консольные команды
+
+```javascript
+// Сброс сейва
+localStorage.clear(); location.reload();
+
+// Переключить UI mode
+window.UI_MODE = "LEGACY"; location.reload();
+
+// Тест Spine
+window.spineHero.play('attack', false);
+
+// Проверка UI
+window.bottomUI
+window.panelContainer
+window.cityBg
+```
+
+---
+
+## ✅ Готово
+
+- [x] Spine анимации
+- [x] Retina support (DPR × size)
+- [x] Fullscreen без чёрных полос
+- [x] CITY_CLEAN mode
+- [x] Antialias для мультяшки
+- [x] GPU оптимизация (desktop)
+- [x] Bottom UI панель
+- [x] Tune Mode для позиционирования
+- [x] Modular architecture
+- [x] Clean code without diagnostics
+
+## 📋 TODO
+
+- [ ] Подключить bottom панель к логике (открытие панелей)
+- [ ] Spine для врагов
+- [ ] Эффекты ударов (particles)
+- [ ] Звуки
+
+---
+
+## 🔴 ИЗВЕСТНЫЕ ПРОБЛЕМЫ
+
+### 1. Мыльная картинка (ЧАСТИЧНО РЕШЕНО)
+
+**Проблема:** Phaser 3.80.1 игнорирует `resolution` config.
+
+**Частичное решение:** `antialias: true` + LINEAR filter на текстурах.
+
+### 2. Spine plugin несовместим с Phaser < 3.60
+
+**Решение:** Остаёмся на Phaser 3.80.1
