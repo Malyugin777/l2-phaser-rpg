@@ -9,7 +9,9 @@ const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
 
 // Base positions for tune mode calculations (scaled for 780×1688)
-const HERO_BASE = { x: 300, y: 1000, scale: 1.4 };
+// Hero positioned by FEET (Spine origin is typically at feet)
+const GROUND_Y = 1350;  // Where hero's feet should be on screen
+const HERO_BASE = { x: 300, y: GROUND_Y, scale: 1.4 };
 let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
@@ -21,7 +23,7 @@ function getTuneSettings() {
     panelY: 0,
     panelScale: 1.0,
     heroX: 36,
-    heroY: 477,
+    heroY: 0,       // Offset from GROUND_Y (usually 0)
     heroScale: 1.72,
     btnX: -246,
     btnY: 4
@@ -802,11 +804,10 @@ function create() {
       cityBg.x = Math.round(bp.bgX + tune.bgPanX);
       cityBg.y = Math.round(bp.bgY + tune.bgPanY);
 
-      // Panel
-      if (window.bottomUI?.bottomPanel) {
-        const p = window.bottomUI.bottomPanel;
-        p.x = Math.round(bp.panelX + tune.panelX);
-        p.y = Math.round(bp.panelY + tune.panelY);
+      // Panel Container (moves panel + icons + button together)
+      if (window.panelContainer) {
+        window.panelContainer.x = Math.round(bp.panelX + tune.panelX);
+        window.panelContainer.y = Math.round(bp.panelY + tune.panelY);
       }
 
       // Hero - use HERO_BASE constants (offset-based positioning)
@@ -873,11 +874,11 @@ function create() {
         tune.bgPanY += dy;
         cityBg.x += dx;
         cityBg.y += dy;
-      } else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) {
+      } else if (selectedElement === 'panel' && window.panelContainer) {
         tune.panelX += dx;
         tune.panelY += dy;
-        window.bottomUI.bottomPanel.x += dx;
-        window.bottomUI.bottomPanel.y += dy;
+        window.panelContainer.x += dx;
+        window.panelContainer.y += dy;
       } else if (selectedElement === 'hero' && window.spineHero) {
         tune.heroX += dx;
         tune.heroY += dy;
@@ -919,7 +920,7 @@ function create() {
     // Arrow keys for fine tune selected element (1px steps)
     this.input.keyboard.on('keydown-UP', () => {
       if (selectedElement === 'bg') { tune.bgPanY -= STEP; cityBg.y -= STEP; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY -= STEP; window.bottomUI.bottomPanel.y -= STEP; }
+      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelY -= STEP; window.panelContainer.y -= STEP; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroY -= STEP; window.spineHero.y -= STEP; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY -= STEP; window.bottomUI.fightBtn.y -= STEP; }
       else moveIcon(-STEP, 'Y');
@@ -927,7 +928,7 @@ function create() {
     });
     this.input.keyboard.on('keydown-DOWN', () => {
       if (selectedElement === 'bg') { tune.bgPanY += STEP; cityBg.y += STEP; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelY += STEP; window.bottomUI.bottomPanel.y += STEP; }
+      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelY += STEP; window.panelContainer.y += STEP; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroY += STEP; window.spineHero.y += STEP; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnY += STEP; window.bottomUI.fightBtn.y += STEP; }
       else moveIcon(STEP, 'Y');
@@ -935,7 +936,7 @@ function create() {
     });
     this.input.keyboard.on('keydown-LEFT', () => {
       if (selectedElement === 'bg') { tune.bgPanX -= STEP; cityBg.x -= STEP; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX -= STEP; window.bottomUI.bottomPanel.x -= STEP; }
+      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelX -= STEP; window.panelContainer.x -= STEP; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroX -= STEP; window.spineHero.x -= STEP; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX -= STEP; window.bottomUI.fightBtn.x -= STEP; }
       else moveIcon(-STEP, 'X');
@@ -943,7 +944,7 @@ function create() {
     });
     this.input.keyboard.on('keydown-RIGHT', () => {
       if (selectedElement === 'bg') { tune.bgPanX += STEP; cityBg.x += STEP; }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) { tune.panelX += STEP; window.bottomUI.bottomPanel.x += STEP; }
+      else if (selectedElement === 'panel' && window.panelContainer) { tune.panelX += STEP; window.panelContainer.x += STEP; }
       else if (selectedElement === 'hero' && window.spineHero) { tune.heroX += STEP; window.spineHero.x += STEP; }
       else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) { tune.btnX += STEP; window.bottomUI.fightBtn.x += STEP; }
       else moveIcon(STEP, 'X');
@@ -1045,23 +1046,24 @@ function create() {
   heroStartX = HERO_BASE.x;
   heroStartY = HERO_BASE.y;
 
-  // Создаём Spine героя (используем HERO_BASE для позиции и масштаба)
+  // Создаём Spine героя (feet at GROUND_Y)
   if (this.spine) {
     try {
-      spineHero = this.add.spine(HERO_BASE.x, HERO_BASE.y, 'hero', 'idle', true);
+      // Spine origin is at feet (bottom center)
+      spineHero = this.add.spine(HERO_BASE.x, GROUND_Y, 'hero', 'idle', true);
       spineHero.setScale(HERO_BASE.scale);
       spineHero.setDepth(50);
       spineHero.setVisible(true);
       window.spineHero = spineHero;
       hero = spineHero;
-      console.log("[HERO] Created at", HERO_BASE.x, HERO_BASE.y, "scale", HERO_BASE.scale);
+      console.log("[HERO] Feet at GROUND_Y=" + GROUND_Y + " x=" + HERO_BASE.x + " scale=" + HERO_BASE.scale);
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
-      hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
+      hero = createHeroSprite(this, HERO_BASE.x, GROUND_Y, 0x3366cc);
       hero.setDepth(50);
     }
   } else {
-    hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
+    hero = createHeroSprite(this, HERO_BASE.x, GROUND_Y, 0x3366cc);
     hero.setDepth(50);
   }
 
@@ -1656,65 +1658,45 @@ function create() {
 // ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
 
 function createBottomUI(scene) {
-  // === ICON TEXTURE CHECK ===
-  console.log("[ICON-CHECK] icon_helmet exists:", scene.textures.exists('icon_helmet'));
-  console.log("[ICON-CHECK] icon_anvil exists:", scene.textures.exists('icon_anvil'));
-  console.log("[ICON-CHECK] icon_store exists:", scene.textures.exists('icon_store'));
-  console.log("[ICON-CHECK] icon_map exists:", scene.textures.exists('icon_map'));
+  const w = scene.scale.width;   // 780
+  const h = scene.scale.height;  // 1688
 
-  const w = scene.scale.width;
-  const h = scene.scale.height;
+  console.log("[BOTTOMUI] Screen:", w, "x", h);
 
-  // === CRITICAL DIMENSION CHECK ===
-  console.log("[BOTTOMUI] Dimensions: w=" + w + " h=" + h);
-  console.log("[BOTTOMUI] Game config: " + scene.game.config.width + "x" + scene.game.config.height);
-  console.log("[BOTTOMUI] Icons will be at y=1627-1640, game h=" + h);
+  // === CREATE CONTAINER at bottom center ===
+  const panelContainer = scene.add.container(w / 2, h);
+  panelContainer.setDepth(100);
+  panelContainer.setScrollFactor(0);
 
-  // Apply LINEAR filter for slightly better quality
+  // === PANEL (relative to container 0,0 = bottom center of screen) ===
   const tex = scene.textures.get('ui_bottom');
   if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-  // Get texture dimensions for aspect ratio
   const texW = tex?.source[0]?.width || 1408;
   const texH = tex?.source[0]?.height || 768;
   const aspect = texW / texH;  // ~1.83
 
-  // Keep aspect ratio: scale to fit width
-  const finalW = w;                    // 390 (screen width)
-  const finalH = Math.round(finalW / aspect);  // ~213
+  const panelW = w;
+  const panelH = Math.round(panelW / aspect);  // ~425
 
-  // Simple Image panel with correct aspect ratio
-  const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom');
-  bottomPanel.setOrigin(0.5, 1);  // Bottom center origin
-  bottomPanel.setDisplaySize(finalW, finalH);
-  bottomPanel.setDepth(100);
-  bottomPanel.setScrollFactor(0);
+  const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
+  bottomPanel.setOrigin(0.5, 1);  // Bottom center
+  bottomPanel.setDisplaySize(panelW, panelH);
+  panelContainer.add(bottomPanel);
 
-  console.log("[UI] Panel aspect-correct:", finalW, "x", finalH, "aspect:", aspect.toFixed(2));
-  console.log("[UI] Panel visible:", bottomPanel.visible, "alpha:", bottomPanel.alpha, "depth:", bottomPanel.depth);
-  console.log("[UI] Panel bounds:", JSON.stringify(bottomPanel.getBounds()));
+  console.log("[BOTTOMUI] Panel size:", panelW, "x", panelH);
 
-  const panelHeight = finalH;
-  const panelCenterX = w / 2;
-  const panelScale = finalH / texH;  // For button/icon scaling
+  // === FIGHT BUTTON (relative to container) ===
+  const btnScale = 0.15;
+  const fightBtn = scene.add.image(200, -panelH / 2, 'ui_btn_fight');
+  fightBtn.setScale(btnScale);
+  fightBtn.setInteractive({ useHandCursor: true });
+  panelContainer.add(fightBtn);
 
-  // === КРАСНАЯ КНОПКА БОЯ ===
-  const fightBtnScale = panelScale * 1.2;
-  const fightBtnX = Math.round(panelCenterX + 123 * panelScale * 3.6);
-  const fightBtnY = Math.round(h - panelHeight / 2);
-
-  const fightBtn = scene.add.image(fightBtnX, fightBtnY, 'ui_btn_fight')
-    .setOrigin(0.5, 0.5)
-    .setDepth(110)
-    .setScrollFactor(0)
-    .setScale(fightBtnScale)
-    .setInteractive({ useHandCursor: true });
-
-  console.log("[UI] FightBtn: pos=", fightBtnX, fightBtnY, "scale=", fightBtnScale.toFixed(3));
-
+  // Fight button pulse animation
   const fightBtnTween = scene.tweens.add({
     targets: fightBtn,
-    scale: fightBtnScale * 1.05,
+    scale: btnScale * 1.05,
     yoyo: true,
     repeat: -1,
     duration: 800,
@@ -1726,20 +1708,34 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  // === ICONS - FINAL HARDCODED POSITIONS AND SCALE ===
-  const iconScale = 0.08;
+  console.log("[BOTTOMUI] FightBtn at relative:", 200, -panelH / 2);
 
-  const icon0 = scene.add.image(494, 1635, 'icon_helmet').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
-  const icon1 = scene.add.image(405, 1628, 'icon_anvil').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
-  const icon2 = scene.add.image(378, 1627, 'icon_store').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
-  const icon3 = scene.add.image(369, 1628, 'icon_map').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
+  // === ICONS (relative to container, positioned on panel) ===
+  const iconScale = 0.12;
+  const iconY = -panelH / 2;  // Vertical center of panel
+
+  // X positions from center (negative = left, positive = right)
+  const icon0 = scene.add.image(-100, iconY, 'icon_helmet').setScale(iconScale).setInteractive();
+  const icon1 = scene.add.image(-180, iconY, 'icon_anvil').setScale(iconScale).setInteractive();
+  const icon2 = scene.add.image(-260, iconY, 'icon_store').setScale(iconScale).setInteractive();
+  const icon3 = scene.add.image(-340, iconY, 'icon_map').setScale(iconScale).setInteractive();
+
+  panelContainer.add([icon0, icon1, icon2, icon3]);
 
   const createdIcons = [icon0, icon1, icon2, icon3];
-  console.log("[UI] Icons FINAL: helmet(494,1635) anvil(405,1628) store(378,1627) map(369,1628) scale=0.08");
 
-  // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
+  console.log("[BOTTOMUI] Container at:", w / 2, h);
+  console.log("[BOTTOMUI] Icons at Y:", iconY, "(relative to container)");
 
-  return { bottomPanel, fightBtn, icons: createdIcons };
+  // Store container reference
+  window.panelContainer = panelContainer;
+
+  return {
+    bottomPanel,
+    fightBtn,
+    icons: createdIcons,
+    container: panelContainer
+  };
 }
 
 // ================== UI-ХЕЛПЕРЫ ДЛЯ ТЕКСТА ==================
