@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FIX-DEPTH");
+console.log("GAMEJS BUILD: 2025-12-19-CONTAINER-FINAL");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -27,8 +27,8 @@ function getTuneSettings() {
     heroScale: 1.72,
     btnX: -246,
     btnY: 4,
-    btnScale: 0.5,      // Default button scale
-    iconScale: 0.1,     // Default icon scale
+    btnScale: 0.18,     // Default button scale
+    iconScale: 0.09,    // Default icon scale
     icon0X: 0, icon0Y: 0,
     icon1X: 0, icon1Y: 0,
     icon2X: 0, icon2Y: 0,
@@ -792,8 +792,8 @@ function create() {
         bgZoom:1, bgPanX:0, bgPanY:0,
         panelX:0, panelY:0, panelScale:1,
         heroX:0, heroY:0, heroScale:1,
-        btnX:0, btnY:0, btnScale:0.5,
-        iconScale:0.1,
+        btnX:0, btnY:0, btnScale:0.18,
+        iconScale:0.09,
         icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0
       });
       localStorage.removeItem('TUNE_SETTINGS');
@@ -1718,35 +1718,28 @@ function createBottomUI(scene) {
   console.log("[BOTTOMUI] Screen:", w, "x", h);
 
   // === CREATE CONTAINER at bottom center ===
+  // Container at (w/2, h) = (390, 1688) - bottom center of screen
   const panelContainer = scene.add.container(w / 2, h);
-  panelContainer.setDepth(200);  // Higher than any background
-  panelContainer.setScrollFactor(0);
+  panelContainer.setDepth(200);
+  panelContainer.setScrollFactor(0);  // Children inherit this
 
-  // === PANEL (relative to container 0,0 = bottom center of screen) ===
+  // === PANEL (relative to container) ===
+  // Panel at (0, 0) with origin(0.5, 1) draws UP from container position
   const tex = scene.textures.get('ui_bottom');
   if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-  const texW = tex?.source[0]?.width || 1408;
-  const texH = tex?.source[0]?.height || 768;
-  const aspect = texW / texH;  // ~1.83
-
-  const panelW = w;
-  const panelH = Math.round(panelW / aspect);  // ~425
-
   const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
   bottomPanel.setOrigin(0.5, 1);  // Bottom center
-  bottomPanel.setDisplaySize(panelW, panelH);
-  bottomPanel.setScrollFactor(0);
-  bottomPanel.setDepth(200);  // Explicit high depth
-  panelContainer.add(bottomPanel);
+  bottomPanel.setDisplaySize(w, 220);  // Full width, 220px height
+  panelContainer.add(bottomPanel);  // ADD FIRST (behind other elements)
 
-  console.log("[BOTTOMUI] Panel size:", panelW, "x", panelH);
+  console.log("[BOTTOMUI] Panel displaySize:", w, "x 220");
 
   // === FIGHT BUTTON (relative to container) ===
-  const btnScale = 0.5;  // STEP 5: bigger button
-  const fightBtn = scene.add.image(200, -panelH / 2, 'ui_btn_fight');
+  // Button at center of panel height (220/2 = 110)
+  const btnScale = 0.18;
+  const fightBtn = scene.add.image(0, -110, 'ui_btn_fight');
   fightBtn.setScale(btnScale);
-  fightBtn.setScrollFactor(0);  // STEP 1: scrollFactor on children
   fightBtn.setInteractive({ useHandCursor: true });
   panelContainer.add(fightBtn);
 
@@ -1765,30 +1758,46 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  console.log("[BOTTOMUI] FightBtn at relative:", 200, -panelH / 2, "scale:", btnScale);
+  // === ICONS (relative to container) ===
+  // Icons at Y=-110 (center of 220px panel)
+  // X: -290, -190 (left side) and +190, +290 (right side)
+  const iconScale = 0.09;
+  const iconY = -110;
 
-  // === ICONS (relative to container, positioned on panel) ===
-  const iconScale = 0.1;  // STEP 5: visible icons
-  const iconY = -panelH / 2;  // Vertical center of panel
-
-  // X positions from center (negative = left, positive = right)
-  const icon0 = scene.add.image(-100, iconY, 'icon_helmet').setScale(iconScale).setScrollFactor(0).setInteractive();
-  const icon1 = scene.add.image(-180, iconY, 'icon_anvil').setScale(iconScale).setScrollFactor(0).setInteractive();
-  const icon2 = scene.add.image(-260, iconY, 'icon_store').setScale(iconScale).setScrollFactor(0).setInteractive();
-  const icon3 = scene.add.image(-340, iconY, 'icon_map').setScale(iconScale).setScrollFactor(0).setInteractive();
+  const icon0 = scene.add.image(-290, iconY, 'icon_helmet').setScale(iconScale).setInteractive();
+  const icon1 = scene.add.image(-190, iconY, 'icon_anvil').setScale(iconScale).setInteractive();
+  const icon2 = scene.add.image(190, iconY, 'icon_store').setScale(iconScale).setInteractive();
+  const icon3 = scene.add.image(290, iconY, 'icon_map').setScale(iconScale).setInteractive();
 
   panelContainer.add([icon0, icon1, icon2, icon3]);
 
   const createdIcons = [icon0, icon1, icon2, icon3];
 
-  console.log("[BOTTOMUI] Container at:", w / 2, h);
-  console.log("[BOTTOMUI] Icons at Y:", iconY, "scale:", iconScale);
-
-  // Debug depths
-  console.log("[DEPTH] container:", panelContainer.depth, "panel:", bottomPanel.depth, "btn:", fightBtn.depth);
-
   // Store container reference
   window.panelContainer = panelContainer;
+
+  // === DEBUG LOGS ===
+  console.log("[BOTTOMUI] Container at:", w / 2, h);
+  console.log("[BOTTOMUI] Button at: 0, -110 scale:", btnScale);
+  console.log("[BOTTOMUI] Icons at Y:", iconY, "scale:", iconScale);
+
+  console.log("[PANEL-DEBUG] bottomPanel:", {
+    exists: !!bottomPanel,
+    visible: bottomPanel.visible,
+    alpha: bottomPanel.alpha,
+    x: bottomPanel.x,
+    y: bottomPanel.y,
+    scaleX: bottomPanel.scaleX,
+    displayWidth: bottomPanel.displayWidth,
+    displayHeight: bottomPanel.displayHeight,
+    texture: bottomPanel.texture?.key,
+    inContainer: panelContainer.list.includes(bottomPanel)
+  });
+
+  console.log("[PANEL-DEBUG] Container children:");
+  panelContainer.list.forEach((child, i) => {
+    console.log("  ", i, child.type, child.texture?.key || child.name || 'unknown');
+  });
 
   return {
     bottomPanel,
