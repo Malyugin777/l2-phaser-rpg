@@ -6,7 +6,7 @@
 **Платформа:** Telegram Mini App (TMA)
 **Движок:** Phaser 3.80.1 + SpinePlugin 4.1
 **Язык:** Vanilla JavaScript (ES6, strict mode, глобальные переменные)
-**Версия:** 1.5.0
+**Версия:** 1.6.0
 **GitHub:** https://github.com/Malyugin777/l2-phaser-rpg
 **GitHub Pages:** https://malyugin777.github.io/l2-phaser-rpg/src/
 **Telegram:** @Poketlineage_bot
@@ -252,6 +252,69 @@ window.spineHero.play('attack', false);
 | | | - Удалён код repositioning иконок из layoutUI() |
 | | | - getTuneSettings() с hardcoded defaults |
 | | | - Texture diagnostics и LINEAR filter для UI |
+| 1.6.0 | 19.12.2024 | **Container-based Adaptive UI** |
+| | | - UI в контейнере (panelContainer) - panel, button, icons |
+| | | - HERO_OFFSET: адаптивное позиционирование (w/2 + x, h + y) |
+| | | - UI_LAYOUT: конфиг всех UI элементов |
+| | | - Индивидуальный scale для каждой иконки |
+| | | - TUNE_VERSION для сброса localStorage |
+| | | - Позиции адаптируются под разные экраны |
+
+---
+
+## 🏗️ Container-based Adaptive UI (v1.6.0)
+
+### Архитектура
+
+Все UI элементы находятся в контейнере `panelContainer`:
+- **Container** позиционируется относительно низа экрана (h + offsetY)
+- **Panel, Button, Icons** - дети контейнера с относительными координатами
+- Позиции адаптируются под любой размер экрана
+
+### Конфиг позиций (game.js)
+
+```javascript
+// Hero position (adaptive offsets from center/bottom)
+// x: w/2 + offsetX, y: h + offsetY
+const HERO_OFFSET = { x: -54, y: -196, scale: 1.23 };
+
+// UI Layout config
+const UI_LAYOUT = {
+  container: { offsetY: 3 },  // from bottom (h + offset)
+  panel: { scale: 0.574 },
+  button: { x: 0, y: -214, scale: 0.54 },
+  icons: {
+    scale: 0.65,  // default scale
+    positions: [
+      { x: 42, y: -68, scale: 0.65 },   // helmet
+      { x: 17, y: -68, scale: 0.61 },   // anvil (smaller)
+      { x: -22, y: -71, scale: 0.65 },  // store
+      { x: -41, y: -66, scale: 0.65 }   // map
+    ]
+  }
+};
+
+// Background position (center + offset)
+cityBg.setScale(0.48);
+cityBg.setPosition(w / 2 + 2, h / 2 + 168);
+```
+
+### Depth слои
+
+| Элемент | Depth | Описание |
+|---------|-------|----------|
+| cityBg | 10 | Фон города |
+| locationBg | 10 | Фон локации |
+| spineHero | 100 | Герой |
+| panelContainer | 200 | UI контейнер |
+
+### TUNE_VERSION
+
+При изменении позиций в коде, нужно обновить `TUNE_VERSION` чтобы сбросить старые localStorage настройки:
+
+```javascript
+const TUNE_VERSION = 'v12';  // Bump this to clear localStorage
+```
 
 ---
 
@@ -259,7 +322,7 @@ window.spineHero.play('attack', false);
 
 ### Описание
 
-Режим визуального позиционирования UI элементов. Включается через `?tune=1` в URL.
+Режим визуального позиционирования UI элементов. Включается через `?tune` в URL.
 
 ### Использование
 
@@ -487,48 +550,50 @@ const iconY = panelMidY;  // Вертикальный центр панели
 | icon_map.png | - | Карта |
 | slot_empty.png | - | Пустой слот |
 
-### createBottomUI() (game.js)
+### createBottomUI() (game.js) - v1.6.0
 
 ```javascript
 function createBottomUI(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
 
-  // Panel с сохранением aspect ratio
-  const tex = scene.textures.get('ui_bottom');
-  const texW = tex?.source[0]?.width || 1408;
-  const texH = tex?.source[0]?.height || 768;
-  const aspect = texW / texH;
+  // === CONTAINER (adaptive: center-X, bottom + offset) ===
+  const panelContainer = scene.add.container(
+    w / 2,
+    h + UI_LAYOUT.container.offsetY
+  );
+  panelContainer.setDepth(200);
+  panelContainer.setScrollFactor(0);
 
-  const finalW = w;
-  const finalH = Math.round(finalW / aspect);
+  // === PANEL (relative to container) ===
+  const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
+  bottomPanel.setOrigin(0.5, 1);  // Draws UP from container
+  bottomPanel.setScale(UI_LAYOUT.panel.scale);
+  panelContainer.add(bottomPanel);
 
-  const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom')
-    .setOrigin(0.5, 1)
-    .setDisplaySize(finalW, finalH)
-    .setDepth(100)
-    .setScrollFactor(0);
+  // === FIGHT BUTTON (relative to container) ===
+  const btnCfg = UI_LAYOUT.button;
+  const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
+  fightBtn.setScale(btnCfg.scale);
+  fightBtn.setInteractive({ useHandCursor: true });
+  panelContainer.add(fightBtn);
 
-  const panelScale = finalH / texH;
-  const panelMidY = h - finalH / 2;
+  // === ICONS (relative to container, individual scales) ===
+  const iconsCfg = UI_LAYOUT.icons;
+  const iconKeys = ['icon_helmet', 'icon_anvil', 'icon_store', 'icon_map'];
+  const icons = iconsCfg.positions.map((pos, i) => {
+    return scene.add.image(pos.x, pos.y, iconKeys[i])
+      .setScale(pos.scale || iconsCfg.scale)  // individual or default
+      .setInteractive();
+  });
+  panelContainer.add(icons);
 
-  // === ИКОНКИ - ОТНОСИТЕЛЬНО ПАНЕЛИ ===
-  const scaleX = w / 780;
-  const iconSpacing = 30 * scaleX;
-  const icon0X = w / 2 - 80 * scaleX;
-  const iconY = panelMidY;
-  const iconScale = panelScale * 0.3;
-
-  const icons = [
-    scene.add.image(icon0X, iconY, 'icon_helmet'),
-    scene.add.image(icon0X - iconSpacing, iconY, 'icon_anvil'),
-    scene.add.image(icon0X - iconSpacing * 2, iconY, 'icon_store'),
-    scene.add.image(icon0X - iconSpacing * 3, iconY, 'icon_map'),
-  ];
-  icons.forEach(ic => ic.setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive());
-
-  return { bottomPanel, fightBtn, icons };
+  window.panelContainer = panelContainer;
+  return { bottomPanel, fightBtn, icons, container: panelContainer };
 }
 ```
 
-**Важно:** Иконки позиционируются **относительно панели**, а не абсолютными координатами. Это гарантирует корректное отображение на любом размере экрана.
+**Важно:**
+- Все UI элементы - дети контейнера с относительными координатами
+- Container позиционируется адаптивно: `(w/2, h + offsetY)`
+- Каждая иконка может иметь индивидуальный scale
