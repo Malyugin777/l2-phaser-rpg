@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FINAL-UI");
+console.log("GAMEJS BUILD: 2025-12-19-TUNE-SCALES");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -26,7 +26,13 @@ function getTuneSettings() {
     heroY: 0,       // Offset from GROUND_Y (usually 0)
     heroScale: 1.72,
     btnX: -246,
-    btnY: 4
+    btnY: 4,
+    btnScale: 0.5,      // Default button scale
+    iconScale: 0.1,     // Default icon scale
+    icon0X: 0, icon0Y: 0,
+    icon1X: 0, icon1Y: 0,
+    icon2X: 0, icon2Y: 0,
+    icon3X: 0, icon3Y: 0
   };
 
   if (!TUNE_ENABLED) return defaults;
@@ -742,17 +748,54 @@ function create() {
     `;
     document.body.appendChild(overlay);
 
-    // Button handlers - SAVE to localStorage + clipboard
+    // Button handlers - SAVE to localStorage + clipboard (with ALL scales)
     document.getElementById('tune-save').onclick = () => {
-      const json = JSON.stringify(tune, null, 2);
-      localStorage.setItem('TUNE_SETTINGS', JSON.stringify(tune));
+      const ui = window.bottomUI;
+      const hero = window.spineHero;
+      const cont = window.panelContainer;
+      const bp = window.tuneBasePositions;
+
+      // Build settings with all current values
+      const settings = {
+        bgZoom: tune.bgZoom,
+        bgPanX: tune.bgPanX,
+        bgPanY: tune.bgPanY,
+        panelX: cont ? cont.x - bp.panelX : tune.panelX,
+        panelY: cont ? cont.y - bp.panelY : tune.panelY,
+        panelScale: ui?.bottomPanel?.scaleX || 1,
+        heroX: tune.heroX,
+        heroY: tune.heroY,
+        heroScale: hero?.scaleX || 1.4,
+        btnX: tune.btnX,
+        btnY: tune.btnY,
+        btnScale: ui?.fightBtn?.scaleX || 0.5,
+        iconScale: ui?.icons?.[0]?.scaleX || 0.1,
+        icon0X: tune.icon0X || 0,
+        icon0Y: tune.icon0Y || 0,
+        icon1X: tune.icon1X || 0,
+        icon1Y: tune.icon1Y || 0,
+        icon2X: tune.icon2X || 0,
+        icon2Y: tune.icon2Y || 0,
+        icon3X: tune.icon3X || 0,
+        icon3Y: tune.icon3Y || 0
+      };
+
+      const json = JSON.stringify(settings, null, 2);
+      localStorage.setItem('TUNE_SETTINGS', JSON.stringify(settings));
       navigator.clipboard?.writeText(json);
       console.log("[TUNE] Saved to localStorage and clipboard:\n" + json);
       alert("Saved to localStorage!\n\n" + json);
     };
     document.getElementById('tune-reset').onclick = () => {
       // Reset tune values to defaults and clear localStorage
-      Object.assign(tune, {bgZoom:1, bgPanX:0, bgPanY:0, panelX:0, panelY:0, panelScale:1, heroX:0, heroY:0, heroScale:1, btnX:0, btnY:0, icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0});
+      Object.assign(tune, {
+        bgZoom:1, bgPanX:0, bgPanY:0,
+        panelX:0, panelY:0, panelScale:1,
+        heroX:0, heroY:0, heroScale:1,
+        btnX:0, btnY:0, btnScale:0.5,
+        iconScale:0.1,
+        icon0X:0, icon0Y:0, icon1X:0, icon1Y:0, icon2X:0, icon2Y:0, icon3X:0, icon3Y:0
+      });
       localStorage.removeItem('TUNE_SETTINGS');
       applyTune();
       console.log("[TUNE] Reset to defaults, localStorage cleared");
@@ -767,22 +810,33 @@ function create() {
     const selColors = { bg: '#0f0', panel: '#ff0', hero: '#0ff', btn: '#f0f', icon0: '#f80', icon1: '#f80', icon2: '#f80', icon3: '#f80' };
 
     const updateOverlay = () => {
+      const t = getTuneSettings();
+      const ui = window.bottomUI;
       const hero = window.spineHero;
-      const btn = window.bottomUI?.fightBtn;
-      const icons = window.bottomUI?.icons || [];
+      const btn = ui?.fightBtn;
+      const icons = ui?.icons || [];
+      const cont = window.panelContainer;
 
       document.getElementById('tune-sel').innerHTML = `<span style="color:${selColors[selectedElement] || '#fff'}">${selectedElement}</span>`;
-      document.getElementById('tune-values').innerHTML = `
-        <b style="color:#0f0">1.BG:</b> z:${tune.bgZoom.toFixed(2)} pos:${cityBg?.x?.toFixed(0)},${cityBg?.y?.toFixed(0)}<br>
-        <b style="color:#ff0">2.Panel:</b> ${window.bottomUI?.bottomPanel?.x?.toFixed(0) || '?'},${window.bottomUI?.bottomPanel?.y?.toFixed(0) || '?'}<br>
-        <b style="color:#0ff">3.Hero:</b> ${hero?.x?.toFixed(0) || '?'},${hero?.y?.toFixed(0) || '?'} s:${(HERO_BASE.scale * tune.heroScale).toFixed(2)}<br>
-        <small>&nbsp;base:${HERO_BASE.x},${HERO_BASE.y} ofs:${tune.heroX},${tune.heroY}</small><br>
-        <b style="color:#f0f">4.Btn:</b> ${btn?.x?.toFixed(0) || '?'},${btn?.y?.toFixed(0) || '?'}<br>
-        <small>&nbsp;base:${FIGHTBTN_BASE?.x?.toFixed(0) || '?'},${FIGHTBTN_BASE?.y?.toFixed(0) || '?'} ofs:${tune.btnX},${tune.btnY}</small><br>
-        <b style="color:#f80">5-8.Icons:</b><br>
-        &nbsp;🪖${icons[0]?.x?.toFixed(0) || '?'},${icons[0]?.y?.toFixed(0) || '?'} ⚒️${icons[1]?.x?.toFixed(0) || '?'},${icons[1]?.y?.toFixed(0) || '?'}<br>
-        &nbsp;🏪${icons[2]?.x?.toFixed(0) || '?'},${icons[2]?.y?.toFixed(0) || '?'} 🗺️${icons[3]?.x?.toFixed(0) || '?'},${icons[3]?.y?.toFixed(0) || '?'}
-      `;
+
+      let html = '';
+      // BG
+      html += `<b style="color:#0f0">1.BG:</b> z:${tune.bgZoom.toFixed(2)} pos:${cityBg?.x?.toFixed(0)},${cityBg?.y?.toFixed(0)}<br>`;
+      // Panel (container position + panel scale)
+      html += `<b style="color:#ff0">2.Panel:</b> ${cont?.x?.toFixed(0) || '?'},${cont?.y?.toFixed(0) || '?'} s:${ui?.bottomPanel?.scaleX?.toFixed(2) || '?'}<br>`;
+      // Hero
+      html += `<b style="color:#0ff">3.Hero:</b> ${hero?.x?.toFixed(0) || '?'},${hero?.y?.toFixed(0) || '?'} s:${hero?.scaleX?.toFixed(2) || '?'}<br>`;
+      // Button
+      html += `<b style="color:#f0f">4.Btn:</b> ${btn?.x?.toFixed(0) || '?'},${btn?.y?.toFixed(0) || '?'} s:${btn?.scaleX?.toFixed(2) || '?'}<br>`;
+      // Icons (show scale)
+      html += `<b style="color:#f80">5-8.Icons:</b><br>`;
+      const emojis = ['🎩', '⚒️', '🏪', '🗺️'];
+      icons.forEach((ic, i) => {
+        html += `${emojis[i]}${ic.x?.toFixed(0)},${ic.y?.toFixed(0)} s:${ic.scaleX?.toFixed(2)}  `;
+        if (i === 1) html += '<br>';
+      });
+
+      document.getElementById('tune-values').innerHTML = html;
     };
 
     const applyTune = () => {
@@ -952,51 +1006,49 @@ function create() {
     });
 
     // Q/E for scale (+ and - don't work in Phaser)
+    const SCALE_STEP = 0.02;
+    const ui = window.bottomUI;
+
     this.input.keyboard.on('keydown-E', () => {
-      if (selectedElement === 'bg') { tune.bgZoom += 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) {
-        tune.panelScale += 0.05;
-        const p = window.bottomUI.bottomPanel;
-        p.setScale(p.scaleX * 1.05, p.scaleY * 1.05);
+      if (selectedElement === 'bg') {
+        tune.bgZoom += 0.05;
+        cityBg.setScale(baseScale * tune.bgZoom);
+      }
+      else if (selectedElement === 'panel' && ui?.bottomPanel) {
+        ui.bottomPanel.setScale(ui.bottomPanel.scaleX + SCALE_STEP);
       }
       else if (selectedElement === 'hero' && window.spineHero) {
-        tune.heroScale += 0.05;
-        const hbScale = window.HERO_BASE?.scale || 0.7;
-        window.spineHero.setScale(hbScale * tune.heroScale);
+        window.spineHero.setScale(window.spineHero.scaleX + SCALE_STEP);
       }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
-        window.fightBtnTween?.stop(); // Stop animation
-        const btn = window.bottomUI.fightBtn;
-        btn.setScale(btn.scaleX * 1.05, btn.scaleY * 1.05);
+      else if (selectedElement === 'btn' && ui?.fightBtn) {
+        window.fightBtnTween?.stop();
+        ui.fightBtn.setScale(ui.fightBtn.scaleX + SCALE_STEP);
       }
       else if (selectedElement.startsWith('icon')) {
-        const idx = parseInt(selectedElement.replace('icon', ''));
-        const icon = window.bottomUI?.icons?.[idx];
-        if (icon) icon.setScale(icon.scaleX * 1.05, icon.scaleY * 1.05);
+        // Change ALL icons together
+        ui?.icons?.forEach(ic => ic.setScale(ic.scaleX + SCALE_STEP));
       }
       updateOverlay();
     });
+
     this.input.keyboard.on('keydown-Q', () => {
-      if (selectedElement === 'bg') { tune.bgZoom -= 0.05; cityBg.setScale(baseScale * tune.bgZoom); }
-      else if (selectedElement === 'panel' && window.bottomUI?.bottomPanel) {
-        tune.panelScale -= 0.05;
-        const p = window.bottomUI.bottomPanel;
-        p.setScale(p.scaleX * 0.95, p.scaleY * 0.95);
+      if (selectedElement === 'bg') {
+        tune.bgZoom -= 0.05;
+        cityBg.setScale(baseScale * tune.bgZoom);
+      }
+      else if (selectedElement === 'panel' && ui?.bottomPanel) {
+        ui.bottomPanel.setScale(ui.bottomPanel.scaleX - SCALE_STEP);
       }
       else if (selectedElement === 'hero' && window.spineHero) {
-        tune.heroScale -= 0.05;
-        const hbScale = window.HERO_BASE?.scale || 0.7;
-        window.spineHero.setScale(hbScale * tune.heroScale);
+        window.spineHero.setScale(window.spineHero.scaleX - SCALE_STEP);
       }
-      else if (selectedElement === 'btn' && window.bottomUI?.fightBtn) {
-        window.fightBtnTween?.stop(); // Stop animation
-        const btn = window.bottomUI.fightBtn;
-        btn.setScale(btn.scaleX * 0.95, btn.scaleY * 0.95);
+      else if (selectedElement === 'btn' && ui?.fightBtn) {
+        window.fightBtnTween?.stop();
+        ui.fightBtn.setScale(ui.fightBtn.scaleX - SCALE_STEP);
       }
       else if (selectedElement.startsWith('icon')) {
-        const idx = parseInt(selectedElement.replace('icon', ''));
-        const icon = window.bottomUI?.icons?.[idx];
-        if (icon) icon.setScale(icon.scaleX * 0.95, icon.scaleY * 0.95);
+        // Change ALL icons together
+        ui?.icons?.forEach(ic => ic.setScale(ic.scaleX - SCALE_STEP));
       }
       updateOverlay();
     });
@@ -1682,14 +1734,16 @@ function createBottomUI(scene) {
   const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
   bottomPanel.setOrigin(0.5, 1);  // Bottom center
   bottomPanel.setDisplaySize(panelW, panelH);
+  bottomPanel.setScrollFactor(0);  // STEP 1: scrollFactor on children
   panelContainer.add(bottomPanel);
 
   console.log("[BOTTOMUI] Panel size:", panelW, "x", panelH);
 
   // === FIGHT BUTTON (relative to container) ===
-  const btnScale = 0.15;
+  const btnScale = 0.5;  // STEP 5: bigger button
   const fightBtn = scene.add.image(200, -panelH / 2, 'ui_btn_fight');
   fightBtn.setScale(btnScale);
+  fightBtn.setScrollFactor(0);  // STEP 1: scrollFactor on children
   fightBtn.setInteractive({ useHandCursor: true });
   panelContainer.add(fightBtn);
 
@@ -1708,24 +1762,24 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  console.log("[BOTTOMUI] FightBtn at relative:", 200, -panelH / 2);
+  console.log("[BOTTOMUI] FightBtn at relative:", 200, -panelH / 2, "scale:", btnScale);
 
   // === ICONS (relative to container, positioned on panel) ===
-  const iconScale = 0.12;
+  const iconScale = 0.1;  // STEP 5: visible icons
   const iconY = -panelH / 2;  // Vertical center of panel
 
   // X positions from center (negative = left, positive = right)
-  const icon0 = scene.add.image(-100, iconY, 'icon_helmet').setScale(iconScale).setInteractive();
-  const icon1 = scene.add.image(-180, iconY, 'icon_anvil').setScale(iconScale).setInteractive();
-  const icon2 = scene.add.image(-260, iconY, 'icon_store').setScale(iconScale).setInteractive();
-  const icon3 = scene.add.image(-340, iconY, 'icon_map').setScale(iconScale).setInteractive();
+  const icon0 = scene.add.image(-100, iconY, 'icon_helmet').setScale(iconScale).setScrollFactor(0).setInteractive();
+  const icon1 = scene.add.image(-180, iconY, 'icon_anvil').setScale(iconScale).setScrollFactor(0).setInteractive();
+  const icon2 = scene.add.image(-260, iconY, 'icon_store').setScale(iconScale).setScrollFactor(0).setInteractive();
+  const icon3 = scene.add.image(-340, iconY, 'icon_map').setScale(iconScale).setScrollFactor(0).setInteractive();
 
   panelContainer.add([icon0, icon1, icon2, icon3]);
 
   const createdIcons = [icon0, icon1, icon2, icon3];
 
   console.log("[BOTTOMUI] Container at:", w / 2, h);
-  console.log("[BOTTOMUI] Icons at Y:", iconY, "(relative to container)");
+  console.log("[BOTTOMUI] Icons at Y:", iconY, "scale:", iconScale);
 
   // Store container reference
   window.panelContainer = panelContainer;
