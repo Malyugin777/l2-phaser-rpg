@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FINAL-LAYOUT");
+console.log("GAMEJS BUILD: 2025-12-19-ADAPTIVE");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -9,8 +9,9 @@ const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
 
 // Base positions for tune mode calculations (scaled for 780×1688)
-// Hero position (tuned)
-const HERO_BASE = { x: 336, y: 1492, scale: 1.23 };
+// Hero position (adaptive offsets from center/bottom)
+// x: w/2 + offsetX, y: h + offsetY
+const HERO_OFFSET = { x: -54, y: -196, scale: 1.23 };
 let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
@@ -35,8 +36,8 @@ function getTuneSettings() {
     icon3X: 0, icon3Y: 0
   };
 
-  // Clear old tune settings - positions are now hardcoded (v5)
-  const TUNE_VERSION = 'v5';
+  // Clear old tune settings - now adaptive (v6)
+  const TUNE_VERSION = 'v6';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
@@ -700,8 +701,9 @@ function create() {
   if (rsKey) {
     cityBg.setTexture(rsKey);
     cityBg.setScale(1 / dprCap);
-    // Tuned background position
-    cityBg.setPosition(371, 1081);
+    // Adaptive background position (center + offset)
+    // offset: -19 X, +237 Y from center
+    cityBg.setPosition(w / 2 - 19, h / 2 + 237);
 
     // STEP 4: After resample
     console.log("[BG] step4 - after resample scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
@@ -964,29 +966,30 @@ function create() {
     filterMode: bgTex?.filterMode,
   });
 
-  // герой/враг для локации - FIXED POSITION (no tune mode)
-  // Hero position (working values)
-  heroStartX = HERO_BASE.x;
-  heroStartY = HERO_BASE.y;
+  // Hero position (adaptive: center-X + offset, bottom + offset)
+  const heroX = w / 2 + HERO_OFFSET.x;
+  const heroY = h + HERO_OFFSET.y;
+  heroStartX = heroX;
+  heroStartY = heroY;
 
-  // Создаём Spine героя (tuned position)
+  // Создаём Spine героя
   if (this.spine) {
     try {
-      spineHero = this.add.spine(HERO_BASE.x, HERO_BASE.y, 'hero', 'idle', true);
-      spineHero.setScale(HERO_BASE.scale);
+      spineHero = this.add.spine(heroX, heroY, 'hero', 'idle', true);
+      spineHero.setScale(HERO_OFFSET.scale);
       spineHero.setDepth(100);  // Above background (10), below UI (200)
       spineHero.setVisible(true);
       spineHero.setScrollFactor(0);  // Fixed on screen
       window.spineHero = spineHero;
       hero = spineHero;
-      console.log("[HERO] Created at:", HERO_BASE.x, HERO_BASE.y, "scale:", HERO_BASE.scale, "depth:", spineHero.depth);
+      console.log("[HERO] Adaptive pos:", heroX, heroY, "scale:", HERO_OFFSET.scale);
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
-      hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
+      hero = createHeroSprite(this, heroX, heroY, 0x3366cc);
       hero.setDepth(50);
     }
   } else {
-    hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
+    hero = createHeroSprite(this, heroX, heroY, 0x3366cc);
     hero.setDepth(50);
   }
 
@@ -1039,12 +1042,14 @@ function create() {
           window.cityBg.x += tune.bgPanX;
         }
 
-        // Hero - positions are hardcoded, only apply if tune mode
+        // Hero - only apply tune offsets in tune mode
         if (window.spineHero && TUNE_ENABLED) {
-          console.log("[TUNE] Hero offset:", tune.heroX, tune.heroY, "scale mult:", tune.heroScale);
-          window.spineHero.x = HERO_BASE.x + tune.heroX;
-          window.spineHero.y = HERO_BASE.y + tune.heroY;
-          window.spineHero.setScale(HERO_BASE.scale * tune.heroScale);
+          const baseX = w / 2 + HERO_OFFSET.x;
+          const baseY = h + HERO_OFFSET.y;
+          window.spineHero.x = baseX + tune.heroX;
+          window.spineHero.y = baseY + tune.heroY;
+          window.spineHero.setScale(HERO_OFFSET.scale * tune.heroScale);
+          console.log("[TUNE] Hero adjusted by:", tune.heroX, tune.heroY);
         }
 
         // Container position (moves panel + button + icons together)
@@ -1538,67 +1543,79 @@ function create() {
 
 // ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
 
+// UI Layout config (offsets from base positions)
+const UI_LAYOUT = {
+  container: { offsetY: 17 },  // from bottom (h + offset)
+  panel: { scale: 0.574 },
+  button: { x: 0, y: -214, scale: 0.54 },
+  icons: {
+    scale: 0.65,
+    // positions relative to container center
+    positions: [
+      { x: 42, y: -68 },   // helmet
+      { x: 17, y: -68 },   // anvil
+      { x: -22, y: -71 },  // store
+      { x: -41, y: -66 }   // map
+    ]
+  }
+};
+
 function createBottomUI(scene) {
-  const w = scene.scale.width;   // 780
-  const h = scene.scale.height;  // 1688
+  const w = scene.scale.width;
+  const h = scene.scale.height;
 
   console.log("[BOTTOMUI] Screen:", w, "x", h);
 
-  // === CREATE CONTAINER (tuned position) ===
-  const panelContainer = scene.add.container(390, 1705);
+  // === CONTAINER (adaptive: center-X, bottom + offset) ===
+  const panelContainer = scene.add.container(
+    w / 2,
+    h + UI_LAYOUT.container.offsetY
+  );
   panelContainer.setDepth(200);
   panelContainer.setScrollFactor(0);
 
   // === PANEL (relative to container) ===
-  // Panel at (0, 0) with origin(0.5, 1) draws UP from container position
   const tex = scene.textures.get('ui_bottom');
   if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
   const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
-  bottomPanel.setOrigin(0.5, 1);  // Bottom center
-  bottomPanel.setScale(0.574);  // Tuned scale
-  panelContainer.add(bottomPanel);  // ADD FIRST (behind other elements)
-
-  console.log("[BOTTOMUI] Panel displaySize:", w, "x 220");
+  bottomPanel.setOrigin(0.5, 1);  // Draws UP from container
+  bottomPanel.setScale(UI_LAYOUT.panel.scale);
+  panelContainer.add(bottomPanel);
 
   // === FIGHT BUTTON (relative to container) ===
-  const btnScale = 0.54;
-  const fightBtn = scene.add.image(0, -214, 'ui_btn_fight');
-  fightBtn.setScale(btnScale);
+  const btnCfg = UI_LAYOUT.button;
+  const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
+  fightBtn.setScale(btnCfg.scale);
   fightBtn.setInteractive({ useHandCursor: true });
   panelContainer.add(fightBtn);
-
-  // Fight button - no pulse animation for now
 
   fightBtn.on('pointerdown', () => {
     console.log('[UI] Fight button clicked!');
   });
 
   // === ICONS (relative to container) ===
-  const iconScale = 0.65;
-
-  const icon0 = scene.add.image(42, -68, 'icon_helmet').setScale(iconScale).setInteractive();
-  const icon1 = scene.add.image(17, -68, 'icon_anvil').setScale(iconScale).setInteractive();
-  const icon2 = scene.add.image(-22, -71, 'icon_store').setScale(iconScale).setInteractive();
-  const icon3 = scene.add.image(-41, -66, 'icon_map').setScale(iconScale).setInteractive();
-
-  panelContainer.add([icon0, icon1, icon2, icon3]);
-
-  const createdIcons = [icon0, icon1, icon2, icon3];
+  const iconsCfg = UI_LAYOUT.icons;
+  const iconKeys = ['icon_helmet', 'icon_anvil', 'icon_store', 'icon_map'];
+  const icons = iconsCfg.positions.map((pos, i) => {
+    return scene.add.image(pos.x, pos.y, iconKeys[i])
+      .setScale(iconsCfg.scale)
+      .setInteractive();
+  });
+  panelContainer.add(icons);
 
   // Store container reference
   window.panelContainer = panelContainer;
 
   // === DEBUG LOGS ===
-  console.log("[BOTTOMUI] Container at:", panelContainer.x, panelContainer.y);
-  console.log("[BOTTOMUI] Button:", fightBtn.x, fightBtn.y, "scale:", btnScale);
-  console.log("[BOTTOMUI] Icons scale:", iconScale);
-  console.log("[BOTTOMUI] Panel in container:", panelContainer.list.includes(bottomPanel));
+  console.log("[BOTTOMUI] Adaptive container:", w/2, h + UI_LAYOUT.container.offsetY);
+  console.log("[BOTTOMUI] Button:", btnCfg.x, btnCfg.y, "scale:", btnCfg.scale);
+  console.log("[BOTTOMUI] Icons:", icons.length, "scale:", iconsCfg.scale);
 
   return {
     bottomPanel,
     fightBtn,
-    icons: createdIcons,
+    icons,
     container: panelContainer
   };
 }
