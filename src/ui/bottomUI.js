@@ -5,30 +5,30 @@
 //  With click handlers for panels
 // ============================================================
 
-// UI Layout config (offsets from base positions)
+// UI Layout config for optimized textures
+// Panel: 800x188, Button: 240x240, Icons: 140x140
 const UI_LAYOUT = {
   container: { offsetY: 3 },
-  panel: { scale: 0.58 },
-  button: { x: 0, y: -215, scale: 0.54 },
+  panel: { scale: 1.0 },
+  button: { x: 0, y: -110, scale: 0.45 },
   icons: {
-    scale: 0.66,
+    // Icons 140x140, scale 0.5 = 70px on screen
     positions: [
-      { x: 68, y: -62, scale: 0.70 },   // helmet (rightmost)
-      { x: 17, y: -68, scale: 0.60 },   // anvil
-      { x: -22, y: -71, scale: 0.66 },  // store
-      { x: -41, y: -66, scale: 0.66 }   // map (leftmost)
+      { x: 280, y: -50, scale: 0.5 },   // helmet (rightmost)
+      { x: 140, y: -50, scale: 0.5 },   // anvil
+      { x: -140, y: -50, scale: 0.5 },  // store
+      { x: -280, y: -50, scale: 0.5 }   // map (leftmost)
     ]
   }
 };
 
-// Icon config - original visual positions, correct actions
-// Visual positions (original tuning):
-//   x:68 = helmet, x:17 = anvil, x:-22 = store, x:-41 = map
+// Icon config - left to right on screen:
+// map(x:-280) → store(x:-140) → [FIGHT] → anvil(x:140) → helmet(x:280)
 const ICON_CONFIG = [
-  { key: 'icon_helmet', action: 'inventory' },  // pos[0] x:68
-  { key: 'icon_anvil',  action: 'forge' },      // pos[1] x:17
-  { key: 'icon_store',  action: 'shop' },       // pos[2] x:-22
-  { key: 'icon_map',    action: 'map' }         // pos[3] x:-41
+  { key: 'icon_helmet', action: 'inventory' },  // pos[0] x:280 (right)
+  { key: 'icon_anvil',  action: 'forge' },      // pos[1] x:140
+  { key: 'icon_store',  action: 'shop' },       // pos[2] x:-140
+  { key: 'icon_map',    action: 'map' }         // pos[3] x:-280 (left)
 ];
 
 function createBottomUI(scene) {
@@ -55,14 +55,7 @@ function createBottomUI(scene) {
   const btnCfg = UI_LAYOUT.button;
   const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
   fightBtn.setScale(btnCfg.scale);
-  fightBtn.setDepth(205);
-
-  const btnHitSize = 80;
-  fightBtn.setInteractive({
-    useHandCursor: true,
-    hitArea: new Phaser.Geom.Rectangle(-btnHitSize/2, -btnHitSize/2, btnHitSize, btnHitSize),
-    hitAreaCallback: Phaser.Geom.Rectangle.Contains
-  });
+  fightBtn.setInteractive({ useHandCursor: true });
   panelContainer.add(fightBtn);
 
   fightBtn.on('pointerdown', () => {
