@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-ICONS-FIX");
+console.log("GAMEJS BUILD: 2025-12-19-FIXED-ICONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -23,27 +23,17 @@ function getTuneSettings() {
     panelScale: 1.05,
     heroX: 36,
     heroY: 477,
-    heroScale: 2.17,
-    btnX: -245,
-    btnY: 4,
-    // ALL ICONS ON SAME Y LINE (offset = 0)
-    icon0X: 0,
-    icon0Y: 0,
-    icon1X: 0,
-    icon1Y: 0,
-    icon2X: 0,
-    icon2Y: 0,
-    icon3X: 0,
-    icon3Y: 0
+    heroScale: 2.62,
+    btnX: -225,
+    btnY: 4
+    // NO ICON OFFSETS - icons have fixed positions in createBottomUI
   };
 
   if (!TUNE_ENABLED) return defaults;
 
   try {
     const saved = localStorage.getItem('TUNE_SETTINGS');
-    if (saved) {
-      return { ...defaults, ...JSON.parse(saved) };
-    }
+    if (saved) return { ...defaults, ...JSON.parse(saved) };
   } catch (e) {}
   return defaults;
 }
@@ -522,11 +512,9 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
-  // TEMPORARY: Clear bad tune settings from localStorage
-  if (TUNE_ENABLED) {
-    console.log("[TUNE] Clearing old localStorage...");
-    localStorage.removeItem('TUNE_SETTINGS');
-  }
+  // RESET - clear broken settings
+  localStorage.removeItem('TUNE_SETTINGS');
+  console.log("[TUNE] localStorage cleared");
 
   // === RENDER DIAG (pixelated root-cause) ===
   const canvas = this.game?.canvas;
@@ -842,14 +830,7 @@ function create() {
         window.bottomUI.fightBtn.y = Math.round(FIGHTBTN_BASE.y + tune.btnY);
       }
 
-      // Icons
-      const icons = window.bottomUI?.icons || [];
-      icons.forEach((icon, i) => {
-        if (icon && bp[`icon${i}X`] !== 0) {
-          icon.x = Math.round(bp[`icon${i}X`] + tune[`icon${i}X`]);
-          icon.y = Math.round(bp[`icon${i}Y`] + tune[`icon${i}Y`]);
-        }
-      });
+      // Icons have FIXED positions - not tunable
 
       updateOverlay();
     };
@@ -1159,14 +1140,7 @@ function create() {
           bottomUI.fightBtn.y = FIGHTBTN_BASE.y + tune.btnY;
         }
 
-        // Icons
-        const icons = bottomUI.icons || [];
-        icons.forEach((icon, i) => {
-          if (icon) {
-            icon.x += tune[`icon${i}X`] || 0;
-            icon.y += tune[`icon${i}Y`] || 0;
-          }
-        });
+        // Icons have FIXED positions in createBottomUI - no tune offsets
 
         console.log("[TUNE] Production settings applied");
       }, 150);
@@ -1709,44 +1683,41 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  // === ИКОНКИ В СЛОТАХ (слева на панели) ===
-  const iconScale = panelScale * 1.5;
-  const iconY = Math.round(h - panelHeight * 0.5);
-  const slotOffsets = [-380, -230, -80, 70];
+  // === ICONS - FIXED POSITIONS ON PANEL ===
+  const iconY = h - 213;  // Panel height ~425, icons at middle = 1688 - 213 = 1475
 
-  const icons = [
-    { key: 'icon_helmet', action: 'inventory' },
-    { key: 'icon_anvil', action: 'forge' },
-    { key: 'icon_store', action: 'shop' },
-    { key: 'icon_map', action: 'map' },
+  // 4 icons evenly spaced across panel
+  const iconPositions = [
+    { x: 100, key: 'icon_helmet', action: 'inventory' },   // Slot 1 - left
+    { x: 260, key: 'icon_anvil', action: 'forge' },        // Slot 2
+    { x: 520, key: 'icon_store', action: 'shop' },         // Slot 3
+    { x: 680, key: 'icon_map', action: 'map' },            // Slot 4 - right
   ];
 
-  const createdIcons = icons.map((iconData, i) => {
-    const x = Math.round(panelCenterX + slotOffsets[i] * panelScale);
+  const iconScale = 0.15;  // Fixed scale
 
-    // Check if texture exists
-    const tex = scene.textures.exists(iconData.key);
-    console.log(`[ICON] ${iconData.key}: exists=${tex}, x=${x}, y=${iconY}`);
-
-    if (!tex) {
-      console.error(`[ICON] Missing texture: ${iconData.key}`);
-      return null;
+  const createdIcons = iconPositions.map((cfg, i) => {
+    // Check texture exists
+    if (!scene.textures.exists(cfg.key)) {
+      console.error(`[UI] ❌ Missing texture: ${cfg.key}`);
+      const placeholder = scene.add.rectangle(cfg.x, iconY, 60, 60, 0xff0000);
+      placeholder.setDepth(110).setScrollFactor(0);
+      return placeholder;
     }
 
-    const icon = scene.add.image(x, iconY, iconData.key)
+    const icon = scene.add.image(cfg.x, iconY, cfg.key)
       .setDepth(110)
       .setScrollFactor(0)
       .setScale(iconScale)
       .setInteractive({ useHandCursor: true });
 
-    icon.on('pointerdown', () => {
-      console.log(`[UI] Icon clicked: ${iconData.action}`);
-    });
+    icon.on('pointerdown', () => console.log('[UI] Click:', cfg.action));
 
+    console.log(`[UI] Icon ${i}: ${cfg.key} at ${cfg.x},${iconY}`);
     return icon;
-  }).filter(Boolean);
+  });
 
-  console.log("[UI] Icons created:", createdIcons.length, "at y=", iconY, "scale=", iconScale.toFixed(3));
+  console.log("[UI] Icons created:", createdIcons.length, "at y=", iconY);
 
   // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
