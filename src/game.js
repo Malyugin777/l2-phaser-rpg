@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-TUNED-POSITIONS");
+console.log("GAMEJS BUILD: 2025-12-19-FINAL-LAYOUT");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -35,8 +35,8 @@ function getTuneSettings() {
     icon3X: 0, icon3Y: 0
   };
 
-  // Clear old tune settings - positions are now hardcoded (v2)
-  const TUNE_VERSION = 'v2';
+  // Clear old tune settings - positions are now hardcoded (v3)
+  const TUNE_VERSION = 'v3';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
@@ -700,9 +700,8 @@ function create() {
   if (rsKey) {
     cityBg.setTexture(rsKey);
     cityBg.setScale(1 / dprCap);
-    cityBg.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
-    cityBg.x = Math.round(cityBg.x);
-    cityBg.y = Math.round(cityBg.y);
+    // Tuned background position
+    cityBg.setPosition(371, 1081);
 
     // STEP 4: After resample
     console.log("[BG] step4 - after resample scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
@@ -1547,7 +1546,7 @@ function createBottomUI(scene) {
   console.log("[BOTTOMUI] Screen:", w, "x", h);
 
   // === CREATE CONTAINER (tuned position) ===
-  const panelContainer = scene.add.container(390, 1699);
+  const panelContainer = scene.add.container(390, 1701);
   panelContainer.setDepth(200);
   panelContainer.setScrollFactor(0);
 
@@ -1577,12 +1576,12 @@ function createBottomUI(scene) {
   });
 
   // === ICONS (relative to container) ===
-  const iconScale = 0.11;
+  const iconScale = 0.65;
 
-  const icon0 = scene.add.image(-272, -110, 'icon_helmet').setScale(iconScale).setInteractive();
-  const icon1 = scene.add.image(-190, -110, 'icon_anvil').setScale(iconScale).setInteractive();
-  const icon2 = scene.add.image(190, -110, 'icon_store').setScale(iconScale).setInteractive();
-  const icon3 = scene.add.image(290, -110, 'icon_map').setScale(iconScale).setInteractive();
+  const icon0 = scene.add.image(42, -68, 'icon_helmet').setScale(iconScale).setInteractive();
+  const icon1 = scene.add.image(-2, -74, 'icon_anvil').setScale(iconScale).setInteractive();
+  const icon2 = scene.add.image(4, -80, 'icon_store').setScale(iconScale).setInteractive();
+  const icon3 = scene.add.image(-10, -80, 'icon_map').setScale(iconScale).setInteractive();
 
   panelContainer.add([icon0, icon1, icon2, icon3]);
 
