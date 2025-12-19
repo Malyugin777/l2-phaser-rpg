@@ -315,6 +315,14 @@ function setupCleanMode(scene) {
     window.bottomUI = bottomUI;
   }
 
+  // Create panels (needed for icon clicks to work)
+  if (typeof createMapUI === "function") createMapUI(scene);
+  if (typeof createForgeUI === "function") createForgeUI(scene);
+  if (typeof createInventoryPanel === "function") createInventoryPanel(scene);
+  if (typeof createShopPanel === "function") createShopPanel(scene);
+  if (typeof createArenaPanel === "function") createArenaPanel(scene);
+  if (typeof createStatsPanel === "function") createStatsPanel(scene);
+
   // TUNE mode
   if (typeof initTuneMode === "function") {
     initTuneMode(scene, cityBg, HERO_OFFSET);
@@ -336,6 +344,9 @@ function setupCleanMode(scene) {
 
   // Initialize panel variables
   initPanelVariables();
+
+  // Hide all panels initially
+  if (typeof hideAllPanels === "function") hideAllPanels();
 
   console.log("[CLEAN MODE] Initialized");
 }
