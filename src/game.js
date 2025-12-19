@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-DEBUG-ICONS");
+console.log("GAMEJS BUILD: 2025-12-19-PANEL-FIX");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -18,8 +18,8 @@ function getTuneSettings() {
     bgPanX: 0,
     bgPanY: 238,
     panelX: 0,
-    panelY: 13,
-    panelScale: 1.05,
+    panelY: 0,
+    panelScale: 1.0,
     heroX: 36,
     heroY: 477,
     heroScale: 1.77,
