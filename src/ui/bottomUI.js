@@ -74,18 +74,18 @@ function createBottomUI(scene) {
   // === ICONS ===
   const iconsCfg = UI_LAYOUT.icons;
   const icons = [];
-  const iconHitSize = 50;
+  const iconHitSize = 60; // Larger hit area
 
-  console.log("[BOTTOMUI] Creating icons (right to left)...");
+  console.log("[BOTTOMUI] Creating icons...");
 
   ICON_CONFIG.forEach((cfg, i) => {
     const pos = iconsCfg.positions[i];
-    
-    console.log("[BOTTOMUI] Icon", i, cfg.key, "at x:", pos.x, "→", cfg.name);
+
+    console.log("[BOTTOMUI] Icon", i, cfg.key, "x:", pos.x, "→", cfg.action);
 
     const icon = scene.add.image(pos.x, pos.y, cfg.key);
     icon.setScale(pos.scale || iconsCfg.scale);
-    icon.setDepth(210 + i);
+    // Don't set depth - container manages order
 
     icon.setInteractive({
       useHandCursor: true,
@@ -95,29 +95,22 @@ function createBottomUI(scene) {
 
     icon.setData('action', cfg.action);
     icon.setData('name', cfg.name);
-    icon.setData('index', i);
 
-    // Click handler
     icon.on('pointerdown', () => {
-      console.log('[UI] Clicked:', cfg.name, '→ panel:', cfg.action);
+      console.log('[UI] CLICK:', cfg.name, '→', cfg.action);
       onIconClick(scene, cfg.action);
     });
 
-    // Hover effects
-    icon.on('pointerover', () => {
-      icon.setTint(0xaaaaaa);
-    });
+    icon.on('pointerover', () => icon.setTint(0xaaaaaa));
     icon.on('pointerout', () => icon.clearTint());
 
+    panelContainer.add(icon); // Add immediately
     icons.push(icon);
   });
 
-  icons.forEach(icon => panelContainer.add(icon));
-
   window.panelContainer = panelContainer;
 
-  console.log("[BOTTOMUI] Created - Panel + Button + Icons:", icons.length);
-  console.log("[BOTTOMUI] Icon order (R→L): map, shop, forge, inventory");
+  console.log("[BOTTOMUI] Created:", icons.length, "icons");
 
   return { bottomPanel, fightBtn, icons, container: panelContainer };
 }
