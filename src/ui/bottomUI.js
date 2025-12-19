@@ -21,15 +21,14 @@ const UI_LAYOUT = {
   }
 };
 
-// Icon config - matches visual layout left to right
-// Visual: [helmet] [anvil] [FIGHT] [store] [map]
-//         LEFT                              RIGHT
-// Positions array order: [0]=x:68, [1]=x:17, [2]=x:-22, [3]=x:-41
+// Icon config - original visual positions, correct actions
+// Visual positions (original tuning):
+//   x:68 = helmet, x:17 = anvil, x:-22 = store, x:-41 = map
 const ICON_CONFIG = [
-  { key: 'icon_map',    action: 'map',       name: 'map' },       // pos[0] x:68 (right)
-  { key: 'icon_store',  action: 'shop',      name: 'store' },     // pos[1] x:17
-  { key: 'icon_anvil',  action: 'forge',     name: 'anvil' },     // pos[2] x:-22
-  { key: 'icon_helmet', action: 'inventory', name: 'helmet' }     // pos[3] x:-41 (left)
+  { key: 'icon_helmet', action: 'inventory' },  // pos[0] x:68
+  { key: 'icon_anvil',  action: 'forge' },      // pos[1] x:17
+  { key: 'icon_store',  action: 'shop' },       // pos[2] x:-22
+  { key: 'icon_map',    action: 'map' }         // pos[3] x:-41
 ];
 
 function createBottomUI(scene) {
@@ -85,7 +84,6 @@ function createBottomUI(scene) {
 
     const icon = scene.add.image(pos.x, pos.y, cfg.key);
     icon.setScale(pos.scale || iconsCfg.scale);
-    // Don't set depth - container manages order
 
     icon.setInteractive({
       useHandCursor: true,
@@ -94,10 +92,9 @@ function createBottomUI(scene) {
     });
 
     icon.setData('action', cfg.action);
-    icon.setData('name', cfg.name);
 
     icon.on('pointerdown', () => {
-      console.log('[UI] CLICK:', cfg.name, '→', cfg.action);
+      console.log('[UI] CLICK:', cfg.key, '→', cfg.action);
       onIconClick(scene, cfg.action);
     });
 
