@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FIX-HERO-ICONS");
+console.log("GAMEJS BUILD: 2025-12-19-TUNED-DEFAULTS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -13,18 +13,30 @@ const HERO_BASE = { x: 300, y: 1000, scale: 1.4 };
 let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
+  // Hardcoded tuned positions (production defaults)
   const defaults = {
-    bgZoom: 1.0, bgPanX: 0, bgPanY: 0,
-    panelX: 0, panelY: 0, panelScale: 1.0,
-    heroX: 0, heroY: 0, heroScale: 1.0,
-    btnX: 0, btnY: 0,
-    icon0X: 0, icon0Y: 0,
-    icon1X: 0, icon1Y: 0,
-    icon2X: 0, icon2Y: 0,
-    icon3X: 0, icon3Y: 0
+    bgZoom: 0.95,
+    bgPanX: 0,
+    bgPanY: 238,
+    panelX: 0,
+    panelY: 13,
+    panelScale: 1.05,
+    heroX: 21,
+    heroY: 0,
+    heroScale: 1,
+    btnX: -245,
+    btnY: 5,
+    icon0X: 174,
+    icon0Y: 0,
+    icon1X: 171,
+    icon1Y: 427,
+    icon2X: -13,
+    icon2Y: 419,
+    icon3X: 0,
+    icon3Y: 0
   };
 
-  // Only load from localStorage when in tune mode
+  // In TUNE mode, allow localStorage override
   if (!TUNE_ENABLED) return defaults;
 
   try {
@@ -1110,9 +1122,56 @@ function create() {
         console.log("[TUNE] FIGHTBTN_BASE captured:", FIGHTBTN_BASE);
       }
 
-      // Apply tune settings after UI is created
+      // Apply tune settings after UI is created (works for both production and tune mode)
+      const tune = getTuneSettings();
+      console.log("[TUNE] Applied settings:", JSON.stringify(tune, null, 2));
+
+      // Apply production settings with delay (wait for elements to be positioned)
+      setTimeout(() => {
+        // Background
+        if (window.cityBg) {
+          const baseScale = window.cityBg.scaleX / (tune.bgZoom || 1); // Get original scale
+          window.cityBg.setScale(baseScale * tune.bgZoom);
+          window.cityBg.y += tune.bgPanY;
+          window.cityBg.x += tune.bgPanX;
+        }
+
+        // Hero
+        if (window.spineHero) {
+          window.spineHero.x = HERO_BASE.x + tune.heroX;
+          window.spineHero.y = HERO_BASE.y + tune.heroY;
+          window.spineHero.setScale(HERO_BASE.scale * tune.heroScale);
+        }
+
+        // Panel
+        if (bottomUI.bottomPanel) {
+          bottomUI.bottomPanel.y -= tune.panelY; // panelY=13 means move UP
+          bottomUI.bottomPanel.x += tune.panelX;
+          bottomUI.bottomPanel.setScale(bottomUI.bottomPanel.scaleX * tune.panelScale, bottomUI.bottomPanel.scaleY * tune.panelScale);
+        }
+
+        // Fight button
+        if (bottomUI.fightBtn && FIGHTBTN_BASE) {
+          window.fightBtnTween?.stop();
+          bottomUI.fightBtn.x = FIGHTBTN_BASE.x + tune.btnX;
+          bottomUI.fightBtn.y = FIGHTBTN_BASE.y + tune.btnY;
+        }
+
+        // Icons
+        const icons = bottomUI.icons || [];
+        icons.forEach((icon, i) => {
+          if (icon) {
+            icon.x += tune[`icon${i}X`] || 0;
+            icon.y += tune[`icon${i}Y`] || 0;
+          }
+        });
+
+        console.log("[TUNE] Production settings applied");
+      }, 150);
+
+      // Also trigger applyTune in tune mode for interactive adjustments
       if (TUNE_ENABLED && window.applyTune) {
-        setTimeout(() => window.applyTune(), 100);
+        setTimeout(() => window.applyTune(), 200);
       }
 
       // 1) Set depth/scrollFactor FIRST
