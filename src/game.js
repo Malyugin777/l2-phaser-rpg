@@ -702,8 +702,8 @@ function create() {
     cityBg.setTexture(rsKey);
     cityBg.setScale(1 / dprCap);
     // Adaptive background position (center + offset)
-    // offset: -19 X, +237 Y from center
-    cityBg.setPosition(w / 2 - 19, h / 2 + 237);
+    // offset: -19 X, +225 Y from center
+    cityBg.setPosition(w / 2 - 19, h / 2 + 225);
 
     // STEP 4: After resample
     console.log("[BG] step4 - after resample scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
@@ -1545,7 +1545,7 @@ function create() {
 
 // UI Layout config (offsets from base positions)
 const UI_LAYOUT = {
-  container: { offsetY: 17 },  // from bottom (h + offset)
+  container: { offsetY: 3 },  // from bottom (h + offset)
   panel: { scale: 0.574 },
   button: { x: 0, y: -214, scale: 0.54 },
   icons: {
@@ -1553,7 +1553,7 @@ const UI_LAYOUT = {
     // positions relative to container center
     positions: [
       { x: 42, y: -68 },   // helmet
-      { x: 17, y: -68 },   // anvil
+      { x: 18, y: -68 },   // anvil
       { x: -22, y: -71 },  // store
       { x: -41, y: -66 }   // map
     ]
