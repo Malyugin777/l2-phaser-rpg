@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-TUNED-DEFAULTS");
+console.log("GAMEJS BUILD: 2025-12-19-ICONS-FIX");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -21,34 +21,30 @@ function getTuneSettings() {
     panelX: 0,
     panelY: 13,
     panelScale: 1.05,
-    heroX: 21,
-    heroY: 0,
-    heroScale: 1,
+    heroX: 36,
+    heroY: 477,
+    heroScale: 2.17,
     btnX: -245,
-    btnY: 5,
-    icon0X: 174,
+    btnY: 4,
+    // ALL ICONS ON SAME Y LINE (offset = 0)
+    icon0X: 0,
     icon0Y: 0,
-    icon1X: 171,
-    icon1Y: 427,
-    icon2X: -13,
-    icon2Y: 419,
+    icon1X: 0,
+    icon1Y: 0,
+    icon2X: 0,
+    icon2Y: 0,
     icon3X: 0,
     icon3Y: 0
   };
 
-  // In TUNE mode, allow localStorage override
   if (!TUNE_ENABLED) return defaults;
 
   try {
     const saved = localStorage.getItem('TUNE_SETTINGS');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      console.log("[TUNE] Loaded from localStorage:", parsed);
-      return { ...defaults, ...parsed };
+      return { ...defaults, ...JSON.parse(saved) };
     }
-  } catch (e) {
-    console.log("[TUNE] Error loading settings:", e);
-  }
+  } catch (e) {}
   return defaults;
 }
 
@@ -526,6 +522,12 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
+  // TEMPORARY: Clear bad tune settings from localStorage
+  if (TUNE_ENABLED) {
+    console.log("[TUNE] Clearing old localStorage...");
+    localStorage.removeItem('TUNE_SETTINGS');
+  }
+
   // === RENDER DIAG (pixelated root-cause) ===
   const canvas = this.game?.canvas;
   if (canvas) {
