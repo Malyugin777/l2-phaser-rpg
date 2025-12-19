@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-NO-LAYOUT-ICONS");
+console.log("GAMEJS BUILD: 2025-12-19-DEBUG-ICONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1235,6 +1235,13 @@ function create() {
         // Icons stay at HARDCODED positions from createBottomUI() - do not reposition
 
         console.log("[UI] layoutUI done");
+
+        // DEBUG: Check icon positions AFTER layout
+        if (window.bottomUI?.icons) {
+          window.bottomUI.icons.forEach((ic, i) => {
+            console.log(`[DEBUG] Icon ${i} AFTER layout: x=${ic.x} y=${ic.y}`);
+          });
+        }
       };
 
       layoutUI();
