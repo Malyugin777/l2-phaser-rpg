@@ -1,7 +1,7 @@
 "use strict";
 console.log("GAMEJS BUILD: 2025-12-19-REFACTOR-FINAL");
 
-const UI_MODE = "CITY_CLEAN";
+const UI_MODE = "LEGACY";
 window.UI_MODE = UI_MODE;
 
 // Hero offset (adaptive positioning)
