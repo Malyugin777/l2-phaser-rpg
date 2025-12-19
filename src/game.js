@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-TUNE-CLEAN");
+console.log("GAMEJS BUILD: 2025-12-19-TUNED-POSITIONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -9,9 +9,8 @@ const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
 
 // Base positions for tune mode calculations (scaled for 780×1688)
-// Hero positioned by FEET (Spine origin is typically at feet)
-const GROUND_Y = 1350;  // Where hero's feet should be on screen
-const HERO_BASE = { x: 300, y: GROUND_Y, scale: 1.4 };
+// Hero position (tuned)
+const HERO_BASE = { x: 336, y: 1492, scale: 1.23 };
 let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
@@ -854,16 +853,22 @@ function create() {
 
     this.input.on('pointerup', () => { dragging = false; });
 
-    // Arrow keys
-    const moveSelected = (dx, dy) => {
+    // Arrow keys - SHIFT+Arrow moves all icons together, Arrow moves single icon
+    const moveSelected = (dx, dy, moveAllIcons = false) => {
       const { cont, btn, icons, hero } = getUI();
       if (selectedElement === 'bg') { cityBg.x += dx; cityBg.y += dy; }
       else if (selectedElement === 'panel' && cont) { cont.x += dx; cont.y += dy; }
       else if (selectedElement === 'hero' && hero) { hero.x += dx; hero.y += dy; }
       else if (selectedElement === 'btn' && btn) { btn.x += dx; btn.y += dy; }
       else if (selectedElement.startsWith('icon')) {
-        const i = parseInt(selectedElement[4]);
-        if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
+        if (moveAllIcons) {
+          // Move ALL icons together
+          icons.forEach(ic => { ic.x += dx; ic.y += dy; });
+        } else {
+          // Move single icon
+          const i = parseInt(selectedElement[4]);
+          if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
+        }
       }
       updateOverlay();
     };
@@ -941,24 +946,23 @@ function create() {
   heroStartX = HERO_BASE.x;
   heroStartY = HERO_BASE.y;
 
-  // Создаём Spine героя (feet at GROUND_Y)
+  // Создаём Spine героя (tuned position)
   if (this.spine) {
     try {
-      // Spine origin is at feet (bottom center)
-      spineHero = this.add.spine(HERO_BASE.x, GROUND_Y, 'hero', 'idle', true);
+      spineHero = this.add.spine(HERO_BASE.x, HERO_BASE.y, 'hero', 'idle', true);
       spineHero.setScale(HERO_BASE.scale);
       spineHero.setDepth(50);
       spineHero.setVisible(true);
       window.spineHero = spineHero;
       hero = spineHero;
-      console.log("[HERO] Feet at GROUND_Y=" + GROUND_Y + " x=" + HERO_BASE.x + " scale=" + HERO_BASE.scale);
+      console.log("[HERO] pos:", HERO_BASE.x, HERO_BASE.y, "scale:", HERO_BASE.scale);
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
-      hero = createHeroSprite(this, HERO_BASE.x, GROUND_Y, 0x3366cc);
+      hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
       hero.setDepth(50);
     }
   } else {
-    hero = createHeroSprite(this, HERO_BASE.x, GROUND_Y, 0x3366cc);
+    hero = createHeroSprite(this, HERO_BASE.x, HERO_BASE.y, 0x3366cc);
     hero.setDepth(50);
   }
 
@@ -1516,11 +1520,10 @@ function createBottomUI(scene) {
 
   console.log("[BOTTOMUI] Screen:", w, "x", h);
 
-  // === CREATE CONTAINER at bottom center ===
-  // Container at (w/2, h) = (390, 1688) - bottom center of screen
-  const panelContainer = scene.add.container(w / 2, h);
+  // === CREATE CONTAINER (tuned position) ===
+  const panelContainer = scene.add.container(390, 1699);
   panelContainer.setDepth(200);
-  panelContainer.setScrollFactor(0);  // Children inherit this
+  panelContainer.setScrollFactor(0);
 
   // === PANEL (relative to container) ===
   // Panel at (0, 0) with origin(0.5, 1) draws UP from container position
@@ -1529,15 +1532,14 @@ function createBottomUI(scene) {
 
   const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
   bottomPanel.setOrigin(0.5, 1);  // Bottom center
-  bottomPanel.setDisplaySize(w, 220);  // Full width, 220px height
+  bottomPanel.setScale(0.574);  // Tuned scale
   panelContainer.add(bottomPanel);  // ADD FIRST (behind other elements)
 
   console.log("[BOTTOMUI] Panel displaySize:", w, "x 220");
 
   // === FIGHT BUTTON (relative to container) ===
-  // Button at center of panel height (220/2 = 110)
-  const btnScale = 0.18;
-  const fightBtn = scene.add.image(0, -110, 'ui_btn_fight');
+  const btnScale = 0.54;
+  const fightBtn = scene.add.image(0, -214, 'ui_btn_fight');
   fightBtn.setScale(btnScale);
   fightBtn.setInteractive({ useHandCursor: true });
   panelContainer.add(fightBtn);
@@ -1558,15 +1560,12 @@ function createBottomUI(scene) {
   });
 
   // === ICONS (relative to container) ===
-  // Icons at Y=-110 (center of 220px panel)
-  // X: -290, -190 (left side) and +190, +290 (right side)
-  const iconScale = 0.09;
-  const iconY = -110;
+  const iconScale = 0.11;
 
-  const icon0 = scene.add.image(-290, iconY, 'icon_helmet').setScale(iconScale).setInteractive();
-  const icon1 = scene.add.image(-190, iconY, 'icon_anvil').setScale(iconScale).setInteractive();
-  const icon2 = scene.add.image(190, iconY, 'icon_store').setScale(iconScale).setInteractive();
-  const icon3 = scene.add.image(290, iconY, 'icon_map').setScale(iconScale).setInteractive();
+  const icon0 = scene.add.image(-272, -110, 'icon_helmet').setScale(iconScale).setInteractive();
+  const icon1 = scene.add.image(-190, -110, 'icon_anvil').setScale(iconScale).setInteractive();
+  const icon2 = scene.add.image(190, -110, 'icon_store').setScale(iconScale).setInteractive();
+  const icon3 = scene.add.image(290, -110, 'icon_map').setScale(iconScale).setInteractive();
 
   panelContainer.add([icon0, icon1, icon2, icon3]);
 
