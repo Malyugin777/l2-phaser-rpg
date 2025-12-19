@@ -700,7 +700,7 @@ function create() {
   const rsKey = makeResampledBg(this, "talkingisland_main", "talkingisland_main_rs", targetWpx, targetHpx);
   if (rsKey) {
     cityBg.setTexture(rsKey);
-    cityBg.setScale(1 / dprCap);
+    cityBg.setScale(0.46);  // Tuned scale (base 0.5 * 0.92)
     // Adaptive background position (center + offset)
     // offset: -19 X, +225 Y from center
     cityBg.setPosition(w / 2 - 19, h / 2 + 225);
@@ -983,7 +983,6 @@ function create() {
       window.spineHero = spineHero;
       hero = spineHero;
       console.log("[HERO] Adaptive pos:", heroX, heroY, "scale:", HERO_OFFSET.scale);
-      console.log("[HERO] Created:", { visible: spineHero.visible, depth: spineHero.depth, x: spineHero.x, y: spineHero.y });
     } catch (e) {
       console.warn("[Spine] Failed:", e.message);
       hero = createHeroSprite(this, heroX, heroY, 0x3366cc);
@@ -1061,12 +1060,6 @@ function create() {
         }
 
         console.log("[TUNE] Production settings applied");
-        console.log("[HERO] After tune:", {
-          visible: window.spineHero?.visible,
-          x: window.spineHero?.x,
-          y: window.spineHero?.y,
-          depth: window.spineHero?.depth
-        });
       }, 150);
 
       // Also trigger applyTune in tune mode for interactive adjustments
@@ -1560,7 +1553,7 @@ const UI_LAYOUT = {
     // positions relative to container center
     positions: [
       { x: 42, y: -68 },   // helmet
-      { x: 18, y: -68 },   // anvil
+      { x: 17, y: -68 },   // anvil
       { x: -22, y: -71 },  // store
       { x: -41, y: -66 }   // map
     ]
