@@ -6,6 +6,7 @@
 // ============================================================
 
 // UI Layout config (offsets from base positions)
+// Icons arranged left to right: helmet, anvil, store, map
 const UI_LAYOUT = {
   container: { offsetY: 3 },
   panel: { scale: 0.58 },
@@ -13,10 +14,10 @@ const UI_LAYOUT = {
   icons: {
     scale: 0.66,
     positions: [
-      { x: 68, y: -62, scale: 0.70 },   // helmet → inventory
-      { x: 17, y: -68, scale: 0.60 },   // anvil → forge
-      { x: -22, y: -71, scale: 0.66 },  // store → shop
-      { x: -41, y: -66, scale: 0.66 }   // map → map
+      { x: -68, y: -62, scale: 0.70 },  // helmet → inventory (leftmost)
+      { x: -22, y: -68, scale: 0.60 },  // anvil → forge
+      { x: 22, y: -71, scale: 0.66 },   // store → shop
+      { x: 68, y: -66, scale: 0.66 }    // map → map (rightmost)
     ]
   }
 };
@@ -99,27 +100,17 @@ function createBottomUI(scene) {
 // ============================================================
 
 function onFightButtonClick(scene) {
-  const currentMode = typeof mode !== 'undefined' ? mode : 'city';
+  console.log('[UI] Fight button → Arena');
+  if (typeof hideAllPanels === 'function') hideAllPanels();
 
-  if (currentMode === 'city') {
-    // Go to hunting location
-    console.log('[UI] Going to location...');
-    if (typeof hideAllPanels === 'function') hideAllPanels();
-    if (typeof teleportToCurrentLocation === 'function') {
-      teleportToCurrentLocation(scene);
-    } else if (typeof enterLocation === 'function') {
-      enterLocation(scene);
-    }
-  } else if (currentMode === 'location') {
-    // Attack enemy
-    console.log('[UI] Attacking...');
-    if (typeof startHeroAttack === 'function') {
-      const canAttack = !isAttacking &&
-                        (typeof enemyAlive === 'undefined' || enemyAlive) &&
-                        (typeof stats === 'undefined' || stats.hp > 0);
-      if (canAttack) {
-        startHeroAttack(scene);
-      }
+  // Open arena
+  if (typeof isArenaOpen !== 'undefined' && isArenaOpen) {
+    if (typeof hideArenaPanel === 'function') hideArenaPanel();
+  } else {
+    if (typeof showArenaPanel === 'function') {
+      showArenaPanel();
+    } else if (typeof onArenaButtonClick === 'function') {
+      onArenaButtonClick(scene);
     }
   }
 }
