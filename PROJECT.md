@@ -6,7 +6,7 @@
 **Платформа:** Telegram Mini App (TMA)
 **Движок:** Phaser 3.80.1 + SpinePlugin 4.1
 **Язык:** Vanilla JavaScript (ES6, strict mode, глобальные переменные)
-**Версия:** 1.3.0
+**Версия:** 1.5.0
 **GitHub:** https://github.com/Malyugin777/l2-phaser-rpg
 **GitHub Pages:** https://malyugin777.github.io/l2-phaser-rpg/src/
 **Telegram:** @Poketlineage_bot
@@ -19,39 +19,27 @@
 
 | Параметр | Значение | Описание |
 |----------|----------|----------|
-| UI_WIDTH | 390 | Логическая ширина |
-| UI_HEIGHT | 844 | Логическая высота |
-| Canvas | 780×1688 | При DPR=2 |
+| BASE_W | 780 | Базовая ширина игры |
+| BASE_H | 1688 | Базовая высота игры |
+| RESOLUTION | DPR | devicePixelRatio для ретина |
 
-### Phaser Config (АКТУАЛЬНЫЙ!)
+### Phaser Config (АКТУАЛЬНЫЙ v1.5.0!)
 
 ```javascript
-const isMobile = window.matchMedia("(max-width: 520px)").matches;
-
-// На десктопе DPR=1 (иначе GPU перегрузка)
-const _dpr = isMobile
-  ? Math.max(1, Math.round(window.devicePixelRatio || 1))
-  : 1;
+const BASE_W = 780;
+const BASE_H = 1688;
+const RESOLUTION = window.devicePixelRatio || 1;
 
 const config = {
   type: Phaser.AUTO,
-  width: 390 * _dpr,   // 780 при DPR=2 (мобиль), 390 (десктоп)
-  height: 844 * _dpr,  // 1688 при DPR=2 (мобиль), 844 (десктоп)
+  width: BASE_W,
+  height: BASE_H,
+  resolution: RESOLUTION,
   parent: "game-container",
   backgroundColor: 0x0a0a12,
-  fps: {
-    target: 60,
-    forceSetTimeOut: true
-  },
-  render: {
-    antialias: true,
-    pixelArt: false,
-    roundPixels: false
-  },
-  scale: {
-    mode: isMobile ? Phaser.Scale.ENVELOP : Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  },
+  fps: { target: 60, forceSetTimeOut: true },
+  render: { antialias: true, antialiasGL: true, pixelArt: false, roundPixels: false },
+  scale: { mode: Phaser.Scale.ENVELOP, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: { preload, create, update },
   plugins: {
     scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
@@ -66,8 +54,9 @@ document.addEventListener("visibilitychange", () => {
 ```
 
 **Важные моменты:**
-- **Мобиль (<520px):** ENVELOP fullscreen, DPR=2 (ретина)
-- **Десктоп:** FIT в рамке 430px, DPR=1 (GPU ~5-10% вместо 61%)
+- **Фиксированный BASE:** 780×1688 для всех устройств
+- **ENVELOP режим:** заполняет экран, может обрезать края
+- **resolution: DPR** — качество для Retina
 - `fps.target: 60` + `forceSetTimeOut` — стабильный FPS
 - `visibilitychange` — экономия ресурсов при скрытой вкладке
 
@@ -205,16 +194,15 @@ heroEnterLocation()  // run → idle (1000ms)
 ### Консольные логи при загрузке
 
 ```javascript
-GAMEJS BUILD: 2025-12-15-RETINA-FIX
-[Render] DPR: 2
-[Render] Config size: 780 x 1688
-[Render] Canvas size: 780 x 1688
-[Render] Antialias: true
-[Scale] mode: 3 expected ENVELOP= 3
-[Scale] parent size: 390 x 844
-[Scale] Canvas CSS: 390 x 844
-[Spine] Hero created at: 97.5 548.6 scale: 0.7
-[UI] NUKE mode: only bg + hero visible
+GAMEJS BUILD: 2025-12-19-ICONS-RELATIVE
+[MOBCHK] BASE 780 1688 scale 780 1688 disp 390 844
+[BOTTOMUI] Dimensions: w=780 h=1688
+[BOTTOMUI] Game config: 780x1688
+[BOTTOMUI] Icons: panelMidY=1475 iconY=1475 iconScale=0.0832 panelScale=0.2773
+[UI] Panel aspect-correct: 780 x 426 aspect: 1.83
+[ICON-DIAG] === FINAL ICON STATE ===
+[ICON-DIAG] Canvas: 780 x 1688
+[ICON-DIAG] Icon 0: { key: 'icon_helmet', pos: [310, 1475], visible: true, alpha: 1 }
 ```
 
 ### Консольные команды
@@ -257,6 +245,13 @@ window.spineHero.play('attack', false);
 | | | - localStorage сохранение настроек tune |
 | | | - Эксперименты с Phaser 3.55.2 (откат) |
 | | | - Попытки resample для качества (убрано) |
+| 1.5.0 | 19.12.2024 | **Фикс иконок + относительное позиционирование** |
+| | | - BASE_W=780, BASE_H=1688 фиксированные |
+| | | - HERO_BASE: 300,1000,1.4 для нового разрешения |
+| | | - Иконки теперь позиционируются ОТНОСИТЕЛЬНО панели |
+| | | - Удалён код repositioning иконок из layoutUI() |
+| | | - getTuneSettings() с hardcoded defaults |
+| | | - Texture diagnostics и LINEAR filter для UI |
 
 ---
 
@@ -296,11 +291,33 @@ https://malyugin777.github.io/l2-phaser-rpg/src/?tune=1
 ### Константы (game.js)
 
 ```javascript
-// Базовые позиции героя (фиксированные)
-const HERO_BASE = { x: 150, y: 500, scale: 0.7 };
+// Базовые позиции героя (для 780×1688)
+const HERO_BASE = { x: 300, y: 1000, scale: 1.4 };
 
 // Базовые позиции кнопки (захватываются при создании UI)
 let FIGHTBTN_BASE = null; // { x, y, scale }
+
+// Дефолтные настройки tune (hardcoded для production)
+function getTuneSettings() {
+  const defaults = {
+    bgZoom: 0.95,
+    bgPanX: 0,
+    bgPanY: 238,
+    panelX: 0,
+    panelY: 0,
+    panelScale: 1.0,
+    heroX: 36,
+    heroY: 477,
+    heroScale: 1.77,
+    btnX: -246,
+    btnY: 4
+  };
+  if (!TUNE_ENABLED) return defaults;
+  // В tune mode читаем из localStorage
+  const saved = localStorage.getItem('TUNE_SETTINGS');
+  if (saved) return { ...defaults, ...JSON.parse(saved) };
+  return defaults;
+}
 ```
 
 ### Формат настроек
@@ -440,6 +457,20 @@ const targetW = Math.round(origW * 0.5); // 704
 
 **Решение:** Остаёмся на Phaser 3.80.1
 
+### 6. Иконки не видны (РЕШЕНО в v1.5.0)
+
+**Проблема:** Иконки были захардкожены на y=1640 (для 1688px), но `scene.scale.height` может вернуть другое значение. На некоторых устройствах иконки оказывались за пределами экрана.
+
+**Решение:** Иконки позиционируются **относительно панели**:
+```javascript
+const panelMidY = h - panelHeight / 2;
+const iconY = panelMidY;  // Вертикальный центр панели
+```
+
+**Также исправлено:**
+- Удалён код в `layoutUI()` который переопределял позиции иконок
+- Добавлены диагностические логи `[BOTTOMUI]` и `[ICON-DIAG]`
+
 ---
 
 ## 🎨 UI Ассеты
@@ -462,26 +493,42 @@ const targetW = Math.round(origW * 0.5); // 704
 function createBottomUI(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
-  const panelScale = w / 1408;  // ≈ 0.277
+
+  // Panel с сохранением aspect ratio
+  const tex = scene.textures.get('ui_bottom');
+  const texW = tex?.source[0]?.width || 1408;
+  const texH = tex?.source[0]?.height || 768;
+  const aspect = texW / texH;
+
+  const finalW = w;
+  const finalH = Math.round(finalW / aspect);
 
   const bottomPanel = scene.add.image(w / 2, h, 'ui_bottom')
     .setOrigin(0.5, 1)
+    .setDisplaySize(finalW, finalH)
     .setDepth(100)
-    .setScale(panelScale);
+    .setScrollFactor(0);
 
-  const fightBtn = scene.add.image(fightBtnX, fightBtnY, 'ui_btn_fight')
-    .setDepth(110)
-    .setScale(panelScale * 1.2)
-    .setInteractive({ useHandCursor: true });
+  const panelScale = finalH / texH;
+  const panelMidY = h - finalH / 2;
 
-  // Пульсация кнопки боя
-  scene.tweens.add({
-    targets: fightBtn,
-    scale: panelScale * 1.25,
-    yoyo: true,
-    repeat: -1,
-    duration: 800,
-    ease: 'Sine.easeInOut'
-  });
+  // === ИКОНКИ - ОТНОСИТЕЛЬНО ПАНЕЛИ ===
+  const scaleX = w / 780;
+  const iconSpacing = 30 * scaleX;
+  const icon0X = w / 2 - 80 * scaleX;
+  const iconY = panelMidY;
+  const iconScale = panelScale * 0.3;
+
+  const icons = [
+    scene.add.image(icon0X, iconY, 'icon_helmet'),
+    scene.add.image(icon0X - iconSpacing, iconY, 'icon_anvil'),
+    scene.add.image(icon0X - iconSpacing * 2, iconY, 'icon_store'),
+    scene.add.image(icon0X - iconSpacing * 3, iconY, 'icon_map'),
+  ];
+  icons.forEach(ic => ic.setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive());
+
+  return { bottomPanel, fightBtn, icons };
 }
 ```
+
+**Важно:** Иконки позиционируются **относительно панели**, а не абсолютными координатами. Это гарантирует корректное отображение на любом размере экрана.

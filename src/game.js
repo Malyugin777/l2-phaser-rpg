@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-CLEAR-LS");
+console.log("GAMEJS BUILD: 2025-12-19-FINAL-UI");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -22,7 +22,7 @@ function getTuneSettings() {
     panelScale: 1.0,
     heroX: 36,
     heroY: 477,
-    heroScale: 1.77,
+    heroScale: 1.72,
     btnX: -246,
     btnY: 4
   };
@@ -510,9 +510,6 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
-  // CLEAR OLD SETTINGS
-  localStorage.removeItem('TUNE_SETTINGS');
-  console.log("[TUNE] localStorage cleared");
 
   // === RENDER DIAG (pixelated root-cause) ===
   const canvas = this.game?.canvas;
@@ -1410,6 +1407,52 @@ function create() {
     // Background too
     if (window.cityBg) analyzeTexture('talkingisland_main', window.cityBg);
 
+    // === ICON VISIBILITY DIAGNOSTIC ===
+    console.log("[ICON-DIAG] === FINAL ICON STATE ===");
+    const canvas = this.game.canvas;
+    const cam = this.cameras.main;
+    console.log("[ICON-DIAG] Canvas:", canvas.width, "x", canvas.height);
+    console.log("[ICON-DIAG] Game config:", this.game.config.width, "x", this.game.config.height);
+    console.log("[ICON-DIAG] Camera bounds:", cam.x, cam.y, cam.width, cam.height);
+    console.log("[ICON-DIAG] Camera scroll:", cam.scrollX, cam.scrollY);
+    console.log("[ICON-DIAG] Camera zoom:", cam.zoom);
+
+    if (window.bottomUI?.icons) {
+      window.bottomUI.icons.forEach((ic, i) => {
+        const tex = this.textures.get(ic.texture?.key);
+        const srcImg = tex?.getSourceImage?.();
+        console.log(`[ICON-DIAG] Icon ${i}:`, {
+          key: ic.texture?.key,
+          pos: [ic.x, ic.y],
+          scale: ic.scale,
+          displaySize: [ic.displayWidth?.toFixed(1), ic.displayHeight?.toFixed(1)],
+          visible: ic.visible,
+          alpha: ic.alpha,
+          depth: ic.depth,
+          scrollFactor: [ic.scrollFactorX, ic.scrollFactorY],
+          active: ic.active,
+          parent: ic.parentContainer ? 'CONTAINER' : 'scene',
+          texLoaded: !!srcImg,
+          texSize: srcImg ? [srcImg.width, srcImg.height] : null,
+        });
+      });
+
+      // Check if icons are within visible area
+      const icon0 = window.bottomUI.icons[0];
+      if (icon0) {
+        const inBounds = icon0.y >= 0 && icon0.y <= this.game.config.height;
+        console.log("[ICON-DIAG] Icon0 y=" + icon0.y + " vs game height=" + this.game.config.height + " -> " + (inBounds ? "IN BOUNDS" : "OUT OF BOUNDS"));
+      }
+    } else {
+      console.error("[ICON-DIAG] NO ICONS FOUND in window.bottomUI!");
+    }
+
+    // Check panel position
+    if (window.bottomUI?.bottomPanel) {
+      const p = window.bottomUI.bottomPanel;
+      console.log("[ICON-DIAG] Panel pos:", p.x, p.y, "visible:", p.visible, "alpha:", p.alpha);
+    }
+
     return;
   }
 
@@ -1622,6 +1665,11 @@ function createBottomUI(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
 
+  // === CRITICAL DIMENSION CHECK ===
+  console.log("[BOTTOMUI] Dimensions: w=" + w + " h=" + h);
+  console.log("[BOTTOMUI] Game config: " + scene.game.config.width + "x" + scene.game.config.height);
+  console.log("[BOTTOMUI] Icons will be at y=1627-1640, game h=" + h);
+
   // Apply LINEAR filter for slightly better quality
   const tex = scene.textures.get('ui_bottom');
   if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
@@ -1678,14 +1726,16 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  // === ICONS - HARDCODED FINAL POSITIONS ===
-  const icon0 = scene.add.image(461, 1640, 'icon_helmet').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
-  const icon1 = scene.add.image(405, 1635, 'icon_anvil').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
-  const icon2 = scene.add.image(378, 1627, 'icon_store').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
-  const icon3 = scene.add.image(369, 1632, 'icon_map').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  // === ICONS - FINAL HARDCODED POSITIONS AND SCALE ===
+  const iconScale = 0.08;
+
+  const icon0 = scene.add.image(494, 1635, 'icon_helmet').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
+  const icon1 = scene.add.image(405, 1628, 'icon_anvil').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
+  const icon2 = scene.add.image(378, 1627, 'icon_store').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
+  const icon3 = scene.add.image(369, 1628, 'icon_map').setDepth(110).setScrollFactor(0).setScale(iconScale).setInteractive();
 
   const createdIcons = [icon0, icon1, icon2, icon3];
-  console.log("[UI] Icons at: helmet(461,1640) anvil(405,1635) store(378,1627) map(369,1632)");
+  console.log("[UI] Icons FINAL: helmet(494,1635) anvil(405,1628) store(378,1627) map(369,1628) scale=0.08");
 
   // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
