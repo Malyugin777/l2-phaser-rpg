@@ -6,16 +6,16 @@
 
 // UI Layout config (offsets from base positions)
 const UI_LAYOUT = {
-  container: { offsetY: 3 },  // from bottom (h + offset)
-  panel: { scale: 0.574 },
-  button: { x: 0, y: -214, scale: 0.54 },
+  container: { offsetY: 3 },
+  panel: { scale: 1.0 },
+  button: { x: 0, y: -214, scale: 1.0 },
   icons: {
-    scale: 0.65,
+    scale: 1.0,
     positions: [
-      { x: 42, y: -68, scale: 0.65 },   // helmet
-      { x: 17, y: -68, scale: 0.61 },   // anvil
-      { x: -22, y: -71, scale: 0.65 },  // store
-      { x: -41, y: -66, scale: 0.65 }   // map
+      { x: 42, y: -68, scale: 1.0 },    // helmet
+      { x: 17, y: -68, scale: 0.95 },   // anvil
+      { x: -22, y: -71, scale: 1.0 },   // store
+      { x: -41, y: -66, scale: 1.0 }    // map
     ]
   }
 };
