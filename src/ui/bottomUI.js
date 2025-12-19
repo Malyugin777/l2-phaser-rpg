@@ -6,7 +6,6 @@
 // ============================================================
 
 // UI Layout config (offsets from base positions)
-// Icons arranged left to right: helmet, anvil, store, map
 const UI_LAYOUT = {
   container: { offsetY: 3 },
   panel: { scale: 0.58 },
@@ -14,10 +13,10 @@ const UI_LAYOUT = {
   icons: {
     scale: 0.66,
     positions: [
-      { x: -68, y: -62, scale: 0.70 },  // helmet → inventory (leftmost)
-      { x: -22, y: -68, scale: 0.60 },  // anvil → forge
-      { x: 22, y: -71, scale: 0.66 },   // store → shop
-      { x: 68, y: -66, scale: 0.66 }    // map → map (rightmost)
+      { x: 68, y: -62, scale: 0.70 },   // helmet → inventory
+      { x: 17, y: -68, scale: 0.60 },   // anvil → forge
+      { x: -22, y: -71, scale: 0.66 },  // store → shop
+      { x: -41, y: -66, scale: 0.66 }   // map → map
     ]
   }
 };
