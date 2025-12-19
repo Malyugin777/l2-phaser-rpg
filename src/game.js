@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FINAL-ICONS");
+console.log("GAMEJS BUILD: 2025-12-19-FINAL-FIX");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -13,7 +13,6 @@ const HERO_BASE = { x: 300, y: 1000, scale: 1.4 };
 let FIGHTBTN_BASE = null; // Set when bottomUI is created
 
 function getTuneSettings() {
-  // Hardcoded tuned positions (production defaults)
   const defaults = {
     bgZoom: 0.95,
     bgPanX: 0,
@@ -23,10 +22,9 @@ function getTuneSettings() {
     panelScale: 1.05,
     heroX: 36,
     heroY: 477,
-    heroScale: 2.62,
-    btnX: -225,
+    heroScale: 1.77,
+    btnX: -246,
     btnY: 4
-    // NO ICON OFFSETS - icons have fixed positions in createBottomUI
   };
 
   if (!TUNE_ENABLED) return defaults;
