@@ -824,7 +824,8 @@ function create() {
         selectedElement = 'btn';
       } else if (panel?.getBounds()?.contains(p.x, p.y)) {
         selectedElement = 'panel';
-      } else if (hero?.getBounds()?.contains(p.x, p.y)) {
+      } else if (hero && Math.abs(p.x - hero.x) < 100 && Math.abs(p.y - hero.y) < 200) {
+        // Spine doesn't have getBounds, use simple distance check
         selectedElement = 'hero';
       } else {
         selectedElement = 'bg';
@@ -1587,27 +1588,10 @@ function createBottomUI(scene) {
   window.panelContainer = panelContainer;
 
   // === DEBUG LOGS ===
-  console.log("[BOTTOMUI] Container at:", w / 2, h);
-  console.log("[BOTTOMUI] Button at: 0, -110 scale:", btnScale);
-  console.log("[BOTTOMUI] Icons at Y:", iconY, "scale:", iconScale);
-
-  console.log("[PANEL-DEBUG] bottomPanel:", {
-    exists: !!bottomPanel,
-    visible: bottomPanel.visible,
-    alpha: bottomPanel.alpha,
-    x: bottomPanel.x,
-    y: bottomPanel.y,
-    scaleX: bottomPanel.scaleX,
-    displayWidth: bottomPanel.displayWidth,
-    displayHeight: bottomPanel.displayHeight,
-    texture: bottomPanel.texture?.key,
-    inContainer: panelContainer.list.includes(bottomPanel)
-  });
-
-  console.log("[PANEL-DEBUG] Container children:");
-  panelContainer.list.forEach((child, i) => {
-    console.log("  ", i, child.type, child.texture?.key || child.name || 'unknown');
-  });
+  console.log("[BOTTOMUI] Container at:", panelContainer.x, panelContainer.y);
+  console.log("[BOTTOMUI] Button:", fightBtn.x, fightBtn.y, "scale:", btnScale);
+  console.log("[BOTTOMUI] Icons scale:", iconScale);
+  console.log("[BOTTOMUI] Panel in container:", panelContainer.list.includes(bottomPanel));
 
   return {
     bottomPanel,
