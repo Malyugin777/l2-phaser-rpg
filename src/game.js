@@ -37,7 +37,7 @@ function getTuneSettings() {
   };
 
   // Clear old tune settings - now adaptive (v6)
-  const TUNE_VERSION = 'v7';
+  const TUNE_VERSION = 'v8';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
