@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-CONTAINER-FINAL");
+console.log("GAMEJS BUILD: 2025-12-19-CONTAINER-FIX2");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1164,7 +1164,7 @@ function create() {
       setTimeout(() => {
         // Background
         if (window.cityBg) {
-          const baseScale = window.cityBg.scaleX / (tune.bgZoom || 1); // Get original scale
+          const baseScale = window.cityBg.scaleX / (tune.bgZoom || 1);
           window.cityBg.setScale(baseScale * tune.bgZoom);
           window.cityBg.y += tune.bgPanY;
           window.cityBg.x += tune.bgPanX;
@@ -1177,21 +1177,12 @@ function create() {
           window.spineHero.setScale(HERO_BASE.scale * tune.heroScale);
         }
 
-        // Panel
-        if (bottomUI.bottomPanel) {
-          bottomUI.bottomPanel.y -= tune.panelY; // panelY=13 means move UP
-          bottomUI.bottomPanel.x += tune.panelX;
-          bottomUI.bottomPanel.setScale(bottomUI.bottomPanel.scaleX * tune.panelScale, bottomUI.bottomPanel.scaleY * tune.panelScale);
+        // Container position (moves panel + button + icons together)
+        // NOTE: Don't modify children directly, container handles positioning!
+        if (window.panelContainer) {
+          window.panelContainer.x += tune.panelX;
+          window.panelContainer.y -= tune.panelY;
         }
-
-        // Fight button
-        if (bottomUI.fightBtn && FIGHTBTN_BASE) {
-          window.fightBtnTween?.stop();
-          bottomUI.fightBtn.x = FIGHTBTN_BASE.x + tune.btnX;
-          bottomUI.fightBtn.y = FIGHTBTN_BASE.y + tune.btnY;
-        }
-
-        // Icons have FIXED positions in createBottomUI - no tune offsets
 
         console.log("[TUNE] Production settings applied");
       }, 150);
@@ -1201,14 +1192,7 @@ function create() {
         setTimeout(() => window.applyTune(), 200);
       }
 
-      // 1) Set depth/scrollFactor FIRST
-      [bottomUI.bottomPanel, bottomUI.fightBtn, ...(bottomUI.icons || [])].forEach(obj => {
-        if (obj) {
-          obj.setScrollFactor?.(0);
-          if (obj === bottomUI.bottomPanel) obj.setDepth?.(100);
-          else obj.setDepth?.(110);
-        }
-      });
+      // Container handles depth/scrollFactor - no need to set on children
 
       // 2) getSafeRect — вычисляет видимую область в game-координатах
       const getSafeRect = () => {
@@ -1265,39 +1249,13 @@ function create() {
           pad: pad.toFixed(1)
         });
 
-        const ui = window.bottomUI;
-        if (!ui) return;
-
-        const { bottomPanel, fightBtn, icons } = ui;
-
-        // === PANEL (Image with origin 0.5, 1) ===
-        if (bottomPanel) {
-          bottomPanel.setOrigin(0.5, 1);
-          bottomPanel.x = Math.round(safe.centerX);
-          bottomPanel.y = Math.round(safe.bottom - pad);
-        }
-
-        // Получаем реальные границы панели после scale
-        const panelB = bottomPanel?.getBounds?.();
-        const panelMidY = panelB ? (panelB.top + panelB.bottom) / 2 : (safe.bottom - 60);
-
-        // === FIGHT BTN (pixel-snapped) ===
-        if (fightBtn && panelB) {
-          const rightPad = 80;
-          fightBtn.setOrigin(0.5, 0.5);
-          fightBtn.x = Math.round(panelB.right - rightPad);
-          fightBtn.y = Math.round(panelMidY);
-        }
-
-        // Icons stay at HARDCODED positions from createBottomUI() - do not reposition
-
-        console.log("[UI] layoutUI done");
-
-        // DEBUG: Check icon positions AFTER layout
-        if (window.bottomUI?.icons) {
-          window.bottomUI.icons.forEach((ic, i) => {
-            console.log(`[DEBUG] Icon ${i} AFTER layout: x=${ic.x} y=${ic.y}`);
-          });
+        // === CONTAINER-BASED UI ===
+        // Only move the container, don't touch children!
+        const cont = window.panelContainer;
+        if (cont) {
+          cont.x = Math.round(safe.centerX);
+          cont.y = Math.round(safe.bottom - pad);
+          console.log("[UI] layoutUI - container moved to:", cont.x, cont.y);
         }
       };
 
