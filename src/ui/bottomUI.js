@@ -97,6 +97,20 @@ function createBottomUI(scene) {
 
   window.panelContainer = panelContainer;
 
+  // Diagnostic: check texture sizes
+  console.log("[BOTTOMUI] === TEXTURE SIZES ===");
+  ICON_CONFIG.forEach((cfg) => {
+    const tex = scene.textures.get(cfg.key);
+    const src = tex?.getSourceImage();
+    console.log('[BOTTOMUI]', cfg.key, ':', src?.width, 'x', src?.height);
+  });
+  const btnTex = scene.textures.get('ui_btn_fight');
+  const btnSrc = btnTex?.getSourceImage();
+  console.log('[BOTTOMUI] ui_btn_fight:', btnSrc?.width, 'x', btnSrc?.height);
+  const panelTex = scene.textures.get('ui_bottom');
+  const panelSrc = panelTex?.getSourceImage();
+  console.log('[BOTTOMUI] ui_bottom:', panelSrc?.width, 'x', panelSrc?.height);
+
   console.log("[BOTTOMUI] Created:", icons.length, "icons");
 
   return { bottomPanel, fightBtn, icons, container: panelContainer };
