@@ -5,28 +5,32 @@
 //  With click handlers for panels
 // ============================================================
 
-// UI Layout config - tuned positions for optimized textures
+// Текстуры оптимизированы:
+// - bottom.png: 800×188
+// - btn_fight_base.png: 240×240
+// - icons: 140×140
+
 const UI_LAYOUT = {
   container: { offsetY: 3 },
-  panel: { scale: 0.58 },
-  button: { x: 0, y: -217, scale: 0.55 },
+  panel: { scale: 0.58 },  // 800 * 0.58 = ~464px
+  button: { x: 0, y: -217, scale: 0.55 },  // 240 * 0.55 = ~132px
   icons: {
     positions: [
       { x: 98, y: -57, scale: 0.76 },   // helmet → inventory
       { x: 18, y: -61, scale: 0.76 },   // anvil → forge
       { x: -14, y: -65, scale: 0.76 },  // store → shop
-      { x: -44, y: -62, scale: 0.76 }   // map → map
+      { x: -44, y: -62, scale: 0.76 }   // map → map (140 * 0.76 = ~106px)
     ]
   }
 };
 
 // Icon config - left to right on screen:
-// map(x:-280) → store(x:-140) → [FIGHT] → anvil(x:140) → helmet(x:280)
+// map(x:-44) → store(x:-14) → [FIGHT] → anvil(x:18) → helmet(x:98)
 const ICON_CONFIG = [
-  { key: 'icon_helmet', action: 'inventory' },  // pos[0] x:280 (right)
-  { key: 'icon_anvil',  action: 'forge' },      // pos[1] x:140
-  { key: 'icon_store',  action: 'shop' },       // pos[2] x:-140
-  { key: 'icon_map',    action: 'map' }         // pos[3] x:-280 (left)
+  { key: 'icon_helmet', action: 'inventory' },  // pos[0] x:98 (right)
+  { key: 'icon_anvil',  action: 'forge' },      // pos[1] x:18
+  { key: 'icon_store',  action: 'shop' },       // pos[2] x:-14
+  { key: 'icon_map',    action: 'map' }         // pos[3] x:-44 (left)
 ];
 
 function createBottomUI(scene) {

@@ -8,7 +8,7 @@ const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
 
 // Tune settings version (increment to reset saved positions)
-const TUNE_VERSION = 'v15';
+const TUNE_VERSION = 'v16';
 
 function getTuneSettings() {
   const defaults = {
