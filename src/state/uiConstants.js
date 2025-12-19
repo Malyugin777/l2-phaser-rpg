@@ -1,57 +1,57 @@
 "use strict";
 
 // ============================================================
-//  UI CONSTANTS — Константы для мобильного экрана 390×844
+//  UI CONSTANTS — Константы для мобильного экрана 780×1688
 // ============================================================
 
-// Размеры экрана
-var UI_WIDTH = 390;
-var UI_HEIGHT = 844;
+// Размеры экрана (2x от iPhone 14 Pro)
+var UI_WIDTH = 780;
+var UI_HEIGHT = 1688;
 
-// Safe Area (отступы от краёв для TMA)
-var SAFE_TOP = 67;      // отступ сверху (шапка Telegram)
-var SAFE_BOTTOM = 84;   // отступ снизу (жесты/кнопка)
-var SAFE_LEFT = 16;     // отступ слева
-var SAFE_RIGHT = 16;    // отступ справа
+// Safe Area (отступы от краёв для TMA) - doubled
+var SAFE_TOP = 134;      // отступ сверху (шапка Telegram)
+var SAFE_BOTTOM = 168;   // отступ снизу (жесты/кнопка)
+var SAFE_LEFT = 32;      // отступ слева
+var SAFE_RIGHT = 32;     // отступ справа
 
 // Центры
-var CENTER_X = 195;     // UI_WIDTH / 2
-var CENTER_Y = 422;     // UI_HEIGHT / 2
+var CENTER_X = 390;      // UI_WIDTH / 2
+var CENTER_Y = 844;      // UI_HEIGHT / 2
 
 // Игровая область (между safe areas)
-var GAME_AREA_TOP = 147;    // SAFE_TOP + 80 (место для HP/MP баров)
-var GAME_AREA_BOTTOM = 690; // UI_HEIGHT - SAFE_BOTTOM - 70
-var GAME_AREA_HEIGHT = 543; // GAME_AREA_BOTTOM - GAME_AREA_TOP
-var GAME_AREA_CENTER_Y = 418; // (GAME_AREA_TOP + GAME_AREA_BOTTOM) / 2
+var GAME_AREA_TOP = 294;     // SAFE_TOP + 160 (место для HP/MP баров)
+var GAME_AREA_BOTTOM = 1380; // UI_HEIGHT - SAFE_BOTTOM - 140
+var GAME_AREA_HEIGHT = 1086; // GAME_AREA_BOTTOM - GAME_AREA_TOP
+var GAME_AREA_CENTER_Y = 837; // (GAME_AREA_TOP + GAME_AREA_BOTTOM) / 2
 
 // Нижний док (кнопки управления)
-var BOTTOM_DOCK_Y = 690;
-var BOTTOM_DOCK_HEIGHT = 70;
+var BOTTOM_DOCK_Y = 1380;
+var BOTTOM_DOCK_HEIGHT = 140;
 
 // Панели
-var PANEL_WIDTH = 350;
-var PANEL_HEIGHT = 400;
+var PANEL_WIDTH = 700;
+var PANEL_HEIGHT = 800;
 var PANEL_X = CENTER_X;
 var PANEL_Y = GAME_AREA_CENTER_Y;
 
 // Кнопки нижнего дока
-var DOCK_BTN_WIDTH = 110;
-var DOCK_BTN_HEIGHT = 40;
-var DOCK_BTN_GAP = 10;
+var DOCK_BTN_WIDTH = 220;
+var DOCK_BTN_HEIGHT = 80;
+var DOCK_BTN_GAP = 20;
 
 // Скилл кнопки (над доком)
-var SKILL_BTN_Y = BOTTOM_DOCK_Y - 60;
-var SKILL_BTN_WIDTH = 80;
-var SKILL_BTN_HEIGHT = 50;
+var SKILL_BTN_Y = BOTTOM_DOCK_Y - 120;
+var SKILL_BTN_WIDTH = 160;
+var SKILL_BTN_HEIGHT = 100;
 
 // Верхний бар (статы)
-var TOP_BAR_Y = SAFE_TOP + 10;
-var TOP_BAR_LINE_HEIGHT = 20;
+var TOP_BAR_Y = SAFE_TOP + 20;
+var TOP_BAR_LINE_HEIGHT = 40;
 
 // Location навигация
-var LOC_NAV_Y = SAFE_TOP + 80;
-var LOC_ARROW_OFFSET = 150; // от центра
+var LOC_NAV_Y = SAFE_TOP + 160;
+var LOC_ARROW_OFFSET = 300; // от центра
 
 // NPC кнопки в городе
-var NPC_BTN_WIDTH = 100;
-var NPC_BTN_HEIGHT = 45;
+var NPC_BTN_WIDTH = 200;
+var NPC_BTN_HEIGHT = 90;

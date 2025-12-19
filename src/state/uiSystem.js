@@ -9,15 +9,15 @@ function getHeroStatsLabel() {
   const effCrit = getEffectiveCritChance();
   return (
     "Герой: Lvl " +
-    heroStats.level +
+    stats.level +
     " | HP " +
-    heroStats.hp +
+    stats.hp +
     " / " +
-    heroStats.maxHp +
+    stats.maxHp +
     " | MP " +
-    heroStats.mp +
+    stats.mp +
     " / " +
-    heroStats.maxMp +
+    stats.maxMp +
     " | ATK " +
     effMin +
     "-" +
@@ -25,22 +25,22 @@ function getHeroStatsLabel() {
     " | CRIT " +
     Math.round(effCrit * 100) +
     "% | EXP " +
-    heroStats.exp +
+    stats.exp +
     "/" +
-    heroStats.expToNext
+    stats.expToNext
   );
 }
 
 function getGoldLabel() {
-  return "Адена: " + heroGold;
+  return "Адена: " + wallet.gold;
 }
 
 function getKillsLabel() {
-  return "Убийств: " + heroKills + " (Элитных: " + heroEliteKills + ")";
+  return "Убийств: " + progress.kills + " (Элитных: " + progress.eliteKills + ")";
 }
 
 function getEtherLabel() {
-  return "Эфир: " + heroEther;
+  return "Эфир: " + wallet.ether;
 }
 
 // [LEGACY] updateEtherUI() removed - etherText no longer exists
