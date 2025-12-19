@@ -12,25 +12,23 @@ const UI_LAYOUT = {
   button: { x: 0, y: -215, scale: 0.54 },
   icons: {
     scale: 0.66,
-    // Positions go RIGHT to LEFT (x: 68 is rightmost, x: -41 is leftmost)
     positions: [
-      { x: 68, y: -62, scale: 0.70 },   // rightmost position
-      { x: 17, y: -68, scale: 0.60 },   // right of center
-      { x: -22, y: -71, scale: 0.66 },  // left of center
-      { x: -41, y: -66, scale: 0.66 }   // leftmost position
+      { x: 68, y: -62, scale: 0.70 },   // helmet (rightmost)
+      { x: 17, y: -68, scale: 0.60 },   // anvil
+      { x: -22, y: -71, scale: 0.66 },  // store
+      { x: -41, y: -66, scale: 0.66 }   // map (leftmost)
     ]
   }
 };
 
-// Icon keys and actions - ordered RIGHT to LEFT to match positions
-// Screen shows: [helmet] [anvil] [FIGHT] [store] [map]
-//               LEFT                              RIGHT
-// So rightmost (x:68) = map, leftmost (x:-41) = helmet
+// Icon config - keeps original visual positions, correct click actions
+// Visual: [map] [store] [FIGHT] [anvil] [helmet]
+//         LEFT                           RIGHT
 const ICON_CONFIG = [
-  { key: 'icon_map',    action: 'map',       name: 'map' },       // x: 68 (rightmost)
-  { key: 'icon_store',  action: 'shop',      name: 'shop' },      // x: 17
-  { key: 'icon_anvil',  action: 'forge',     name: 'forge' },     // x: -22
-  { key: 'icon_helmet', action: 'inventory', name: 'inventory' }  // x: -41 (leftmost)
+  { key: 'icon_helmet', action: 'inventory', name: 'helmet' },   // x: 68 → inventory
+  { key: 'icon_anvil',  action: 'forge',     name: 'anvil' },    // x: 17 → forge
+  { key: 'icon_store',  action: 'shop',      name: 'store' },    // x: -22 → shop
+  { key: 'icon_map',    action: 'map',       name: 'map' }       // x: -41 → map
 ];
 
 function createBottomUI(scene) {
