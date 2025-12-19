@@ -65,18 +65,18 @@ function createBottomUI(scene) {
   const iconsCfg = UI_LAYOUT.icons;
   const iconKeys = ['icon_helmet', 'icon_anvil', 'icon_store', 'icon_map'];
 
+  console.log("[BOTTOMUI] Creating icons...");
+
   const icons = [];
   iconsCfg.positions.forEach((pos, i) => {
+    console.log("[BOTTOMUI] Creating icon", i, iconKeys[i], "at", pos.x, pos.y);
+
     const icon = scene.add.image(pos.x, pos.y, iconKeys[i]);
     icon.setScale(pos.scale || iconsCfg.scale);
+    icon.setDepth(210); // Above panel and button
 
-    // Use pixel-perfect hit area based on actual icon size
-    const hitSize = 40; // Small hit area to prevent overlap
-    icon.setInteractive({
-      useHandCursor: true,
-      hitArea: new Phaser.Geom.Rectangle(-hitSize/2, -hitSize/2, hitSize, hitSize),
-      hitAreaCallback: Phaser.Geom.Rectangle.Contains
-    });
+    // Simple interactive - full image bounds
+    icon.setInteractive({ useHandCursor: true });
 
     icon.setData('action', ICON_ACTIONS[i]);
     icon.setData('index', i);
@@ -84,22 +84,26 @@ function createBottomUI(scene) {
     // Click handler
     icon.on('pointerdown', () => {
       const action = icon.getData('action');
-      console.log('[UI] Icon', i, 'clicked:', action.name, 'at pos', pos.x, pos.y);
+      console.log('[UI] Icon', i, 'clicked:', action.name);
       onIconClick(scene, action.panel);
     });
 
     // Hover effects
     icon.on('pointerover', () => {
       icon.setTint(0xaaaaaa);
-      console.log('[UI] Hover icon', i, ':', ICON_ACTIONS[i].name);
+      console.log('[UI] Hover icon', i);
     });
     icon.on('pointerout', () => icon.clearTint());
 
     icons.push(icon);
+
+    console.log("[BOTTOMUI] Icon", i, "created, size:", icon.width, "x", icon.height);
   });
 
   // Add icons to container
   icons.forEach(icon => panelContainer.add(icon));
+
+  console.log("[BOTTOMUI] All icons added to container");
   window.panelContainer = panelContainer;
 
   console.log("[BOTTOMUI] Created - Icons:", icons.length);
