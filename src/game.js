@@ -905,8 +905,9 @@ function create() {
         window.fightBtnTween?.stop();
         btn.setScale(btn.scaleX + delta);
       } else if (selectedElement.startsWith('icon')) {
-        // Scale ALL icons together
-        icons.forEach(ic => ic.setScale(ic.scaleX + delta));
+        // Scale single icon
+        const idx = parseInt(selectedElement.replace('icon', ''));
+        if (icons[idx]) icons[idx].setScale(icons[idx].scaleX + delta);
       }
       updateOverlay();
     };
@@ -1558,16 +1559,7 @@ function createBottomUI(scene) {
   fightBtn.setInteractive({ useHandCursor: true });
   panelContainer.add(fightBtn);
 
-  // Fight button pulse animation
-  const fightBtnTween = scene.tweens.add({
-    targets: fightBtn,
-    scale: btnScale * 1.05,
-    yoyo: true,
-    repeat: -1,
-    duration: 800,
-    ease: 'Sine.easeInOut'
-  });
-  window.fightBtnTween = fightBtnTween;
+  // Fight button - no pulse animation for now
 
   fightBtn.on('pointerdown', () => {
     console.log('[UI] Fight button clicked!');
