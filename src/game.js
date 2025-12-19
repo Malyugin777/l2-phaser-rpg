@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FIXED-ICONS");
+console.log("GAMEJS BUILD: 2025-12-19-FINAL-ICONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1683,41 +1683,33 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  // === ICONS - FIXED POSITIONS ON PANEL ===
-  const iconY = h - 213;  // Panel height ~425, icons at middle = 1688 - 213 = 1475
+  // === ICONS - FINAL POSITIONS (from user tuning) ===
+  const iconScale = 0.15;
 
-  // 4 icons evenly spaced across panel
   const iconPositions = [
-    { x: 100, key: 'icon_helmet', action: 'inventory' },   // Slot 1 - left
-    { x: 260, key: 'icon_anvil', action: 'forge' },        // Slot 2
-    { x: 520, key: 'icon_store', action: 'shop' },         // Slot 3
-    { x: 680, key: 'icon_map', action: 'map' },            // Slot 4 - right
+    { x: 443, y: 1635, key: 'icon_helmet', action: 'inventory' },
+    { x: 397, y: 1630, key: 'icon_anvil', action: 'forge' },
+    { x: 386, y: 1627, key: 'icon_store', action: 'shop' },
+    { x: 370, y: 1627, key: 'icon_map', action: 'map' },
   ];
 
-  const iconScale = 0.15;  // Fixed scale
-
   const createdIcons = iconPositions.map((cfg, i) => {
-    // Check texture exists
     if (!scene.textures.exists(cfg.key)) {
       console.error(`[UI] ❌ Missing texture: ${cfg.key}`);
-      const placeholder = scene.add.rectangle(cfg.x, iconY, 60, 60, 0xff0000);
-      placeholder.setDepth(110).setScrollFactor(0);
-      return placeholder;
+      return scene.add.rectangle(cfg.x, cfg.y, 60, 60, 0xff0000).setDepth(110);
     }
 
-    const icon = scene.add.image(cfg.x, iconY, cfg.key)
+    const icon = scene.add.image(cfg.x, cfg.y, cfg.key)
       .setDepth(110)
       .setScrollFactor(0)
       .setScale(iconScale)
       .setInteractive({ useHandCursor: true });
 
     icon.on('pointerdown', () => console.log('[UI] Click:', cfg.action));
-
-    console.log(`[UI] Icon ${i}: ${cfg.key} at ${cfg.x},${iconY}`);
     return icon;
   });
 
-  console.log("[UI] Icons created:", createdIcons.length, "at y=", iconY);
+  console.log("[UI] Icons hardcoded at final positions");
 
   // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
