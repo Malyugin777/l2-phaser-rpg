@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-TUNE-SCALES");
+console.log("GAMEJS BUILD: 2025-12-19-FIX-DEPTH");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -675,7 +675,7 @@ function create() {
   console.log("[BG] step2 - scaleX === scaleY?", cityBg.scaleX === cityBg.scaleY);
   console.log("[BG] step2 - display:", cityBg.displayWidth.toFixed(1), "x", cityBg.displayHeight.toFixed(1));
 
-  cityBg.setDepth(-5);
+  cityBg.setDepth(10);  // Background behind UI
   window.cityBg = cityBg;
 
   // STEP 3: Before resample
@@ -1072,8 +1072,10 @@ function create() {
 
   locationBg = this.add.image(w / 2, h / 2, "obelisk_of_victory");
   fitBackground(locationBg, this);
-  locationBg.setDepth(-5);
+  locationBg.setDepth(10);  // Same as cityBg
   locationBg.setVisible(false);
+
+  console.log("[DEPTH] cityBg:", cityBg.depth, "locationBg:", locationBg.depth);
 
   // === RENDER DIAGNOSTICS ===
   console.log("[RENDER] Scene children:", this.children?.list?.length);
@@ -1717,7 +1719,7 @@ function createBottomUI(scene) {
 
   // === CREATE CONTAINER at bottom center ===
   const panelContainer = scene.add.container(w / 2, h);
-  panelContainer.setDepth(100);
+  panelContainer.setDepth(200);  // Higher than any background
   panelContainer.setScrollFactor(0);
 
   // === PANEL (relative to container 0,0 = bottom center of screen) ===
@@ -1734,7 +1736,8 @@ function createBottomUI(scene) {
   const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
   bottomPanel.setOrigin(0.5, 1);  // Bottom center
   bottomPanel.setDisplaySize(panelW, panelH);
-  bottomPanel.setScrollFactor(0);  // STEP 1: scrollFactor on children
+  bottomPanel.setScrollFactor(0);
+  bottomPanel.setDepth(200);  // Explicit high depth
   panelContainer.add(bottomPanel);
 
   console.log("[BOTTOMUI] Panel size:", panelW, "x", panelH);
@@ -1780,6 +1783,9 @@ function createBottomUI(scene) {
 
   console.log("[BOTTOMUI] Container at:", w / 2, h);
   console.log("[BOTTOMUI] Icons at Y:", iconY, "scale:", iconScale);
+
+  // Debug depths
+  console.log("[DEPTH] container:", panelContainer.depth, "panel:", bottomPanel.depth, "btn:", fightBtn.depth);
 
   // Store container reference
   window.panelContainer = panelContainer;
