@@ -1,7 +1,7 @@
 "use strict";
 console.log("GAMEJS BUILD: 2025-12-19-REFACTOR-FINAL");
 
-const UI_MODE = "LEGACY";
+const UI_MODE = "CLEAN";  // CLEAN = new UI only, LEGACY = old UI, CITY_CLEAN = minimal
 window.UI_MODE = UI_MODE;
 
 // Hero offset (adaptive positioning)
@@ -206,6 +206,12 @@ function create() {
     return;
   }
 
+  // === CLEAN MODE ===
+  if (window.UI_MODE === "CLEAN") {
+    setupCleanMode(this);
+    return;
+  }
+
   // === FULL UI MODE ===
   setupFullUIMode(this);
 }
@@ -296,6 +302,66 @@ function setupCityCleanMode(scene) {
       const t = scene.textures.get(k);
       if (t?.setFilter) t.setFilter(LINEAR);
     });
+}
+
+function setupCleanMode(scene) {
+  if (window.preEntry?.skip) window.preEntry.skip();
+
+  safeRecalc(scene);  // Recalculate stats
+
+  // Bottom UI
+  if (typeof createBottomUI === "function") {
+    const bottomUI = createBottomUI(scene);
+    window.bottomUI = bottomUI;
+  }
+
+  // TUNE mode
+  if (typeof initTuneMode === "function") {
+    initTuneMode(scene, cityBg, HERO_OFFSET);
+  }
+  if (typeof applyTuneSettings === "function") {
+    applyTuneSettings(scene, cityBg, HERO_OFFSET);
+  }
+
+  // Force linear filter on textures
+  const LINEAR = Phaser.Textures.FilterMode.LINEAR;
+  ["talkingisland_main", "ui_bottom", "ui_btn_fight", "icon_store", "icon_anvil", "icon_helmet", "icon_map"]
+    .forEach(k => {
+      const t = scene.textures.get(k);
+      if (t?.setFilter) t.setFilter(LINEAR);
+    });
+
+  // Ensure hero visibility
+  fixHeroVisibility(scene);
+
+  // Initialize panel variables
+  initPanelVariables();
+
+  console.log("[CLEAN MODE] Initialized");
+}
+
+function fixHeroVisibility(scene) {
+  const w = scene.scale.width;
+  const h = scene.scale.height;
+
+  if (window.spineHero) {
+    window.spineHero.setVisible(true);
+    window.spineHero.setDepth(100);
+    window.spineHero.x = w / 2 + HERO_OFFSET.x;
+    window.spineHero.y = h + HERO_OFFSET.y;
+  }
+}
+
+function initPanelVariables() {
+  // Initialize all panel states
+  isInventoryOpen = false;
+  isStatsOpen = false;
+  isForgeOpen = false;
+  isQuestsOpen = false;
+  isShopOpen = false;
+  isMapOpen = false;
+  isArenaOpen = false;
+  isDungeonOpen = false;
 }
 
 function setupFullUIMode(scene) {
