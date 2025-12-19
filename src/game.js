@@ -528,7 +528,7 @@ function getEnemyHpLabel() {
 }
 
 function updateHeroUI() {
-  if (window.UI_MODE === "CITY_CLEAN") return;
+  if (window.UI_MODE === "CITY_CLEAN" || window.UI_MODE === "CLEAN") return;
   if (typeof updateSkillButtonsUI === "function") updateSkillButtonsUI();
   if (typeof updateNewUI === "function") updateNewUI();
 }
@@ -633,7 +633,7 @@ function hideAllPanels() {
 }
 
 function updateNewUI() {
-  if (window.UI_MODE === "CITY_CLEAN") return;
+  if (window.UI_MODE === "CITY_CLEAN" || window.UI_MODE === "CLEAN") return;
   if (typeof updateUIBars === "function") updateUIBars();
   if (typeof updateUIForMode === "function") updateUIForMode(mode);
   if (typeof updateSkillButtons === "function") updateSkillButtons();

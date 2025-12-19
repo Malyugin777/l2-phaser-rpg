@@ -53,8 +53,18 @@ function createBottomUI(scene) {
   const btnCfg = UI_LAYOUT.button;
   const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
   fightBtn.setScale(btnCfg.scale);
-  fightBtn.setInteractive({ useHandCursor: true });
+  fightBtn.setDepth(205); // Below icons (210)
+
+  // Limit button hit area to prevent covering icons
+  const btnHitSize = 80;
+  fightBtn.setInteractive({
+    useHandCursor: true,
+    hitArea: new Phaser.Geom.Rectangle(-btnHitSize/2, -btnHitSize/2, btnHitSize, btnHitSize),
+    hitAreaCallback: Phaser.Geom.Rectangle.Contains
+  });
   panelContainer.add(fightBtn);
+
+  console.log('[BOTTOMUI] Fight button at', btnCfg.x, btnCfg.y, 'size:', fightBtn.width, 'x', fightBtn.height);
 
   fightBtn.on('pointerdown', () => {
     console.log('[UI] Fight button clicked!');
