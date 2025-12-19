@@ -35,8 +35,8 @@ function getTuneSettings() {
     icon3X: 0, icon3Y: 0
   };
 
-  // Clear old tune settings - positions are now hardcoded (v4)
-  const TUNE_VERSION = 'v4';
+  // Clear old tune settings - positions are now hardcoded (v5)
+  const TUNE_VERSION = 'v5';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
@@ -1545,7 +1545,7 @@ function createBottomUI(scene) {
   console.log("[BOTTOMUI] Screen:", w, "x", h);
 
   // === CREATE CONTAINER (tuned position) ===
-  const panelContainer = scene.add.container(390, 1701);
+  const panelContainer = scene.add.container(390, 1705);
   panelContainer.setDepth(200);
   panelContainer.setScrollFactor(0);
 
@@ -1578,9 +1578,9 @@ function createBottomUI(scene) {
   const iconScale = 0.65;
 
   const icon0 = scene.add.image(42, -68, 'icon_helmet').setScale(iconScale).setInteractive();
-  const icon1 = scene.add.image(-2, -74, 'icon_anvil').setScale(iconScale).setInteractive();
-  const icon2 = scene.add.image(4, -80, 'icon_store').setScale(iconScale).setInteractive();
-  const icon3 = scene.add.image(-10, -80, 'icon_map').setScale(iconScale).setInteractive();
+  const icon1 = scene.add.image(17, -68, 'icon_anvil').setScale(iconScale).setInteractive();
+  const icon2 = scene.add.image(-22, -71, 'icon_store').setScale(iconScale).setInteractive();
+  const icon3 = scene.add.image(-41, -66, 'icon_map').setScale(iconScale).setInteractive();
 
   panelContainer.add([icon0, icon1, icon2, icon3]);
 
