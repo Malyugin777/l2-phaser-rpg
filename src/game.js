@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-FINAL");
+console.log("GAMEJS BUILD: 2025-12-19-FORCE-ICONS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -1683,26 +1683,14 @@ function createBottomUI(scene) {
     console.log('[UI] Fight button clicked!');
   });
 
-  // === ICONS - FINAL HARDCODED POSITIONS ===
-  const iconConfigs = [
-    { x: 461, y: 1640, key: 'icon_helmet', action: 'inventory' },
-    { x: 405, y: 1635, key: 'icon_anvil', action: 'forge' },
-    { x: 378, y: 1627, key: 'icon_store', action: 'shop' },
-    { x: 369, y: 1632, key: 'icon_map', action: 'map' },
-  ];
+  // === ICONS - HARDCODED FINAL POSITIONS - DO NOT CALCULATE ===
+  const icon0 = scene.add.image(120, 1580, 'icon_helmet').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  const icon1 = scene.add.image(270, 1580, 'icon_anvil').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  const icon2 = scene.add.image(510, 1580, 'icon_store').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
+  const icon3 = scene.add.image(660, 1580, 'icon_map').setDepth(110).setScrollFactor(0).setScale(0.08).setInteractive();
 
-  const iconScale = 0.08;  // Final working scale
-
-  const createdIcons = iconConfigs.map((cfg, i) => {
-    const icon = scene.add.image(cfg.x, cfg.y, cfg.key)
-      .setDepth(110)
-      .setScrollFactor(0)
-      .setScale(iconScale)
-      .setInteractive({ useHandCursor: true });
-
-    icon.on('pointerdown', () => console.log('[UI] Click:', cfg.action));
-    return icon;
-  });
+  const createdIcons = [icon0, icon1, icon2, icon3];
+  console.log("[UI] Icons HARDCODED at Y=1580");
 
   // NOTE: UI resample removed - Phaser 3.55.2 handles resolution properly
 
