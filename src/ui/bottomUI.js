@@ -10,12 +10,12 @@ const UI_LAYOUT = {
   panel: { scale: 0.58 },
   button: { x: 0, y: -215, scale: 0.54 },
   icons: {
-    scale: 0.70,
+    scale: 0.66,
     positions: [
       { x: 60, y: -62, scale: 0.70 },   // helmet
-      { x: 17, y: -68, scale: 0.70 },   // anvil
-      { x: -22, y: -71, scale: 0.70 },  // store
-      { x: -41, y: -66, scale: 0.70 }   // map
+      { x: 17, y: -68, scale: 0.60 },   // anvil
+      { x: -22, y: -71, scale: 0.66 },  // store
+      { x: -41, y: -66, scale: 0.66 }   // map
     ]
   }
 };
