@@ -808,11 +808,14 @@ function create() {
 
     this.input.on('pointerdown', (p) => {
       const { cont, panel, btn, icons, hero } = getUI();
+      console.log('[TUNE] Click at', p.x, p.y, 'icons:', icons.length);
 
       // Detect what was clicked
       for (let i = 0; i < icons.length; i++) {
-        if (icons[i]?.getBounds()?.contains(p.x, p.y)) {
+        const bounds = icons[i]?.getBounds();
+        if (bounds?.contains(p.x, p.y)) {
           selectedElement = 'icon' + i;
+          console.log('[TUNE] Selected icon' + i);
           dragging = true; startX = p.x; startY = p.y;
           updateOverlay(); return;
         }
@@ -826,6 +829,7 @@ function create() {
       } else {
         selectedElement = 'bg';
       }
+      console.log('[TUNE] Selected', selectedElement);
       dragging = true; startX = p.x; startY = p.y;
       updateOverlay();
     });
@@ -853,21 +857,29 @@ function create() {
 
     this.input.on('pointerup', () => { dragging = false; });
 
-    // Arrow keys - SHIFT+Arrow moves all icons together, Arrow moves single icon
-    const moveSelected = (dx, dy, moveAllIcons = false) => {
+    // Arrow keys move selected element
+    const moveSelected = (dx, dy) => {
       const { cont, btn, icons, hero } = getUI();
-      if (selectedElement === 'bg') { cityBg.x += dx; cityBg.y += dy; }
-      else if (selectedElement === 'panel' && cont) { cont.x += dx; cont.y += dy; }
-      else if (selectedElement === 'hero' && hero) { hero.x += dx; hero.y += dy; }
-      else if (selectedElement === 'btn' && btn) { btn.x += dx; btn.y += dy; }
+
+      if (selectedElement === 'bg') {
+        cityBg.x += dx; cityBg.y += dy;
+      }
+      else if (selectedElement === 'panel' && cont) {
+        cont.x += dx; cont.y += dy;
+      }
+      else if (selectedElement === 'hero' && hero) {
+        hero.x += dx; hero.y += dy;
+      }
+      else if (selectedElement === 'btn' && btn) {
+        btn.x += dx; btn.y += dy;
+      }
       else if (selectedElement.startsWith('icon')) {
-        if (moveAllIcons) {
-          // Move ALL icons together
-          icons.forEach(ic => { ic.x += dx; ic.y += dy; });
-        } else {
-          // Move single icon
-          const i = parseInt(selectedElement[4]);
-          if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
+        const idx = parseInt(selectedElement.replace('icon', ''));
+        console.log('[TUNE] Moving icon', idx, 'icons:', icons.length);
+        if (icons[idx]) {
+          icons[idx].x += dx;
+          icons[idx].y += dy;
+          console.log('[TUNE] Icon', idx, 'new pos:', icons[idx].x, icons[idx].y);
         }
       }
       updateOverlay();
