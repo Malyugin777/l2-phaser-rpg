@@ -35,8 +35,8 @@ function getTuneSettings() {
     icon3X: 0, icon3Y: 0
   };
 
-  // Clear old tune settings - positions are now hardcoded (v3)
-  const TUNE_VERSION = 'v3';
+  // Clear old tune settings - positions are now hardcoded (v4)
+  const TUNE_VERSION = 'v4';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
@@ -1119,14 +1119,13 @@ function create() {
           pad: pad.toFixed(1)
         });
 
-        // === CONTAINER-BASED UI ===
-        // Only move the container, don't touch children!
-        const cont = window.panelContainer;
-        if (cont) {
-          cont.x = Math.round(safe.centerX);
-          cont.y = Math.round(safe.bottom - pad);
-          console.log("[UI] layoutUI - container moved to:", cont.x, cont.y);
-        }
+        // Container position is hardcoded - don't move it
+        // const cont = window.panelContainer;
+        // if (cont) {
+        //   cont.x = Math.round(safe.centerX);
+        //   cont.y = Math.round(safe.bottom - pad);
+        // }
+        console.log("[UI] layoutUI - skipped (positions hardcoded)");
       };
 
       layoutUI();
