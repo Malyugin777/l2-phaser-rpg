@@ -37,7 +37,7 @@ function getTuneSettings() {
   };
 
   // Clear old tune settings - now adaptive (v6)
-  const TUNE_VERSION = 'v10';
+  const TUNE_VERSION = 'v11';
   const savedVersion = localStorage.getItem('TUNE_VERSION');
   if (savedVersion !== TUNE_VERSION) {
     localStorage.removeItem('TUNE_SETTINGS');
@@ -702,8 +702,8 @@ function create() {
     cityBg.setTexture(rsKey);
     cityBg.setScale(0.48);  // Tuned scale
     // Adaptive background position (center + offset)
-    // offset: +2 X, +225 Y from center
-    cityBg.setPosition(w / 2 + 2, h / 2 + 225);
+    // offset: +2 X, +178 Y from center
+    cityBg.setPosition(w / 2 + 2, h / 2 + 178);
 
     // STEP 4: After resample
     console.log("[BG] step4 - after resample scale:", cityBg.scaleX.toFixed(4), cityBg.scaleY.toFixed(4));
