@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-ADAPTIVE");
+console.log("GAMEJS BUILD: 2025-12-19-REFACTOR-PHASE2");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -308,124 +308,8 @@ function makeResampledBg(scene, srcKey, outKey, targetW, targetH) {
   return outKey;
 }
 
-// ================== SPINE АНИМАЦИИ ==================
-// Доступные анимации в hero.json:
-// attack, crouch, crouch-from fall, fall, head-turn,
-// idle, idle-from fall, jump, morningstar pose,
-// run, run-from fall, walk
-
-// Проиграть анимацию
-function playAnim(animName, loop) {
-  if (!window.spineHero) return false;
-  try {
-    window.spineHero.play(animName, loop);
-    return true;
-  } catch(e) {
-    console.warn("[Spine] Animation not found:", animName);
-    return false;
-  }
-}
-
-// Атака героя
-function heroAttack() {
-  if (!window.spineHero) return;
-  if (playAnim('attack', false)) {
-    setTimeout(function() { heroIdle(); }, 400);
-  }
-}
-
-// Герой получает урон (используем fall кратко)
-function heroHit() {
-  if (!window.spineHero) return;
-  if (playAnim('fall', false)) {
-    setTimeout(function() { heroIdle(); }, 200);
-  }
-}
-
-// Герой умирает
-function heroDeath() {
-  if (!window.spineHero) return;
-  playAnim('fall', false);
-}
-
-// Герой бежит
-function heroRun() {
-  if (!window.spineHero) return;
-  playAnim('run', true);
-}
-
-// Герой идёт
-function heroWalk() {
-  if (!window.spineHero) return;
-  playAnim('walk', true);
-}
-
-// Герой в покое
-function heroIdle() {
-  if (!window.spineHero) return;
-  playAnim('idle', true);
-}
-
-// Герой сидит/отдыхает
-function heroCrouch() {
-  if (!window.spineHero) return;
-  playAnim('crouch', true);
-}
-
-// Герой прыгает
-function heroJump() {
-  if (!window.spineHero) return;
-  if (playAnim('jump', false)) {
-    setTimeout(function() { heroIdle(); }, 500);
-  }
-}
-
-// Критический удар (jump → attack → idle)
-function heroCriticalHit() {
-  if (!window.spineHero) return;
-  if (playAnim('jump', false)) {
-    setTimeout(function() {
-      if (playAnim('attack', false)) {
-        setTimeout(function() { heroIdle(); }, 400);
-      }
-    }, 300);
-  }
-}
-
-// Герой входит на локацию (run → idle)
-function heroEnterLocation() {
-  if (!window.spineHero) return;
-  playAnim('run', true);
-  setTimeout(function() { heroIdle(); }, 1000);
-}
-
-// Поворот головы (для города)
-function heroHeadTurn() {
-  if (!window.spineHero) return;
-  if (playAnim('head-turn', false)) {
-    setTimeout(function() { heroIdle(); }, 1500);
-  }
-}
-
-// Переместить героя
-function moveHeroTo(x, y, anim) {
-  if (window.spineHero) {
-    window.spineHero.setPosition(x, y);
-    window.spineHero.setVisible(true);
-    if (anim) {
-      playAnim(anim, true);
-    } else {
-      heroIdle();
-    }
-  }
-}
-
-// Скрыть героя
-function hideHero() {
-  if (window.spineHero) window.spineHero.setVisible(false);
-}
-
 // ================== СПРАЙТ ГЕРОЯ (простой человечек) ==================
+// NOTE: Spine animations moved to core/spineAnimations.js
 
 function createHeroSprite(scene, x, y, color) {
   const g = scene.add.graphics();
@@ -1541,86 +1425,8 @@ function create() {
   updateHeroUI();
 }
 
-// ================== НИЖНЯЯ ПАНЕЛЬ UI (bottom.png) ==================
-
-// UI Layout config (offsets from base positions)
-const UI_LAYOUT = {
-  container: { offsetY: 3 },  // from bottom (h + offset)
-  panel: { scale: 0.574 },
-  button: { x: 0, y: -214, scale: 0.54 },
-  icons: {
-    scale: 0.65,
-    // positions relative to container center
-    positions: [
-      { x: 42, y: -68, scale: 0.65 },   // helmet
-      { x: 17, y: -68, scale: 0.61 },   // anvil (smaller texture)
-      { x: -22, y: -71, scale: 0.65 },  // store
-      { x: -41, y: -66, scale: 0.65 }   // map
-    ]
-  }
-};
-
-function createBottomUI(scene) {
-  const w = scene.scale.width;
-  const h = scene.scale.height;
-
-  console.log("[BOTTOMUI] Screen:", w, "x", h);
-
-  // === CONTAINER (adaptive: center-X, bottom + offset) ===
-  const panelContainer = scene.add.container(
-    w / 2,
-    h + UI_LAYOUT.container.offsetY
-  );
-  panelContainer.setDepth(200);
-  panelContainer.setScrollFactor(0);
-
-  // === PANEL (relative to container) ===
-  const tex = scene.textures.get('ui_bottom');
-  if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
-
-  const bottomPanel = scene.add.image(0, 0, 'ui_bottom');
-  bottomPanel.setOrigin(0.5, 1);  // Draws UP from container
-  bottomPanel.setScale(UI_LAYOUT.panel.scale);
-  panelContainer.add(bottomPanel);
-
-  // === FIGHT BUTTON (relative to container) ===
-  const btnCfg = UI_LAYOUT.button;
-  const fightBtn = scene.add.image(btnCfg.x, btnCfg.y, 'ui_btn_fight');
-  fightBtn.setScale(btnCfg.scale);
-  fightBtn.setInteractive({ useHandCursor: true });
-  panelContainer.add(fightBtn);
-
-  fightBtn.on('pointerdown', () => {
-    console.log('[UI] Fight button clicked!');
-  });
-
-  // === ICONS (relative to container) ===
-  const iconsCfg = UI_LAYOUT.icons;
-  const iconKeys = ['icon_helmet', 'icon_anvil', 'icon_store', 'icon_map'];
-  const icons = iconsCfg.positions.map((pos, i) => {
-    return scene.add.image(pos.x, pos.y, iconKeys[i])
-      .setScale(pos.scale || iconsCfg.scale)  // individual scale or default
-      .setInteractive();
-  });
-  panelContainer.add(icons);
-
-  // Store container reference
-  window.panelContainer = panelContainer;
-
-  // === DEBUG LOGS ===
-  console.log("[BOTTOMUI] Adaptive container:", w/2, h + UI_LAYOUT.container.offsetY);
-  console.log("[BOTTOMUI] Button:", btnCfg.x, btnCfg.y, "scale:", btnCfg.scale);
-  console.log("[BOTTOMUI] Icons:", icons.length, "scale:", iconsCfg.scale);
-
-  return {
-    bottomPanel,
-    fightBtn,
-    icons,
-    container: panelContainer
-  };
-}
-
 // ================== UI-ХЕЛПЕРЫ ДЛЯ ТЕКСТА ==================
+// NOTE: createBottomUI moved to ui/bottomUI.js
 
 function getHeroStatsLabel() {
   const spText = typeof stats.sp === "number" ? stats.sp : 0;
