@@ -35,6 +35,15 @@ function getTuneSettings() {
     icon3X: 0, icon3Y: 0
   };
 
+  // Clear old tune settings - positions are now hardcoded (v2)
+  const TUNE_VERSION = 'v2';
+  const savedVersion = localStorage.getItem('TUNE_VERSION');
+  if (savedVersion !== TUNE_VERSION) {
+    localStorage.removeItem('TUNE_SETTINGS');
+    localStorage.setItem('TUNE_VERSION', TUNE_VERSION);
+    console.log('[TUNE] Cleared old settings, now using hardcoded positions');
+  }
+
   if (!TUNE_ENABLED) return defaults;
 
   try {
