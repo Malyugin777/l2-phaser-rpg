@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-PANEL-FIX");
+console.log("GAMEJS BUILD: 2025-12-19-CLEAR-LS");
 
 const UI_MODE = "CITY_CLEAN"; // "LEGACY" | "CITY_CLEAN"
 window.UI_MODE = UI_MODE;
@@ -510,6 +510,10 @@ function update(time, delta) {
 // ================== CREATE ==================
 
 function create() {
+  // CLEAR OLD SETTINGS
+  localStorage.removeItem('TUNE_SETTINGS');
+  console.log("[TUNE] localStorage cleared");
+
   // === RENDER DIAG (pixelated root-cause) ===
   const canvas = this.game?.canvas;
   if (canvas) {
