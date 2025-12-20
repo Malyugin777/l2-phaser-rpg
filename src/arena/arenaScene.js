@@ -2,6 +2,7 @@
 
 // ============================================================
 //  ARENA SCENE — 2-Screen Wide World (IIFE to avoid conflicts)
+//  Studio Quality: Cinematic camera, proper ground positioning
 // ============================================================
 
 (function() {
@@ -16,15 +17,15 @@ let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
   worldMultiplier: 2,      // World = 2x screen width
-  fightOffset: 110,        // Distance from center for each fighter
-  engageDistance: 220,     // Stop when this close
-  spawnMargin: 0.15,       // Spawn at 15% from edge
-  groundY: 0.55,           // Ground at 55% screen height
-  runSpeed: 2000,          // Run duration (ms)
+  fightOffset: 150,        // Distance from center for each fighter
+  engageDistance: 300,     // Stop when this close
+  spawnMargin: 0.30,       // Spawn at 30% from edge
+  groundY: 0.38,           // Ground at 38% from top (fence line)
+  runSpeed: 2500,          // Slower for drama
   vsScreenDuration: 1500,
   fadeTime: 300,
-  engagePause: 200,
-  fighterScale: 1.0
+  engagePause: 300,
+  fighterScale: 0.8        // Slightly smaller
 };
 
 let BASE_W, BASE_H, WORLD_W, WORLD_H, GROUND_Y;
@@ -42,7 +43,6 @@ function startArena(scene, enemyData) {
   BASE_H = scene.scale.height;
   WORLD_W = BASE_W * ARENA_CONFIG.worldMultiplier;
   WORLD_H = BASE_H;
-  GROUND_Y = BASE_H * ARENA_CONFIG.groundY;
 
   console.log("[ARENA] WORLD_W:", WORLD_W, "BASE_W:", BASE_W);
 
@@ -118,21 +118,29 @@ function showVSScreen(scene, enemyData, onComplete) {
 function setupArenaWorld(scene) {
   console.log("[ARENA] Setup world");
 
+  // Camera bounds = world size
   scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
 
+  // IMPORTANT: Reset camera zoom to 1
+  scene.cameras.main.setZoom(1);
+
+  // Background centered in world, scaled to fit WIDTH
   arenaBgSprite = scene.add.image(WORLD_W / 2, BASE_H / 2, 'arena_village');
 
-  const scaleW = WORLD_W / arenaBgSprite.width;
-  const scaleH = BASE_H / arenaBgSprite.height;
-  const bgScale = Math.max(scaleW, scaleH);
+  // Scale: fit WIDTH of world (not zoom to fill)
+  const bgScale = WORLD_W / arenaBgSprite.width;
+  arenaBgSprite.setScale(bgScale);
+  arenaBgSprite.setOrigin(0.5, 0.5);
+  arenaBgSprite.setDepth(10);
+  arenaBgSprite.setScrollFactor(1);
 
-  arenaBgSprite.setScale(bgScale).setOrigin(0.5, 0.5).setDepth(10).setScrollFactor(1);
+  console.log("[ARENA] BG scale:", bgScale.toFixed(3),
+    "size:", arenaBgSprite.displayWidth.toFixed(0), "x", arenaBgSprite.displayHeight.toFixed(0));
 
-  console.log("[ARENA] bgScale:", bgScale.toFixed(3));
-
-  arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 80, '[ Выход ]', {
-    fontSize: '24px', color: '#ffffff', backgroundColor: '#333333',
-    padding: { x: 20, y: 10 }
+  // Exit button (fixed to screen)
+  arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 100, '[ Выход ]', {
+    fontSize: '28px', color: '#ffffff', backgroundColor: '#222222',
+    padding: { x: 24, y: 12 }
   });
   arenaExitBtnSprite.setOrigin(0.5).setDepth(300).setScrollFactor(0);
   arenaExitBtnSprite.setInteractive({ useHandCursor: true });
@@ -147,35 +155,44 @@ function spawnFighters(scene, enemyData) {
   const playerStartX = BASE_W * ARENA_CONFIG.spawnMargin;
   const enemyStartX = WORLD_W - BASE_W * ARENA_CONFIG.spawnMargin;
 
-  console.log("[ARENA] Spawn Player X:", playerStartX, "Enemy X:", enemyStartX);
+  // Calculate ground Y from background (fence line)
+  const bgTop = BASE_H / 2 - (arenaBgSprite.displayHeight / 2);
+  const fenceY = bgTop + arenaBgSprite.displayHeight * 0.65;  // 65% down the BG = fence line
+  GROUND_Y = fenceY;
 
-  // Player (left)
+  console.log("[ARENA] Ground Y:", GROUND_Y.toFixed(0), "BG top:", bgTop.toFixed(0));
+
+  // Player (left side)
   if (scene.spine) {
     try {
       arenaPlayerSprite = scene.add.spine(playerStartX, GROUND_Y, 'hero', 'idle', true);
       arenaPlayerSprite.setScale(ARENA_CONFIG.fighterScale);
     } catch(e) {
-      arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 80, 150, 0x3366cc);
+      arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 60, 120, 0x3366cc);
     }
   } else {
-    arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 80, 150, 0x3366cc);
+    arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 60, 120, 0x3366cc);
   }
   arenaPlayerSprite.setDepth(100).setScrollFactor(1);
 
-  // Enemy (right, flipped)
+  // Enemy (right side, flipped)
   if (scene.spine) {
     try {
       arenaEnemySprite = scene.add.spine(enemyStartX, GROUND_Y, 'hero', 'idle', true);
       arenaEnemySprite.setScale(-ARENA_CONFIG.fighterScale, ARENA_CONFIG.fighterScale);
     } catch(e) {
-      arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 80, 150, 0xcc3333);
+      arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 60, 120, 0xcc3333);
     }
   } else {
-    arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 80, 150, 0xcc3333);
+    arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 60, 120, 0xcc3333);
   }
   arenaEnemySprite.setDepth(100).setScrollFactor(1);
 
-  scene.cameras.main.scrollX = Math.max(0, playerStartX - BASE_W / 2);
+  // === CINEMATIC CAMERA START ===
+  // Start camera on PLAYER (left side)
+  scene.cameras.main.scrollX = 0;
+
+  console.log("[ARENA] Spawned at Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
 }
 
 // ============================================================
@@ -189,36 +206,44 @@ function startRunIn(scene) {
   const targetPlayerX = WORLD_W / 2 - ARENA_CONFIG.fightOffset;
   const targetEnemyX = WORLD_W / 2 + ARENA_CONFIG.fightOffset;
 
+  // Start run animations
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('run', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('run', true);
 
+  // Move fighters with smooth easing
   scene.tweens.add({
     targets: arenaPlayerSprite,
     x: targetPlayerX,
     duration: ARENA_CONFIG.runSpeed,
-    ease: 'Linear'
+    ease: 'Sine.easeInOut'
   });
 
   scene.tweens.add({
     targets: arenaEnemySprite,
     x: targetEnemyX,
     duration: ARENA_CONFIG.runSpeed,
-    ease: 'Linear'
+    ease: 'Sine.easeInOut'
   });
 }
 
 // ============================================================
-//  UPDATE (Camera Follow Midpoint)
+//  UPDATE (Camera Follow Midpoint with LERP)
 // ============================================================
 
 function updateArena(scene) {
   if (!arenaActive || arenaState !== "RUN_IN") return;
 
+  // Camera follows midpoint with LERP (smooth)
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
   const targetScrollX = midX - BASE_W / 2;
   const clampedX = Math.max(0, Math.min(targetScrollX, WORLD_W - BASE_W));
-  scene.cameras.main.scrollX = clampedX;
 
+  // Smooth camera movement (lerp)
+  const currentX = scene.cameras.main.scrollX;
+  const lerpSpeed = 0.08;  // 8% per frame = smooth
+  scene.cameras.main.scrollX = currentX + (clampedX - currentX) * lerpSpeed;
+
+  // Check engage distance
   const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
   if (distance <= ARENA_CONFIG.engageDistance) {
     onEngageDistance(scene);
@@ -261,6 +286,7 @@ function exitArena(scene) {
 
   scene.cameras.main.setBounds(0, 0, BASE_W, BASE_H);
   scene.cameras.main.scrollX = 0;
+  scene.cameras.main.setZoom(1);
 
   showCity();
   arenaState = "NONE";
