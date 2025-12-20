@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-19-REFACTOR-FINAL");
+console.log("GAMEJS BUILD: 2025-12-20-ARENA-PHASE1");
 
 const UI_MODE = "CLEAN";  // CLEAN = new UI only, LEGACY = old UI, CITY_CLEAN = minimal
 window.UI_MODE = UI_MODE;
@@ -144,6 +144,7 @@ function preload() {
   this.load.image("northern_territory", "assets/backgrounds/northern_territory.png");
   this.load.image("elven_ruins", "assets/backgrounds/elven_ruins.png");
   this.load.image("orc_barracks", "assets/backgrounds/orc_barracks.png");
+  this.load.image("arena_village", "assets/backgrounds/arena_village.png");
 
   // UI
   this.load.image("map_world", "assets/ui/map_world.png");

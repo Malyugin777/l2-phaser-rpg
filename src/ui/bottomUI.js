@@ -123,16 +123,15 @@ function createBottomUI(scene) {
 
 function onFightButtonClick(scene) {
   console.log('[UI] Fight button → Arena');
-  if (typeof hideAllPanels === 'function') hideAllPanels();
 
-  if (typeof isArenaOpen !== 'undefined' && isArenaOpen) {
-    if (typeof hideArenaPanel === 'function') hideArenaPanel();
-  } else {
-    if (typeof showArenaPanel === 'function') {
-      showArenaPanel();
-    } else if (typeof onArenaButtonClick === 'function') {
-      onArenaButtonClick(scene);
-    }
+  // Тестовый противник
+  const testEnemy = {
+    name: "Тень воина",
+    level: window.stats?.level || 1
+  };
+
+  if (typeof startArena === 'function') {
+    startArena(scene, testEnemy);
   }
 }
 
