@@ -1,13 +1,16 @@
 "use strict";
 
 // ============================================================
-//  ARENA SCENE — Cinematic Auto-Battler
+//  ARENA SCENE — Cinematic Auto-Battler (IIFE to avoid conflicts)
 // ============================================================
 
+(function() {
+
 let arenaActive = false;
-let arenaBg = null;
-let vsOverlay = null;
-let vsText = null;
+let arenaBackground = null;
+let arenaVsOverlay = null;
+let arenaVsText = null;
+let arenaExitBtn = null;
 
 // Arena config
 const ARENA_CONFIG = {
@@ -57,10 +60,10 @@ function showVSScreen(scene, enemyData, onComplete) {
   const h = scene.scale.height;
 
   // Затемнение
-  vsOverlay = scene.add.rectangle(w/2, h/2, w, h, 0x000000, 0.9);
-  vsOverlay.setDepth(500);
-  vsOverlay.setScrollFactor(0);
-  vsOverlay.setAlpha(0);
+  arenaVsOverlay = scene.add.rectangle(w/2, h/2, w, h, 0x000000, 0.9);
+  arenaVsOverlay.setDepth(500);
+  arenaVsOverlay.setScrollFactor(0);
+  arenaVsOverlay.setAlpha(0);
 
   // VS текст
   const playerName = window.profile?.name || "Игрок";
@@ -70,7 +73,7 @@ function showVSScreen(scene, enemyData, onComplete) {
 
   const vsContent = `${playerName}  Lv.${playerLevel}\n\n⚔️ VS ⚔️\n\n${enemyName}  Lv.${enemyLevel}`;
 
-  vsText = scene.add.text(w/2, h/2, vsContent, {
+  arenaVsText = scene.add.text(w/2, h/2, vsContent, {
     fontFamily: 'Arial',
     fontSize: '32px',
     color: '#ffffff',
@@ -78,14 +81,14 @@ function showVSScreen(scene, enemyData, onComplete) {
     stroke: '#000000',
     strokeThickness: 4
   });
-  vsText.setOrigin(0.5);
-  vsText.setDepth(501);
-  vsText.setScrollFactor(0);
-  vsText.setAlpha(0);
+  arenaVsText.setOrigin(0.5);
+  arenaVsText.setDepth(501);
+  arenaVsText.setScrollFactor(0);
+  arenaVsText.setAlpha(0);
 
   // Fade in
   scene.tweens.add({
-    targets: [vsOverlay, vsText],
+    targets: [arenaVsOverlay, arenaVsText],
     alpha: 1,
     duration: ARENA_CONFIG.vs.fadeTime,
     onComplete: () => {
@@ -93,14 +96,14 @@ function showVSScreen(scene, enemyData, onComplete) {
       scene.time.delayedCall(ARENA_CONFIG.vs.duration, () => {
         // Fade out
         scene.tweens.add({
-          targets: [vsOverlay, vsText],
+          targets: [arenaVsOverlay, arenaVsText],
           alpha: 0,
           duration: ARENA_CONFIG.vs.fadeTime,
           onComplete: () => {
-            vsOverlay.destroy();
-            vsText.destroy();
-            vsOverlay = null;
-            vsText = null;
+            arenaVsOverlay.destroy();
+            arenaVsText.destroy();
+            arenaVsOverlay = null;
+            arenaVsText = null;
             if (onComplete) onComplete();
           }
         });
@@ -120,29 +123,25 @@ function showArenaBackground(scene) {
   console.log("[ARENA] Showing background");
 
   // Создаём фон арены
-  arenaBg = scene.add.image(w/2, h/2, 'arena_village');
-  arenaBg.setScale(ARENA_CONFIG.bg.scale);
-  arenaBg.setDepth(50);
-  arenaBg.setScrollFactor(0);
+  arenaBackground = scene.add.image(w/2, h/2, 'arena_village');
+  arenaBackground.setScale(ARENA_CONFIG.bg.scale);
+  arenaBackground.setDepth(50);
+  arenaBackground.setScrollFactor(0);
 
-  // Центрируем по вертикали (фон широкий, показываем центр)
-  // Можно настроить Y offset если нужно
-
-  console.log("[ARENA] Background ready, size:", arenaBg.displayWidth, "x", arenaBg.displayHeight);
+  console.log("[ARENA] Background ready, size:", arenaBackground.displayWidth, "x", arenaBackground.displayHeight);
 
   // Временная кнопка выхода (для теста)
-  const exitBtn = scene.add.text(w/2, h - 100, '[ Выход ]', {
+  arenaExitBtn = scene.add.text(w/2, h - 100, '[ Выход ]', {
     fontSize: '24px',
     color: '#ffffff',
     backgroundColor: '#333333',
     padding: { x: 20, y: 10 }
   });
-  exitBtn.setOrigin(0.5);
-  exitBtn.setDepth(300);
-  exitBtn.setScrollFactor(0);
-  exitBtn.setInteractive({ useHandCursor: true });
-  exitBtn.on('pointerdown', () => {
-    exitBtn.destroy();
+  arenaExitBtn.setOrigin(0.5);
+  arenaExitBtn.setDepth(300);
+  arenaExitBtn.setScrollFactor(0);
+  arenaExitBtn.setInteractive({ useHandCursor: true });
+  arenaExitBtn.on('pointerdown', () => {
     exitArena(scene);
   });
 
@@ -159,9 +158,13 @@ function exitArena(scene) {
   console.log("[ARENA] Exiting...");
 
   // Убираем арену
-  if (arenaBg) {
-    arenaBg.destroy();
-    arenaBg = null;
+  if (arenaBackground) {
+    arenaBackground.destroy();
+    arenaBackground = null;
+  }
+  if (arenaExitBtn) {
+    arenaExitBtn.destroy();
+    arenaExitBtn = null;
   }
 
   // Возвращаем город
@@ -180,3 +183,5 @@ window.startArena = startArena;
 window.exitArena = exitArena;
 
 console.log("[ArenaScene] Module loaded");
+
+})();
