@@ -26,7 +26,13 @@ const ARENA_CONFIG = {
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
-  fighterScale: 0.8        // Slightly smaller
+  fighterScale: 0.8,       // Slightly smaller
+  // Camera settings
+  camera: {
+    lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
+    startDelay: 300,       // Wait before camera starts moving (ms)
+    lockOnEngage: true     // Lock camera when fighters meet
+  }
 };
 
 let BASE_W, BASE_H, WORLD_W, WORLD_H, GROUND_Y;
@@ -92,7 +98,8 @@ function createArenaTuneUI(scene) {
     1: BG | 2: Ground | 3: Player | 4: Enemy | 5: Fight<br>
     Up/Down: Move Y | Left/Right: Move X | Q/E: Scale<br>
     SPACE: Test run | R: Reset positions<br>
-    S: SAVE | L: Load defaults
+    C: Camera to player | V: Camera center<br>
+    S: SAVE
     </small>
     <div style="margin-top:10px;display:flex;gap:5px;">
       <button id="arena-tune-save" style="flex:1;padding:8px;cursor:pointer">SAVE</button>
@@ -216,6 +223,21 @@ function setupArenaTuneKeys(scene) {
   // S = save
   scene.input.keyboard.on('keydown-S', () => {
     saveArenaTuneSettings();
+  });
+
+  // C = camera to player
+  scene.input.keyboard.on('keydown-C', () => {
+    if (arenaPlayerSprite) {
+      const camX = Math.max(0, arenaPlayerSprite.x - BASE_W * 0.35);
+      scene.cameras.main.scrollX = camX;
+      console.log("[ARENA TUNE] Camera to player:", camX.toFixed(0));
+    }
+  });
+
+  // V = center camera
+  scene.input.keyboard.on('keydown-V', () => {
+    scene.cameras.main.scrollX = (WORLD_W - BASE_W) / 2;
+    console.log("[ARENA TUNE] Camera centered");
   });
 }
 
@@ -466,10 +488,12 @@ function spawnFighters(scene, enemyData) {
   arenaEnemySprite.setDepth(100).setScrollFactor(1);
 
   // === CINEMATIC CAMERA START ===
-  // Start camera on PLAYER (left side)
-  scene.cameras.main.scrollX = 0;
+  // Start camera focused on player (left side, player in center-left of screen)
+  const cameraStartX = Math.max(0, arenaPlayerSprite.x - BASE_W * 0.35);
+  scene.cameras.main.scrollX = cameraStartX;
 
   console.log("[ARENA] Spawned at Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
+  console.log("[ARENA] Camera start X:", cameraStartX.toFixed(0));
 
   // Draw ground line in tune mode
   if (ARENA_TUNE_ENABLED) {
@@ -513,22 +537,30 @@ function startRunIn(scene) {
 // ============================================================
 
 function updateArena(scene) {
-  if (!arenaActive || arenaState !== "RUN_IN") return;
+  if (!arenaActive) return;
 
-  // Camera follows midpoint with LERP (smooth)
-  const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
-  const targetScrollX = midX - BASE_W / 2;
-  const clampedX = Math.max(0, Math.min(targetScrollX, WORLD_W - BASE_W));
+  if (arenaState === "RUN_IN") {
+    // Calculate midpoint between fighters
+    const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
 
-  // Smooth camera movement (lerp)
-  const currentX = scene.cameras.main.scrollX;
-  const lerpSpeed = 0.08;
-  scene.cameras.main.scrollX = currentX + (clampedX - currentX) * lerpSpeed;
+    // Target: center camera on midpoint
+    const targetScrollX = midX - BASE_W / 2;
 
-  // Check engage distance
-  const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
-  if (distance <= ARENA_CONFIG.engageDistance) {
-    onEngageDistance(scene);
+    // Clamp to world bounds
+    const clampedX = Math.max(0, Math.min(targetScrollX, WORLD_W - BASE_W));
+
+    // Smooth lerp (cinematic feel)
+    const currentX = scene.cameras.main.scrollX;
+    const lerpSpeed = ARENA_CONFIG.camera?.lerpSpeed || 0.06;
+    const newX = currentX + (clampedX - currentX) * lerpSpeed;
+
+    scene.cameras.main.scrollX = newX;
+
+    // Check engage distance
+    const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
+    if (distance <= ARENA_CONFIG.engageDistance) {
+      onEngageDistance(scene);
+    }
   }
 }
 
@@ -541,12 +573,21 @@ function onEngageDistance(scene) {
   arenaState = "ENGAGE";
   console.log("[ARENA] State: ENGAGE");
 
+  // Stop fighter tweens
   scene.tweens.killTweensOf(arenaPlayerSprite);
   scene.tweens.killTweensOf(arenaEnemySprite);
 
+  // Switch to idle
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
 
+  // === LOCK CAMERA at final position ===
+  const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
+  const finalScrollX = Math.max(0, Math.min(midX - BASE_W / 2, WORLD_W - BASE_W));
+  scene.cameras.main.scrollX = finalScrollX;
+  console.log("[ARENA] Camera locked at:", finalScrollX.toFixed(0));
+
+  // Pause, then fight
   scene.time.delayedCall(ARENA_CONFIG.engagePause, () => {
     arenaState = "FIGHT";
     console.log("[ARENA] State: FIGHT");
