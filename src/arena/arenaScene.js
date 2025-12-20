@@ -31,7 +31,10 @@ const ARENA_CONFIG = {
   camera: {
     lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
     startDelay: 300,       // Wait before camera starts moving (ms)
-    lockOnEngage: true     // Lock camera when fighters meet
+    lockOnEngage: true,    // Lock camera when fighters meet
+    startZoom: 1.3,        // Zoomed in on player at start
+    endZoom: 1.0,          // Zoom out to show both fighters
+    zoomLerpSpeed: 0.03    // Zoom interpolation speed
   }
 };
 
@@ -99,7 +102,7 @@ function createArenaTuneUI(scene) {
     Up/Down: Move Y | Left/Right: Move X | Q/E: Scale<br>
     SPACE: Test run | R: Reset positions<br>
     C: Camera to player | V: Camera center<br>
-    S: SAVE
+    Z: Zoom out | X: Zoom in | S: SAVE
     </small>
     <div style="margin-top:10px;display:flex;gap:5px;">
       <button id="arena-tune-save" style="flex:1;padding:8px;cursor:pointer">SAVE</button>
@@ -239,6 +242,20 @@ function setupArenaTuneKeys(scene) {
     scene.cameras.main.scrollX = (WORLD_W - BASE_W) / 2;
     console.log("[ARENA TUNE] Camera centered");
   });
+
+  // Z = zoom out
+  scene.input.keyboard.on('keydown-Z', () => {
+    const zoom = Math.max(0.5, scene.cameras.main.zoom - 0.1);
+    scene.cameras.main.setZoom(zoom);
+    console.log("[ARENA TUNE] Zoom:", zoom.toFixed(2));
+  });
+
+  // X = zoom in
+  scene.input.keyboard.on('keydown-X', () => {
+    const zoom = Math.min(2.0, scene.cameras.main.zoom + 0.1);
+    scene.cameras.main.setZoom(zoom);
+    console.log("[ARENA TUNE] Zoom:", zoom.toFixed(2));
+  });
 }
 
 function applyArenaTuneSettings(scene) {
@@ -304,10 +321,14 @@ function resetFighterPositions(scene) {
     if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
   }
 
-  scene.cameras.main.scrollX = 0;
+  // Reset camera with start zoom
+  const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
+  scene.cameras.main.setZoom(startZoom);
+  const cameraStartX = Math.max(0, arenaPlayerSprite.x - BASE_W / startZoom * 0.4);
+  scene.cameras.main.scrollX = cameraStartX;
   arenaState = 'FIGHT';
 
-  console.log("[ARENA TUNE] Reset positions");
+  console.log("[ARENA TUNE] Reset - Zoom:", startZoom, "CamX:", cameraStartX.toFixed(0));
 }
 
 function destroyTuneUI() {
@@ -488,12 +509,16 @@ function spawnFighters(scene, enemyData) {
   arenaEnemySprite.setDepth(100).setScrollFactor(1);
 
   // === CINEMATIC CAMERA START ===
-  // Start camera focused on player (left side, player in center-left of screen)
-  const cameraStartX = Math.max(0, arenaPlayerSprite.x - BASE_W * 0.35);
+  // Start zoomed in on player (left side)
+  const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
+  scene.cameras.main.setZoom(startZoom);
+
+  // Camera focused on player (adjust for zoom)
+  const cameraStartX = Math.max(0, arenaPlayerSprite.x - BASE_W / startZoom * 0.4);
   scene.cameras.main.scrollX = cameraStartX;
 
   console.log("[ARENA] Spawned at Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
-  console.log("[ARENA] Camera start X:", cameraStartX.toFixed(0));
+  console.log("[ARENA] Camera start - X:", cameraStartX.toFixed(0), "Zoom:", startZoom);
 
   // Draw ground line in tune mode
   if (ARENA_TUNE_ENABLED) {
@@ -543,11 +568,22 @@ function updateArena(scene) {
     // Calculate midpoint between fighters
     const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
 
-    // Target: center camera on midpoint
-    const targetScrollX = midX - BASE_W / 2;
+    // Current zoom
+    const currentZoom = scene.cameras.main.zoom;
+    const endZoom = ARENA_CONFIG.camera?.endZoom || 1.0;
+    const zoomLerpSpeed = ARENA_CONFIG.camera?.zoomLerpSpeed || 0.03;
 
-    // Clamp to world bounds
-    const clampedX = Math.max(0, Math.min(targetScrollX, WORLD_W - BASE_W));
+    // Smooth zoom out
+    const newZoom = currentZoom + (endZoom - currentZoom) * zoomLerpSpeed;
+    scene.cameras.main.setZoom(newZoom);
+
+    // Target: center camera on midpoint (adjust for current zoom)
+    const viewWidth = BASE_W / newZoom;
+    const targetScrollX = midX - viewWidth / 2;
+
+    // Clamp to world bounds (adjusted for zoom)
+    const maxScrollX = WORLD_W - viewWidth;
+    const clampedX = Math.max(0, Math.min(targetScrollX, maxScrollX));
 
     // Smooth lerp (cinematic feel)
     const currentX = scene.cameras.main.scrollX;
@@ -581,11 +617,14 @@ function onEngageDistance(scene) {
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
 
-  // === LOCK CAMERA at final position ===
+  // === LOCK CAMERA AND ZOOM ===
+  const endZoom = ARENA_CONFIG.camera?.endZoom || 1.0;
+  scene.cameras.main.setZoom(endZoom);
+
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
   const finalScrollX = Math.max(0, Math.min(midX - BASE_W / 2, WORLD_W - BASE_W));
   scene.cameras.main.scrollX = finalScrollX;
-  console.log("[ARENA] Camera locked at:", finalScrollX.toFixed(0));
+  console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0), "Zoom:", endZoom);
 
   // Pause, then fight
   scene.time.delayedCall(ARENA_CONFIG.engagePause, () => {
