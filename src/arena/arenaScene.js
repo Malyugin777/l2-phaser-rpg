@@ -222,9 +222,13 @@ function setupArenaTuneKeys(scene) {
 function applyArenaTuneSettings(scene) {
   const s = arenaTuneSettings;
 
-  // Apply BG position/scale
+  // Apply BG position/scale (COVER mode)
   if (arenaBgSprite) {
-    const baseScale = WORLD_W / arenaBgSprite.texture.source[0].width;
+    const texW = arenaBgSprite.texture.source[0].width;
+    const texH = arenaBgSprite.texture.source[0].height;
+    const scaleW = WORLD_W / texW;
+    const scaleH = BASE_H / texH;
+    const baseScale = Math.max(scaleW, scaleH);  // COVER
     arenaBgSprite.setScale(baseScale * s.bgScale);
     arenaBgSprite.setPosition(WORLD_W / 2 + s.bgX, BASE_H / 2 + s.bgY);
   }
@@ -389,17 +393,20 @@ function setupArenaWorld(scene) {
   // IMPORTANT: Reset camera zoom to 1
   scene.cameras.main.setZoom(1);
 
-  // Background centered in world, scaled to fit WIDTH
+  // Background centered in world, scaled to COVER
   arenaBgSprite = scene.add.image(WORLD_W / 2, BASE_H / 2, 'arena_village');
 
-  // Scale: fit WIDTH of world (not zoom to fill)
-  const bgScale = WORLD_W / arenaBgSprite.width;
+  // COVER: background must cover BOTH world width AND screen height
+  const scaleW = WORLD_W / arenaBgSprite.width;   // fit world width
+  const scaleH = BASE_H / arenaBgSprite.height;   // fit screen height
+  const bgScale = Math.max(scaleW, scaleH);       // cover = max of both
   arenaBgSprite.setScale(bgScale);
   arenaBgSprite.setOrigin(0.5, 0.5);
   arenaBgSprite.setDepth(10);
   arenaBgSprite.setScrollFactor(1);
 
   console.log("[ARENA] BG scale:", bgScale.toFixed(3),
+    "(scaleW:", scaleW.toFixed(2), "scaleH:", scaleH.toFixed(2), ")",
     "size:", arenaBgSprite.displayWidth.toFixed(0), "x", arenaBgSprite.displayHeight.toFixed(0));
 
   // Exit button (fixed to screen)
