@@ -3,6 +3,7 @@
 // ============================================================
 //  ARENA SCENE — 2-Screen Wide World (IIFE to avoid conflicts)
 //  Studio Quality: Cinematic camera, proper ground positioning
+//  With Tune Mode for visual adjustments
 // ============================================================
 
 (function() {
@@ -29,6 +30,270 @@ const ARENA_CONFIG = {
 };
 
 let BASE_W, BASE_H, WORLD_W, WORLD_H, GROUND_Y;
+
+// ============================================================
+//  ARENA TUNE MODE
+// ============================================================
+
+const ARENA_TUNE_ENABLED = new URLSearchParams(window.location.search).has('arena_tune');
+if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
+
+// Tunable values (saved to localStorage)
+function getArenaTuneSettings() {
+  const defaults = {
+    bgX: 0,
+    bgY: 0,
+    bgScale: 1.0,
+    groundY: 0.38,
+    fighterScale: 0.8,
+    fightOffset: 150,
+    cameraStartX: 0,
+  };
+
+  if (!ARENA_TUNE_ENABLED) return defaults;
+
+  try {
+    const saved = localStorage.getItem('ARENA_TUNE');
+    if (saved) return { ...defaults, ...JSON.parse(saved) };
+  } catch(e) {}
+  return defaults;
+}
+
+let arenaTuneSettings = getArenaTuneSettings();
+
+function saveArenaTuneSettings() {
+  localStorage.setItem('ARENA_TUNE', JSON.stringify(arenaTuneSettings));
+  console.log("[ARENA TUNE] Saved:", arenaTuneSettings);
+}
+
+// Tune overlay UI
+let tuneOverlay = null;
+let selectedTuneElement = 'ground';
+let groundLine = null;
+
+function createArenaTuneUI(scene) {
+  if (!ARENA_TUNE_ENABLED) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'arena-tune-overlay';
+  overlay.style.cssText = `
+    position: fixed; top: 10px; left: 10px;
+    background: rgba(0,0,0,0.85); color: #0f0;
+    padding: 15px; font: 12px monospace;
+    z-index: 99999; border-radius: 8px;
+    min-width: 280px; pointer-events: auto;
+  `;
+  overlay.innerHTML = `
+    <b>ARENA TUNE</b> [<span id="arena-sel" style="color:#ff0">ground</span>]
+    <hr style="border-color:#333;margin:8px 0">
+    <div id="arena-tune-values"></div>
+    <hr style="border-color:#333;margin:8px 0">
+    <small>
+    1: BG | 2: Ground | 3: Player | 4: Enemy | 5: Fight<br>
+    Up/Down: Move Y | Left/Right: Move X | Q/E: Scale<br>
+    SPACE: Test run | R: Reset positions<br>
+    S: SAVE | L: Load defaults
+    </small>
+    <div style="margin-top:10px;display:flex;gap:5px;">
+      <button id="arena-tune-save" style="flex:1;padding:8px;cursor:pointer">SAVE</button>
+      <button id="arena-tune-reset" style="padding:8px;cursor:pointer">RESET</button>
+      <button id="arena-tune-copy" style="padding:8px;cursor:pointer">COPY</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  tuneOverlay = overlay;
+
+  // Buttons
+  document.getElementById('arena-tune-save').onclick = () => {
+    saveArenaTuneSettings();
+    alert('Saved!\n\n' + JSON.stringify(arenaTuneSettings, null, 2));
+  };
+
+  document.getElementById('arena-tune-reset').onclick = () => {
+    localStorage.removeItem('ARENA_TUNE');
+    alert('Reset! Reload page.');
+    location.reload();
+  };
+
+  document.getElementById('arena-tune-copy').onclick = () => {
+    navigator.clipboard?.writeText(JSON.stringify(arenaTuneSettings, null, 2));
+    alert('Copied to clipboard!');
+  };
+
+  // Keyboard controls
+  setupArenaTuneKeys(scene);
+
+  // Update display
+  updateArenaTuneDisplay();
+}
+
+function updateArenaTuneDisplay() {
+  if (!tuneOverlay) return;
+
+  const el = document.getElementById('arena-tune-values');
+  if (!el) return;
+
+  const s = arenaTuneSettings;
+  el.innerHTML = `
+    <b style="color:${selectedTuneElement === 'bg' ? '#ff0' : '#888'}">1.BG:</b>
+    x:${s.bgX.toFixed(0)} y:${s.bgY.toFixed(0)} s:${s.bgScale.toFixed(2)}<br>
+    <b style="color:${selectedTuneElement === 'ground' ? '#ff0' : '#888'}">2.Ground:</b>
+    ${(s.groundY * 100).toFixed(0)}%<br>
+    <b style="color:${selectedTuneElement === 'player' ? '#ff0' : '#888'}">3.Player:</b>
+    scale:${s.fighterScale.toFixed(2)}<br>
+    <b style="color:${selectedTuneElement === 'enemy' ? '#ff0' : '#888'}">4.Enemy:</b>
+    scale:${s.fighterScale.toFixed(2)}<br>
+    <b style="color:${selectedTuneElement === 'fight' ? '#ff0' : '#888'}">5.Fight:</b>
+    offset:${s.fightOffset.toFixed(0)}px<br>
+    <hr style="border-color:#333;margin:5px 0">
+    <span style="color:#0ff">Ground line: ${(BASE_H * s.groundY).toFixed(0)}px</span>
+  `;
+
+  document.getElementById('arena-sel').textContent = selectedTuneElement;
+}
+
+function setupArenaTuneKeys(scene) {
+  const STEP = 5;
+  const SCALE_STEP = 0.02;
+
+  scene.input.keyboard.on('keydown-ONE', () => { selectedTuneElement = 'bg'; updateArenaTuneDisplay(); });
+  scene.input.keyboard.on('keydown-TWO', () => { selectedTuneElement = 'ground'; updateArenaTuneDisplay(); });
+  scene.input.keyboard.on('keydown-THREE', () => { selectedTuneElement = 'player'; updateArenaTuneDisplay(); });
+  scene.input.keyboard.on('keydown-FOUR', () => { selectedTuneElement = 'enemy'; updateArenaTuneDisplay(); });
+  scene.input.keyboard.on('keydown-FIVE', () => { selectedTuneElement = 'fight'; updateArenaTuneDisplay(); });
+
+  scene.input.keyboard.on('keydown-UP', () => {
+    if (selectedTuneElement === 'bg') arenaTuneSettings.bgY -= STEP;
+    else if (selectedTuneElement === 'ground') arenaTuneSettings.groundY -= 0.01;
+    applyArenaTuneSettings(scene);
+  });
+
+  scene.input.keyboard.on('keydown-DOWN', () => {
+    if (selectedTuneElement === 'bg') arenaTuneSettings.bgY += STEP;
+    else if (selectedTuneElement === 'ground') arenaTuneSettings.groundY += 0.01;
+    applyArenaTuneSettings(scene);
+  });
+
+  scene.input.keyboard.on('keydown-LEFT', () => {
+    if (selectedTuneElement === 'bg') arenaTuneSettings.bgX -= STEP;
+    else if (selectedTuneElement === 'fight') arenaTuneSettings.fightOffset -= 10;
+    applyArenaTuneSettings(scene);
+  });
+
+  scene.input.keyboard.on('keydown-RIGHT', () => {
+    if (selectedTuneElement === 'bg') arenaTuneSettings.bgX += STEP;
+    else if (selectedTuneElement === 'fight') arenaTuneSettings.fightOffset += 10;
+    applyArenaTuneSettings(scene);
+  });
+
+  scene.input.keyboard.on('keydown-Q', () => {
+    if (selectedTuneElement === 'bg') arenaTuneSettings.bgScale -= SCALE_STEP;
+    else if (selectedTuneElement === 'player' || selectedTuneElement === 'enemy')
+      arenaTuneSettings.fighterScale -= SCALE_STEP;
+    applyArenaTuneSettings(scene);
+  });
+
+  scene.input.keyboard.on('keydown-E', () => {
+    if (selectedTuneElement === 'bg') arenaTuneSettings.bgScale += SCALE_STEP;
+    else if (selectedTuneElement === 'player' || selectedTuneElement === 'enemy')
+      arenaTuneSettings.fighterScale += SCALE_STEP;
+    applyArenaTuneSettings(scene);
+  });
+
+  // Space = test run
+  scene.input.keyboard.on('keydown-SPACE', () => {
+    if (arenaState === 'FIGHT' || arenaState === 'ENGAGE') {
+      resetFighterPositions(scene);
+      startRunIn(scene);
+    }
+  });
+
+  // R = reset positions (no run)
+  scene.input.keyboard.on('keydown-R', () => {
+    resetFighterPositions(scene);
+  });
+
+  // S = save
+  scene.input.keyboard.on('keydown-S', () => {
+    saveArenaTuneSettings();
+  });
+}
+
+function applyArenaTuneSettings(scene) {
+  const s = arenaTuneSettings;
+
+  // Apply BG position/scale
+  if (arenaBgSprite) {
+    const baseScale = WORLD_W / arenaBgSprite.texture.source[0].width;
+    arenaBgSprite.setScale(baseScale * s.bgScale);
+    arenaBgSprite.setPosition(WORLD_W / 2 + s.bgX, BASE_H / 2 + s.bgY);
+  }
+
+  // Apply ground Y
+  GROUND_Y = BASE_H * s.groundY;
+
+  // Apply fighter positions
+  if (arenaPlayerSprite) {
+    arenaPlayerSprite.y = GROUND_Y;
+    arenaPlayerSprite.setScale(s.fighterScale);
+  }
+  if (arenaEnemySprite) {
+    arenaEnemySprite.y = GROUND_Y;
+    arenaEnemySprite.setScale(-s.fighterScale, s.fighterScale);
+  }
+
+  // Update fight offset
+  ARENA_CONFIG.fightOffset = s.fightOffset;
+
+  updateArenaTuneDisplay();
+
+  // Draw ground line helper
+  drawGroundLine(scene);
+}
+
+function drawGroundLine(scene) {
+  if (!ARENA_TUNE_ENABLED) return;
+
+  if (groundLine) groundLine.destroy();
+
+  groundLine = scene.add.line(0, 0, 0, GROUND_Y, WORLD_W, GROUND_Y, 0xff0000, 0.5);
+  groundLine.setOrigin(0, 0);
+  groundLine.setDepth(999);
+  groundLine.setScrollFactor(1);
+}
+
+function resetFighterPositions(scene) {
+  const s = arenaTuneSettings;
+  const playerStartX = BASE_W * 0.3;
+  const enemyStartX = WORLD_W - BASE_W * 0.3;
+
+  GROUND_Y = BASE_H * s.groundY;
+
+  if (arenaPlayerSprite) {
+    arenaPlayerSprite.setPosition(playerStartX, GROUND_Y);
+    if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
+  }
+  if (arenaEnemySprite) {
+    arenaEnemySprite.setPosition(enemyStartX, GROUND_Y);
+    if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+  }
+
+  scene.cameras.main.scrollX = 0;
+  arenaState = 'FIGHT';
+
+  console.log("[ARENA TUNE] Reset positions");
+}
+
+function destroyTuneUI() {
+  if (tuneOverlay) {
+    tuneOverlay.remove();
+    tuneOverlay = null;
+  }
+  if (groundLine) {
+    groundLine.destroy();
+    groundLine = null;
+  }
+}
 
 // ============================================================
 //  START ARENA
@@ -84,7 +349,7 @@ function showVSScreen(scene, enemyData, onComplete) {
   const enemyLevel = enemyData?.level || 1;
 
   const vsText = scene.add.text(w/2, h/2,
-    `${playerName}  Lv.${playerLevel}\n\n⚔️ VS ⚔️\n\n${enemyName}  Lv.${enemyLevel}`, {
+    `${playerName}  Lv.${playerLevel}\n\n VS \n\n${enemyName}  Lv.${enemyLevel}`, {
     fontFamily: 'Arial', fontSize: '32px', color: '#ffffff',
     align: 'center', stroke: '#000000', strokeThickness: 4
   });
@@ -145,6 +410,13 @@ function setupArenaWorld(scene) {
   arenaExitBtnSprite.setOrigin(0.5).setDepth(300).setScrollFactor(0);
   arenaExitBtnSprite.setInteractive({ useHandCursor: true });
   arenaExitBtnSprite.on('pointerdown', () => exitArena(scene));
+
+  // Initialize tune mode
+  if (ARENA_TUNE_ENABLED) {
+    createArenaTuneUI(scene);
+    applyArenaTuneSettings(scene);
+    console.log("[ARENA] Tune mode enabled - press 1-5 to select, arrows to adjust");
+  }
 }
 
 // ============================================================
@@ -155,18 +427,16 @@ function spawnFighters(scene, enemyData) {
   const playerStartX = BASE_W * ARENA_CONFIG.spawnMargin;
   const enemyStartX = WORLD_W - BASE_W * ARENA_CONFIG.spawnMargin;
 
-  // Calculate ground Y from background (fence line)
-  const bgTop = BASE_H / 2 - (arenaBgSprite.displayHeight / 2);
-  const fenceY = bgTop + arenaBgSprite.displayHeight * 0.65;  // 65% down the BG = fence line
-  GROUND_Y = fenceY;
+  // Use tune settings for ground Y
+  GROUND_Y = BASE_H * arenaTuneSettings.groundY;
 
-  console.log("[ARENA] Ground Y:", GROUND_Y.toFixed(0), "BG top:", bgTop.toFixed(0));
+  console.log("[ARENA] Ground Y:", GROUND_Y.toFixed(0));
 
   // Player (left side)
   if (scene.spine) {
     try {
       arenaPlayerSprite = scene.add.spine(playerStartX, GROUND_Y, 'hero', 'idle', true);
-      arenaPlayerSprite.setScale(ARENA_CONFIG.fighterScale);
+      arenaPlayerSprite.setScale(arenaTuneSettings.fighterScale);
     } catch(e) {
       arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 60, 120, 0x3366cc);
     }
@@ -179,7 +449,7 @@ function spawnFighters(scene, enemyData) {
   if (scene.spine) {
     try {
       arenaEnemySprite = scene.add.spine(enemyStartX, GROUND_Y, 'hero', 'idle', true);
-      arenaEnemySprite.setScale(-ARENA_CONFIG.fighterScale, ARENA_CONFIG.fighterScale);
+      arenaEnemySprite.setScale(-arenaTuneSettings.fighterScale, arenaTuneSettings.fighterScale);
     } catch(e) {
       arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 60, 120, 0xcc3333);
     }
@@ -193,6 +463,11 @@ function spawnFighters(scene, enemyData) {
   scene.cameras.main.scrollX = 0;
 
   console.log("[ARENA] Spawned at Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
+
+  // Draw ground line in tune mode
+  if (ARENA_TUNE_ENABLED) {
+    drawGroundLine(scene);
+  }
 }
 
 // ============================================================
@@ -240,7 +515,7 @@ function updateArena(scene) {
 
   // Smooth camera movement (lerp)
   const currentX = scene.cameras.main.scrollX;
-  const lerpSpeed = 0.08;  // 8% per frame = smooth
+  const lerpSpeed = 0.08;
   scene.cameras.main.scrollX = currentX + (clampedX - currentX) * lerpSpeed;
 
   // Check engage distance
@@ -278,6 +553,9 @@ function onEngageDistance(scene) {
 function exitArena(scene) {
   if (!arenaActive) return;
   console.log("[ARENA] Exit");
+
+  // Destroy tune UI
+  destroyTuneUI();
 
   if (arenaBgSprite) { arenaBgSprite.destroy(); arenaBgSprite = null; }
   if (arenaPlayerSprite) { arenaPlayerSprite.destroy(); arenaPlayerSprite = null; }
