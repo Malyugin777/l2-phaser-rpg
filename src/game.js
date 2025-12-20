@@ -173,6 +173,9 @@ function update(time, delta) {
   if (mode === "runner" && typeof updateRunnerBattle === "function") {
     updateRunnerBattle(this, delta);
   }
+  if (typeof updateArena === "function") {
+    updateArena(this);
+  }
 }
 
 // ============================================================
