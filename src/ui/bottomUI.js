@@ -12,14 +12,15 @@
 
 const UI_LAYOUT = {
   container: { offsetY: 3 },
-  panel: { scale: 0.58 },  // 800 * 0.58 = ~464px
-  button: { x: 0, y: -217, scale: 0.55 },  // 240 * 0.55 = ~132px
+  panel: { scale: 0.58 },
+  button: { x: 0, y: -120, scale: 0.55 },
   icons: {
+    // 140 * 0.5 = 70px icons, 120px between centers
     positions: [
-      { x: 98, y: -57, scale: 0.76 },   // helmet → inventory
-      { x: 18, y: -61, scale: 0.76 },   // anvil → forge
-      { x: -14, y: -65, scale: 0.76 },  // store → shop
-      { x: -44, y: -62, scale: 0.76 }   // map → map (140 * 0.76 = ~106px)
+      { x: 180, y: -60, scale: 0.5 },    // helmet (справа)
+      { x: 60, y: -60, scale: 0.5 },     // anvil
+      { x: -60, y: -60, scale: 0.5 },    // store
+      { x: -180, y: -60, scale: 0.5 }    // map (слева)
     ]
   }
 };
