@@ -11,16 +11,16 @@
 // - icons: 140×140
 
 const UI_LAYOUT = {
-  container: { offsetY: 3 },
-  panel: { scale: 0.58 },
-  button: { x: 0, y: -120, scale: 0.55 },
+  container: { offsetY: -9 },
+  panel: { scale: 0.98 },
+  button: { x: 0, y: -104, scale: 0.41 },
   icons: {
-    // 140 * 0.5 = 70px icons, 120px between centers
+    // Tuned positions - icons 140x140, scale 0.86
     positions: [
-      { x: 180, y: -60, scale: 0.5 },    // helmet (справа)
-      { x: 60, y: -60, scale: 0.5 },     // anvil
-      { x: -60, y: -60, scale: 0.5 },    // store
-      { x: -180, y: -60, scale: 0.5 }    // map (слева)
+      { x: -301, y: -91, scale: 0.86 },  // helmet (слева)
+      { x: -153, y: -94, scale: 0.86 },  // anvil
+      { x: 150, y: -89, scale: 0.86 },   // store (справа)
+      { x: 301, y: -92, scale: 0.86 }    // map (справа)
     ]
   }
 };
