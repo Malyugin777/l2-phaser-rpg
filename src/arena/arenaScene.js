@@ -9,7 +9,7 @@
 (function() {
 
 let arenaActive = false;
-let arenaState = "NONE"; // NONE, INTRO, RUN_IN, ENGAGE, FIGHT
+let arenaState = "NONE"; // NONE, INTRO, TUNING, RUN_IN, ENGAGE, FIGHT
 
 let arenaBgSprite = null;
 let arenaPlayerSprite = null;
@@ -99,10 +99,9 @@ function createArenaTuneUI(scene) {
     <hr style="border-color:#333;margin:8px 0">
     <small>
     1: BG | 2: Ground | 3: Player | 4: Enemy | 5: Fight<br>
-    Up/Down: Move Y | Left/Right: Move X | Q/E: Scale<br>
-    SPACE: Test run | R: Reset positions<br>
-    C: Camera to player | V: Camera center<br>
-    Z: Zoom out | X: Zoom in | S: SAVE
+    Arrows: Move | Q/E: Scale | Z/X: Zoom<br>
+    <span style="color:#0f0">SPACE: Start run</span> | R: Reset to start<br>
+    C: Cam→player | V: Cam→center | S: SAVE
     </small>
     <div style="margin-top:10px;display:flex;gap:5px;">
       <button id="arena-tune-save" style="flex:1;padding:8px;cursor:pointer">SAVE</button>
@@ -156,7 +155,8 @@ function updateArenaTuneDisplay() {
     <b style="color:${selectedTuneElement === 'fight' ? '#ff0' : '#888'}">5.Fight:</b>
     offset:${s.fightOffset.toFixed(0)}px<br>
     <hr style="border-color:#333;margin:5px 0">
-    <span style="color:#0ff">Ground line: ${(BASE_H * s.groundY).toFixed(0)}px</span>
+    <span style="color:#0ff">Ground: ${(BASE_H * s.groundY).toFixed(0)}px</span> |
+    <span style="color:#f80">State: ${arenaState}</span>
   `;
 
   document.getElementById('arena-sel').textContent = selectedTuneElement;
@@ -210,17 +210,23 @@ function setupArenaTuneKeys(scene) {
     applyArenaTuneSettings(scene);
   });
 
-  // Space = test run
+  // Space = start/restart run
   scene.input.keyboard.on('keydown-SPACE', () => {
-    if (arenaState === 'FIGHT' || arenaState === 'ENGAGE') {
-      resetFighterPositions(scene);
+    if (arenaState === 'TUNING') {
+      // First run from tuning state
       startRunIn(scene);
+    } else if (arenaState === 'FIGHT' || arenaState === 'ENGAGE') {
+      // Reset and run again
+      resetFighterPositions(scene);
+      scene.time.delayedCall(100, () => startRunIn(scene));
     }
   });
 
-  // R = reset positions (no run)
+  // R = reset to start positions (TUNING state, no run)
   scene.input.keyboard.on('keydown-R', () => {
     resetFighterPositions(scene);
+    arenaState = 'TUNING';
+    console.log("[ARENA TUNE] Reset to start - ready to adjust");
   });
 
   // S = save
@@ -307,17 +313,23 @@ function drawGroundLine(scene) {
 
 function resetFighterPositions(scene) {
   const s = arenaTuneSettings;
-  const playerStartX = BASE_W * 0.3;
-  const enemyStartX = WORLD_W - BASE_W * 0.3;
+  const playerStartX = BASE_W * ARENA_CONFIG.spawnMargin;
+  const enemyStartX = WORLD_W - BASE_W * ARENA_CONFIG.spawnMargin;
 
   GROUND_Y = BASE_H * s.groundY;
 
+  // Stop any running tweens
+  scene.tweens.killTweensOf(arenaPlayerSprite);
+  scene.tweens.killTweensOf(arenaEnemySprite);
+
   if (arenaPlayerSprite) {
     arenaPlayerSprite.setPosition(playerStartX, GROUND_Y);
+    arenaPlayerSprite.setScale(s.fighterScale);
     if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   }
   if (arenaEnemySprite) {
     arenaEnemySprite.setPosition(enemyStartX, GROUND_Y);
+    arenaEnemySprite.setScale(-s.fighterScale, s.fighterScale);
     if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
   }
 
@@ -326,9 +338,8 @@ function resetFighterPositions(scene) {
   scene.cameras.main.setZoom(startZoom);
   const cameraStartX = Math.max(0, arenaPlayerSprite.x - BASE_W / startZoom * 0.4);
   scene.cameras.main.scrollX = cameraStartX;
-  arenaState = 'FIGHT';
 
-  console.log("[ARENA TUNE] Reset - Zoom:", startZoom, "CamX:", cameraStartX.toFixed(0));
+  console.log("[ARENA TUNE] Reset - Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
 }
 
 function destroyTuneUI() {
@@ -363,7 +374,18 @@ function startArena(scene, enemyData) {
   showVSScreen(scene, enemyData, () => {
     setupArenaWorld(scene);
     spawnFighters(scene, enemyData);
-    startRunIn(scene);
+
+    // === TUNE MODE: Don't auto-run, wait for SPACE ===
+    if (ARENA_TUNE_ENABLED) {
+      arenaState = "TUNING";
+      console.log("[ARENA] Tune mode - press SPACE to start run");
+      // Fighters stay idle at start positions
+      if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
+      if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+    } else {
+      // Normal mode - start run immediately
+      startRunIn(scene);
+    }
   });
 }
 
