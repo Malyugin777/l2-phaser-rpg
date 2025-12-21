@@ -39,6 +39,7 @@ const ARENA_CONFIG = {
 };
 
 let BASE_W, BASE_H, WORLD_W, WORLD_H, GROUND_Y;
+const CAMERA_PADDING = 400;  // Allow camera beyond world edges
 
 // ============================================================
 //  ARENA TUNE MODE
@@ -245,10 +246,10 @@ function setupArenaTuneKeys(scene) {
 
   // === CAMERA CONTROLS ===
 
-  // C = camera to player
+  // C = camera to player (center player on screen)
   scene.input.keyboard.on('keydown-C', () => {
     if (arenaPlayerSprite) {
-      const camX = Math.max(0, arenaPlayerSprite.x - BASE_W * 0.35);
+      const camX = Math.max(-CAMERA_PADDING, arenaPlayerSprite.x - BASE_W / 2);
       scene.cameras.main.scrollX = camX;
       updateArenaTuneDisplay();
     }
@@ -260,24 +261,24 @@ function setupArenaTuneKeys(scene) {
     updateArenaTuneDisplay();
   });
 
-  // B = camera to enemy
+  // B = camera to enemy (center enemy on screen)
   scene.input.keyboard.on('keydown-B', () => {
     if (arenaEnemySprite) {
-      const camX = Math.min(WORLD_W - BASE_W, arenaEnemySprite.x - BASE_W * 0.65);
+      const camX = Math.min(WORLD_W - BASE_W + CAMERA_PADDING, arenaEnemySprite.x - BASE_W / 2);
       scene.cameras.main.scrollX = camX;
       updateArenaTuneDisplay();
     }
   });
 
-  // A/D = pan camera left/right
+  // A/D = pan camera left/right (with padding)
   const PAN_STEP = 50;
   scene.input.keyboard.on('keydown-A', () => {
-    const newX = Math.max(0, scene.cameras.main.scrollX - PAN_STEP);
+    const newX = Math.max(-CAMERA_PADDING, scene.cameras.main.scrollX - PAN_STEP);
     scene.cameras.main.scrollX = newX;
     updateArenaTuneDisplay();
   });
   scene.input.keyboard.on('keydown-D', () => {
-    const newX = Math.min(WORLD_W - BASE_W, scene.cameras.main.scrollX + PAN_STEP);
+    const newX = Math.min(WORLD_W - BASE_W + CAMERA_PADDING, scene.cameras.main.scrollX + PAN_STEP);
     scene.cameras.main.scrollX = newX;
     updateArenaTuneDisplay();
   });
@@ -380,10 +381,11 @@ function resetFighterPositions(scene) {
     if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
   }
 
-  // Reset camera with start zoom
+  // Reset camera with start zoom (center on player)
   const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
   scene.cameras.main.setZoom(startZoom);
-  const cameraStartX = Math.max(0, arenaPlayerSprite.x - BASE_W / startZoom * 0.4);
+  const viewWidth = BASE_W / startZoom;
+  const cameraStartX = Math.max(-CAMERA_PADDING, arenaPlayerSprite.x - viewWidth / 2);
   scene.cameras.main.scrollX = cameraStartX;
 
   console.log("[ARENA TUNE] Reset - Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
@@ -499,8 +501,14 @@ function showVSScreen(scene, enemyData, onComplete) {
 function setupArenaWorld(scene) {
   console.log("[ARENA] Setup world");
 
-  // Camera bounds = world size
-  scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
+  // Camera bounds WITH PADDING (allows camera beyond world edges)
+  scene.cameras.main.setBounds(
+    -CAMERA_PADDING,
+    0,
+    WORLD_W + CAMERA_PADDING * 2,
+    WORLD_H
+  );
+  console.log("[ARENA] Camera bounds: -" + CAMERA_PADDING + " to " + (WORLD_W + CAMERA_PADDING));
 
   // IMPORTANT: Reset camera zoom to 1
   scene.cameras.main.setZoom(1);
@@ -557,7 +565,7 @@ function setupCameraDrag(scene) {
   scene.input.on('pointermove', (pointer) => {
     if (isDraggingCamera) {
       const deltaX = dragStartX - pointer.x;
-      const newScrollX = Math.max(0, Math.min(cameraStartX + deltaX, WORLD_W - BASE_W));
+      const newScrollX = Math.max(-CAMERA_PADDING, Math.min(cameraStartX + deltaX, WORLD_W - BASE_W + CAMERA_PADDING));
       scene.cameras.main.scrollX = newScrollX;
     }
   });
@@ -616,12 +624,13 @@ function spawnFighters(scene, enemyData) {
   }
 
   // === CINEMATIC CAMERA START ===
-  // Start zoomed in on player (left side)
+  // Start zoomed in on player (center player on screen)
   const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
   scene.cameras.main.setZoom(startZoom);
 
-  // Camera focused on player (adjust for zoom)
-  const cameraStartX = Math.max(0, arenaPlayerSprite.x - BASE_W / startZoom * 0.4);
+  // Camera focused on player (center in viewport, with padding allowance)
+  const viewWidth = BASE_W / startZoom;
+  const cameraStartX = Math.max(-CAMERA_PADDING, arenaPlayerSprite.x - viewWidth / 2);
   scene.cameras.main.scrollX = cameraStartX;
 
   console.log("[ARENA] Spawned at Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
