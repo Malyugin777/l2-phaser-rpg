@@ -57,6 +57,8 @@ function getArenaTuneSettings() {
     fighterScale: 0.8,
     fightOffset: 150,
     cameraStartX: 0,
+    playerStartX: 0.15,    // Player at 15% of world width
+    enemyStartX: 0.85,     // Enemy at 85% of world width
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
@@ -93,20 +95,21 @@ function createArenaTuneUI(scene) {
     min-width: 280px; pointer-events: auto;
   `;
   overlay.innerHTML = `
-    <b>ARENA TUNE</b> [<span id="arena-sel" style="color:#ff0">ground</span>]
+    <b>🎬 ARENA TUNE</b> [<span id="arena-sel" style="color:#ff0">ground</span>]
     <hr style="border-color:#333;margin:8px 0">
     <div id="arena-tune-values"></div>
     <hr style="border-color:#333;margin:8px 0">
-    <small>
-    1: BG | 2: Ground | 3: Player | 4: Enemy | 5: Fight<br>
-    Arrows: Move | Q/E: Scale | Z/X: Zoom<br>
-    <span style="color:#0f0">SPACE: Start run</span> | R: Reset to start<br>
+    <small style="color:#888">
+    🖱️ <b style="color:#0f0">Drag</b> fighters to position<br>
+    🖱️ <b style="color:#0f0">Right-drag</b> to pan camera<br>
+    Q/E: Scale | Z/X: Zoom<br>
+    <span style="color:#0f0">SPACE: Start run</span> | R: Reset<br>
     C: Cam→player | V: Cam→center | S: SAVE
     </small>
     <div style="margin-top:10px;display:flex;gap:5px;">
-      <button id="arena-tune-save" style="flex:1;padding:8px;cursor:pointer">SAVE</button>
-      <button id="arena-tune-reset" style="padding:8px;cursor:pointer">RESET</button>
-      <button id="arena-tune-copy" style="padding:8px;cursor:pointer">COPY</button>
+      <button id="arena-tune-save" style="flex:1;padding:8px;cursor:pointer">💾 SAVE</button>
+      <button id="arena-tune-reset" style="padding:8px;cursor:pointer">🔄</button>
+      <button id="arena-tune-copy" style="padding:8px;cursor:pointer">📋</button>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -144,18 +147,17 @@ function updateArenaTuneDisplay() {
 
   const s = arenaTuneSettings;
   el.innerHTML = `
-    <b style="color:${selectedTuneElement === 'bg' ? '#ff0' : '#888'}">1.BG:</b>
+    <b style="color:${selectedTuneElement === 'bg' ? '#ff0' : '#888'}">BG:</b>
     x:${s.bgX.toFixed(0)} y:${s.bgY.toFixed(0)} s:${s.bgScale.toFixed(2)}<br>
-    <b style="color:${selectedTuneElement === 'ground' ? '#ff0' : '#888'}">2.Ground:</b>
-    ${(s.groundY * 100).toFixed(0)}%<br>
-    <b style="color:${selectedTuneElement === 'player' ? '#ff0' : '#888'}">3.Player:</b>
-    scale:${s.fighterScale.toFixed(2)}<br>
-    <b style="color:${selectedTuneElement === 'enemy' ? '#ff0' : '#888'}">4.Enemy:</b>
-    scale:${s.fighterScale.toFixed(2)}<br>
-    <b style="color:${selectedTuneElement === 'fight' ? '#ff0' : '#888'}">5.Fight:</b>
+    <b style="color:${selectedTuneElement === 'ground' ? '#ff0' : '#888'}">Ground:</b>
+    ${(s.groundY * 100).toFixed(0)}% (${(BASE_H * s.groundY).toFixed(0)}px)<br>
+    <b style="color:${selectedTuneElement === 'player' ? '#ff0' : '#888'}">Player:</b>
+    x:${(s.playerStartX * 100).toFixed(0)}% s:${s.fighterScale.toFixed(2)}<br>
+    <b style="color:${selectedTuneElement === 'enemy' ? '#ff0' : '#888'}">Enemy:</b>
+    x:${(s.enemyStartX * 100).toFixed(0)}% s:${s.fighterScale.toFixed(2)}<br>
+    <b style="color:${selectedTuneElement === 'fight' ? '#ff0' : '#888'}">Fight:</b>
     offset:${s.fightOffset.toFixed(0)}px<br>
     <hr style="border-color:#333;margin:5px 0">
-    <span style="color:#0ff">Ground: ${(BASE_H * s.groundY).toFixed(0)}px</span> |
     <span style="color:#f80">State: ${arenaState}</span>
   `;
 
@@ -313,8 +315,9 @@ function drawGroundLine(scene) {
 
 function resetFighterPositions(scene) {
   const s = arenaTuneSettings;
-  const playerStartX = BASE_W * ARENA_CONFIG.spawnMargin;
-  const enemyStartX = WORLD_W - BASE_W * ARENA_CONFIG.spawnMargin;
+  // Use saved tune positions
+  const playerStartX = WORLD_W * (s.playerStartX || 0.15);
+  const enemyStartX = WORLD_W * (s.enemyStartX || 0.85);
 
   GROUND_Y = BASE_H * s.groundY;
 
@@ -487,8 +490,40 @@ function setupArenaWorld(scene) {
   if (ARENA_TUNE_ENABLED) {
     createArenaTuneUI(scene);
     applyArenaTuneSettings(scene);
-    console.log("[ARENA] Tune mode enabled - press 1-5 to select, arrows to adjust");
+    setupCameraDrag(scene);
+    console.log("[ARENA] Tune mode enabled - drag fighters, right-drag to pan camera");
   }
+}
+
+// === Camera Pan with Right-Click Drag ===
+function setupCameraDrag(scene) {
+  let isDraggingCamera = false;
+  let dragStartX = 0;
+  let cameraStartX = 0;
+
+  // Right-click or middle-click drag = pan camera
+  scene.input.on('pointerdown', (pointer) => {
+    if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
+      isDraggingCamera = true;
+      dragStartX = pointer.x;
+      cameraStartX = scene.cameras.main.scrollX;
+    }
+  });
+
+  scene.input.on('pointermove', (pointer) => {
+    if (isDraggingCamera) {
+      const deltaX = dragStartX - pointer.x;
+      const newScrollX = Math.max(0, Math.min(cameraStartX + deltaX, WORLD_W - BASE_W));
+      scene.cameras.main.scrollX = newScrollX;
+    }
+  });
+
+  scene.input.on('pointerup', () => {
+    isDraggingCamera = false;
+  });
+
+  // Disable context menu on canvas
+  scene.game.canvas.oncontextmenu = (e) => e.preventDefault();
 }
 
 // ============================================================
@@ -496,8 +531,9 @@ function setupArenaWorld(scene) {
 // ============================================================
 
 function spawnFighters(scene, enemyData) {
-  const playerStartX = BASE_W * ARENA_CONFIG.spawnMargin;
-  const enemyStartX = WORLD_W - BASE_W * ARENA_CONFIG.spawnMargin;
+  // Use tune settings for positions (or defaults)
+  const playerStartX = WORLD_W * (arenaTuneSettings.playerStartX || 0.15);
+  const enemyStartX = WORLD_W * (arenaTuneSettings.enemyStartX || 0.85);
 
   // Use tune settings for ground Y
   GROUND_Y = BASE_H * arenaTuneSettings.groundY;
@@ -530,6 +566,11 @@ function spawnFighters(scene, enemyData) {
   }
   arenaEnemySprite.setDepth(100).setScrollFactor(1);
 
+  // === TUNE MODE: Make fighters draggable ===
+  if (ARENA_TUNE_ENABLED) {
+    setupFighterDrag(scene);
+  }
+
   // === CINEMATIC CAMERA START ===
   // Start zoomed in on player (left side)
   const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
@@ -546,6 +587,65 @@ function spawnFighters(scene, enemyData) {
   if (ARENA_TUNE_ENABLED) {
     drawGroundLine(scene);
   }
+}
+
+// === DRAG & DROP for Tune Mode ===
+function setupFighterDrag(scene) {
+  // Make player draggable
+  arenaPlayerSprite.setInteractive({ draggable: true, useHandCursor: true });
+  scene.input.setDraggable(arenaPlayerSprite);
+
+  // Make enemy draggable
+  arenaEnemySprite.setInteractive({ draggable: true, useHandCursor: true });
+  scene.input.setDraggable(arenaEnemySprite);
+
+  // Drag events
+  scene.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+    // Move object (convert from screen to world coords)
+    const worldX = dragX + scene.cameras.main.scrollX;
+    const worldY = dragY;
+
+    gameObject.x = worldX;
+    gameObject.y = worldY;
+
+    // Update tune settings
+    if (gameObject === arenaPlayerSprite) {
+      arenaTuneSettings.playerStartX = worldX / WORLD_W;
+      arenaTuneSettings.groundY = worldY / BASE_H;
+    }
+    if (gameObject === arenaEnemySprite) {
+      arenaTuneSettings.enemyStartX = worldX / WORLD_W;
+      arenaTuneSettings.groundY = worldY / BASE_H;
+    }
+
+    // Sync both Y positions (same ground)
+    GROUND_Y = worldY;
+    if (gameObject === arenaPlayerSprite && arenaEnemySprite) {
+      arenaEnemySprite.y = worldY;
+    }
+    if (gameObject === arenaEnemySprite && arenaPlayerSprite) {
+      arenaPlayerSprite.y = worldY;
+    }
+
+    // Update visuals
+    drawGroundLine(scene);
+    updateArenaTuneDisplay();
+  });
+
+  // Visual feedback on hover
+  scene.input.on('gameobjectover', (pointer, gameObject) => {
+    if (gameObject === arenaPlayerSprite || gameObject === arenaEnemySprite) {
+      gameObject.setTint(0x00ff00);
+    }
+  });
+
+  scene.input.on('gameobjectout', (pointer, gameObject) => {
+    if (gameObject === arenaPlayerSprite || gameObject === arenaEnemySprite) {
+      gameObject.clearTint();
+    }
+  });
+
+  console.log("[ARENA TUNE] Fighters are now draggable");
 }
 
 // ============================================================
