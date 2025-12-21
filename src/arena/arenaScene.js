@@ -81,9 +81,12 @@ function saveArenaTuneSettings() {
 let tuneOverlay = null;
 let selectedTuneElement = 'ground';
 let groundLine = null;
+let tuneScene = null;  // Reference for camera access
 
 function createArenaTuneUI(scene) {
   if (!ARENA_TUNE_ENABLED) return;
+
+  tuneScene = scene;  // Save reference
 
   const overlay = document.createElement('div');
   overlay.id = 'arena-tune-overlay';
@@ -100,11 +103,11 @@ function createArenaTuneUI(scene) {
     <div id="arena-tune-values"></div>
     <hr style="border-color:#333;margin:8px 0">
     <small style="color:#888">
-    🖱️ <b style="color:#0f0">Drag</b> fighters to position<br>
-    🖱️ <b style="color:#0f0">Right-drag</b> to pan camera<br>
-    Q/E: Scale | Z/X: Zoom<br>
-    <span style="color:#0f0">SPACE: Start run</span> | R: Reset<br>
-    C: Cam→player | V: Cam→center | S: SAVE
+    🖱️ <b style="color:#0f0">Drag</b> fighters | <b style="color:#0f0">RMB</b> pan<br>
+    <b>Q/E:</b> Scale | <b>A/D:</b> Pan cam<br>
+    <b>Z/X:</b> Zoom | <b>0:</b> Zoom=1 | <b>9:</b> Zoom=1.3<br>
+    <b>C:</b> Cam→Player | <b>V:</b> Center | <b>B:</b> Cam→Enemy<br>
+    <span style="color:#0f0">SPACE: Run</span> | <b>R:</b> Reset | <b>S:</b> Save
     </small>
     <div style="margin-top:10px;display:flex;gap:5px;">
       <button id="arena-tune-save" style="flex:1;padding:8px;cursor:pointer">💾 SAVE</button>
@@ -146,6 +149,9 @@ function updateArenaTuneDisplay() {
   if (!el) return;
 
   const s = arenaTuneSettings;
+  const cam = tuneScene?.cameras?.main;
+  const camInfo = cam ? `x:${cam.scrollX.toFixed(0)} z:${cam.zoom.toFixed(2)}` : '';
+
   el.innerHTML = `
     <b style="color:${selectedTuneElement === 'bg' ? '#ff0' : '#888'}">BG:</b>
     x:${s.bgX.toFixed(0)} y:${s.bgY.toFixed(0)} s:${s.bgScale.toFixed(2)}<br>
@@ -158,7 +164,8 @@ function updateArenaTuneDisplay() {
     <b style="color:${selectedTuneElement === 'fight' ? '#ff0' : '#888'}">Fight:</b>
     offset:${s.fightOffset.toFixed(0)}px<br>
     <hr style="border-color:#333;margin:5px 0">
-    <span style="color:#f80">State: ${arenaState}</span>
+    <span style="color:#0ff">Cam: ${camInfo}</span> |
+    <span style="color:#f80">${arenaState}</span>
   `;
 
   document.getElementById('arena-sel').textContent = selectedTuneElement;
@@ -236,33 +243,70 @@ function setupArenaTuneKeys(scene) {
     saveArenaTuneSettings();
   });
 
+  // === CAMERA CONTROLS ===
+
   // C = camera to player
   scene.input.keyboard.on('keydown-C', () => {
     if (arenaPlayerSprite) {
       const camX = Math.max(0, arenaPlayerSprite.x - BASE_W * 0.35);
       scene.cameras.main.scrollX = camX;
-      console.log("[ARENA TUNE] Camera to player:", camX.toFixed(0));
+      updateArenaTuneDisplay();
     }
   });
 
-  // V = center camera
+  // V = center camera (world center)
   scene.input.keyboard.on('keydown-V', () => {
     scene.cameras.main.scrollX = (WORLD_W - BASE_W) / 2;
-    console.log("[ARENA TUNE] Camera centered");
+    updateArenaTuneDisplay();
+  });
+
+  // B = camera to enemy
+  scene.input.keyboard.on('keydown-B', () => {
+    if (arenaEnemySprite) {
+      const camX = Math.min(WORLD_W - BASE_W, arenaEnemySprite.x - BASE_W * 0.65);
+      scene.cameras.main.scrollX = camX;
+      updateArenaTuneDisplay();
+    }
+  });
+
+  // A/D = pan camera left/right
+  const PAN_STEP = 50;
+  scene.input.keyboard.on('keydown-A', () => {
+    const newX = Math.max(0, scene.cameras.main.scrollX - PAN_STEP);
+    scene.cameras.main.scrollX = newX;
+    updateArenaTuneDisplay();
+  });
+  scene.input.keyboard.on('keydown-D', () => {
+    const newX = Math.min(WORLD_W - BASE_W, scene.cameras.main.scrollX + PAN_STEP);
+    scene.cameras.main.scrollX = newX;
+    updateArenaTuneDisplay();
   });
 
   // Z = zoom out
   scene.input.keyboard.on('keydown-Z', () => {
     const zoom = Math.max(0.5, scene.cameras.main.zoom - 0.1);
     scene.cameras.main.setZoom(zoom);
-    console.log("[ARENA TUNE] Zoom:", zoom.toFixed(2));
+    updateArenaTuneDisplay();
   });
 
   // X = zoom in
   scene.input.keyboard.on('keydown-X', () => {
     const zoom = Math.min(2.0, scene.cameras.main.zoom + 0.1);
     scene.cameras.main.setZoom(zoom);
-    console.log("[ARENA TUNE] Zoom:", zoom.toFixed(2));
+    updateArenaTuneDisplay();
+  });
+
+  // 0 = reset zoom to 1.0
+  scene.input.keyboard.on('keydown-ZERO', () => {
+    scene.cameras.main.setZoom(1.0);
+    updateArenaTuneDisplay();
+  });
+
+  // 9 = zoom to start (1.3)
+  scene.input.keyboard.on('keydown-NINE', () => {
+    const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
+    scene.cameras.main.setZoom(startZoom);
+    updateArenaTuneDisplay();
   });
 }
 
