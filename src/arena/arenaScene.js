@@ -17,7 +17,7 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  worldMultiplier: 5,      // World = 5x screen width (3900px)
+  worldMultiplier: 4,      // World = 4x screen width (3120px)
   fightOffset: 150,        // Distance from center for each fighter
   engageDistance: 300,     // Stop when this close
   groundY: 0.90,           // LOCKED at 90%
@@ -25,12 +25,13 @@ const ARENA_CONFIG = {
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
-  fighterScale: 1.14,      // LOCKED at 1.14
+  fighterScale: 1.96,      // LOCKED at 1.96
   // Spawn positions (% of world width)
-  playerSpawnX: 0.10,      // LOCKED at 10%
-  enemySpawnX: 0.90,       // 90% for wider world
+  playerSpawnX: 0.19,      // LOCKED at 19%
+  enemySpawnX: 0.81,       // LOCKED at 81% (fits in BG)
   // BG position
-  bgOffsetX: 465,          // LOCKED
+  bgOffsetX: 370,          // LOCKED
+  bgOffsetY: 95,           // LOCKED
   // Camera settings
   camera: {
     lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
@@ -65,15 +66,15 @@ if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 // Tunable values (saved to localStorage)
 function getArenaTuneSettings() {
   const defaults = {
-    bgX: ARENA_CONFIG.bgOffsetX,  // LOCKED at 465
-    bgY: 0,
+    bgX: ARENA_CONFIG.bgOffsetX,          // LOCKED at 370
+    bgY: ARENA_CONFIG.bgOffsetY || 95,    // LOCKED at 95
     bgScale: 1.0,
     groundY: ARENA_CONFIG.groundY,        // LOCKED at 0.90
-    fighterScale: ARENA_CONFIG.fighterScale,  // LOCKED at 1.14
+    fighterScale: ARENA_CONFIG.fighterScale,  // LOCKED at 1.96
     fightOffset: ARENA_CONFIG.fightOffset,
     cameraStartX: 0,
-    playerStartX: ARENA_CONFIG.playerSpawnX,  // LOCKED at 10%
-    enemyStartX: ARENA_CONFIG.enemySpawnX,    // 90%
+    playerStartX: ARENA_CONFIG.playerSpawnX,  // LOCKED at 19%
+    enemyStartX: ARENA_CONFIG.enemySpawnX,    // LOCKED at 81%
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
