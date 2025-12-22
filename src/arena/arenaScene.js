@@ -17,21 +17,23 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  worldMultiplier: 4,      // World = 4x screen width (3120px)
-  fightOffset: 150,        // Distance from center for each fighter
-  engageDistance: 300,     // Stop when this close
-  groundY: 0.90,           // LOCKED at 90%
-  runSpeed: 2500,          // Slower for drama
+  worldMultiplier: 4,      // LOCKED - 3120px world
+  fightOffset: 150,
+  engageDistance: 300,
+
+  // HARDCODED FROM USER'S TUNING:
+  groundY: 0.98,           // LOCKED at 98%
+  fighterScale: 1.78,      // LOCKED at 1.78
+  playerSpawnX: 0.22,      // LOCKED at 22%
+  enemySpawnX: 0.78,       // LOCKED at 78%
+
+  bgOffsetX: 370,          // LOCKED
+  bgOffsetY: 95,           // LOCKED
+
+  runSpeed: 2500,
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
-  fighterScale: 1.96,      // LOCKED at 1.96
-  // Spawn positions (% of world width)
-  playerSpawnX: 0.19,      // LOCKED at 19%
-  enemySpawnX: 0.81,       // LOCKED at 81% (fits in BG)
-  // BG position
-  bgOffsetX: 370,          // LOCKED
-  bgOffsetY: 95,           // LOCKED
   // Camera settings
   camera: {
     lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
@@ -66,15 +68,15 @@ if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 // Tunable values (saved to localStorage)
 function getArenaTuneSettings() {
   const defaults = {
-    bgX: ARENA_CONFIG.bgOffsetX,          // LOCKED at 370
-    bgY: ARENA_CONFIG.bgOffsetY || 95,    // LOCKED at 95
-    bgScale: 1.0,
-    groundY: ARENA_CONFIG.groundY,        // LOCKED at 0.90
-    fighterScale: ARENA_CONFIG.fighterScale,  // LOCKED at 1.96
-    fightOffset: ARENA_CONFIG.fightOffset,
+    bgX: 370,                // HARDCODED
+    bgY: 95,                 // HARDCODED
+    bgScale: 1.0,            // HARDCODED
+    groundY: 0.98,           // HARDCODED at 98%
+    fighterScale: 1.78,      // HARDCODED at 1.78
+    fightOffset: 150,
     cameraStartX: 0,
-    playerStartX: ARENA_CONFIG.playerSpawnX,  // LOCKED at 19%
-    enemyStartX: ARENA_CONFIG.enemySpawnX,    // LOCKED at 81%
+    playerStartX: 0.22,      // HARDCODED at 22%
+    enemyStartX: 0.78,       // HARDCODED at 78%
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
@@ -83,15 +85,27 @@ function getArenaTuneSettings() {
     const saved = localStorage.getItem('ARENA_TUNE');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Validate spawn positions
-      if (parsed.playerStartX > 0.5) parsed.playerStartX = defaults.playerStartX;
-      if (parsed.enemyStartX < 0.5) parsed.enemyStartX = defaults.enemyStartX;
-      // Validate groundY (must be 0.3 to 0.95)
-      if (parsed.groundY > 0.95) parsed.groundY = 0.90;
-      if (parsed.groundY < 0.3) parsed.groundY = 0.50;
+
+      // STRICT VALIDATION - clamp ALL values
+      if (parsed.playerStartX !== undefined) {
+        parsed.playerStartX = Math.max(0.05, Math.min(0.45, parsed.playerStartX));
+      }
+      if (parsed.enemyStartX !== undefined) {
+        parsed.enemyStartX = Math.max(0.55, Math.min(0.95, parsed.enemyStartX));
+      }
+      if (parsed.groundY !== undefined) {
+        parsed.groundY = Math.max(0.5, Math.min(0.99, parsed.groundY));
+      }
+      if (parsed.fighterScale !== undefined) {
+        parsed.fighterScale = Math.max(0.5, Math.min(3.0, parsed.fighterScale));
+      }
+
+      console.log("[ARENA] Loaded settings (validated):", parsed);
       return { ...defaults, ...parsed };
     }
-  } catch(e) {}
+  } catch(e) {
+    console.warn("[ARENA] Failed to load settings, using defaults");
+  }
   return defaults;
 }
 
@@ -511,6 +525,23 @@ function destroyTuneUI() {
 
 function startArena(scene, enemyData) {
   if (arenaActive) return;
+
+  // Validate saved settings on startup - clear if invalid
+  const savedRaw = localStorage.getItem('ARENA_TUNE');
+  if (savedRaw) {
+    try {
+      const saved = JSON.parse(savedRaw);
+      if (saved.enemyStartX > 1 || saved.playerStartX > 0.5 || saved.groundY > 1) {
+        console.warn("[ARENA] Invalid saved settings detected, clearing!");
+        localStorage.removeItem('ARENA_TUNE');
+        arenaTuneSettings = getArenaTuneSettings();  // Reload defaults
+      }
+    } catch(e) {
+      localStorage.removeItem('ARENA_TUNE');
+      arenaTuneSettings = getArenaTuneSettings();
+    }
+  }
+
   arenaActive = true;
   arenaState = "INTRO";
 
@@ -793,33 +824,40 @@ function setupFighterDrag(scene) {
   arenaEnemySprite.setInteractive({ draggable: true, useHandCursor: true });
   scene.input.setDraggable(arenaEnemySprite);
 
-  // Drag events
+  // Drag events with STRICT CLAMPING
   scene.input.on('drag', (pointer, gameObject, dragX, dragY) => {
-    // Move object (convert from screen to world coords)
+    // Convert to world coordinates
     const worldX = dragX + scene.cameras.main.scrollX;
     const worldY = dragY;
 
-    gameObject.x = worldX;
-    gameObject.y = worldY;
+    // STRICT CLAMP to valid world bounds
+    const clampedX = Math.max(100, Math.min(worldX, WORLD_W - 100));
+    const clampedY = Math.max(200, Math.min(worldY, BASE_H - 50));
 
-    // Update tune settings
+    gameObject.x = clampedX;
+    gameObject.y = clampedY;
+
+    // Calculate percentage and CLAMP before saving
     if (gameObject === arenaPlayerSprite) {
-      arenaTuneSettings.playerStartX = worldX / WORLD_W;
-      arenaTuneSettings.groundY = worldY / BASE_H;
+      const pct = clampedX / WORLD_W;
+      arenaTuneSettings.playerStartX = Math.max(0.05, Math.min(0.45, pct));
+      console.log("[TUNE] Player X:", (arenaTuneSettings.playerStartX * 100).toFixed(0) + "%");
     }
+
     if (gameObject === arenaEnemySprite) {
-      arenaTuneSettings.enemyStartX = worldX / WORLD_W;
-      arenaTuneSettings.groundY = worldY / BASE_H;
+      const pct = clampedX / WORLD_W;
+      arenaTuneSettings.enemyStartX = Math.max(0.55, Math.min(0.95, pct));
+      console.log("[TUNE] Enemy X:", (arenaTuneSettings.enemyStartX * 100).toFixed(0) + "%");
     }
+
+    // Ground Y - also clamp
+    const groundPct = clampedY / BASE_H;
+    arenaTuneSettings.groundY = Math.max(0.5, Math.min(0.99, groundPct));
 
     // Sync both Y positions (same ground)
-    GROUND_Y = worldY;
-    if (gameObject === arenaPlayerSprite && arenaEnemySprite) {
-      arenaEnemySprite.y = worldY;
-    }
-    if (gameObject === arenaEnemySprite && arenaPlayerSprite) {
-      arenaPlayerSprite.y = worldY;
-    }
+    GROUND_Y = clampedY;
+    if (arenaPlayerSprite) arenaPlayerSprite.y = clampedY;
+    if (arenaEnemySprite) arenaEnemySprite.y = clampedY;
 
     // Update visuals
     drawGroundLine(scene);
