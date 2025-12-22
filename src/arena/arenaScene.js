@@ -85,6 +85,9 @@ function getArenaTuneSettings() {
       // Validate spawn positions
       if (parsed.playerStartX > 0.5) parsed.playerStartX = defaults.playerStartX;
       if (parsed.enemyStartX < 0.5) parsed.enemyStartX = defaults.enemyStartX;
+      // Validate groundY (must be 0.3 to 0.95)
+      if (parsed.groundY > 0.95) parsed.groundY = 0.90;
+      if (parsed.groundY < 0.3) parsed.groundY = 0.50;
       return { ...defaults, ...parsed };
     }
   } catch(e) {}
@@ -203,27 +206,65 @@ function setupArenaTuneKeys(scene) {
   scene.input.keyboard.on('keydown-FIVE', () => { selectedTuneElement = 'fight'; updateArenaTuneDisplay(); });
 
   scene.input.keyboard.on('keydown-UP', () => {
-    if (selectedTuneElement === 'bg') arenaTuneSettings.bgY -= STEP;
-    else if (selectedTuneElement === 'ground') arenaTuneSettings.groundY -= 0.01;
-    applyArenaTuneSettings(scene);
+    if (selectedTuneElement === 'bg') {
+      arenaTuneSettings.bgY -= STEP;
+      applyArenaTuneSettings(scene);
+    } else if (selectedTuneElement === 'ground' || selectedTuneElement === 'player' || selectedTuneElement === 'enemy') {
+      arenaTuneSettings.groundY -= 0.01;
+      GROUND_Y = BASE_H * arenaTuneSettings.groundY;
+      if (arenaPlayerSprite) arenaPlayerSprite.y = GROUND_Y;
+      if (arenaEnemySprite) arenaEnemySprite.y = GROUND_Y;
+      drawGroundLine(scene);
+    }
+    updateArenaTuneDisplay();
   });
 
   scene.input.keyboard.on('keydown-DOWN', () => {
-    if (selectedTuneElement === 'bg') arenaTuneSettings.bgY += STEP;
-    else if (selectedTuneElement === 'ground') arenaTuneSettings.groundY += 0.01;
-    applyArenaTuneSettings(scene);
+    if (selectedTuneElement === 'bg') {
+      arenaTuneSettings.bgY += STEP;
+      applyArenaTuneSettings(scene);
+    } else if (selectedTuneElement === 'ground' || selectedTuneElement === 'player' || selectedTuneElement === 'enemy') {
+      arenaTuneSettings.groundY += 0.01;
+      GROUND_Y = BASE_H * arenaTuneSettings.groundY;
+      if (arenaPlayerSprite) arenaPlayerSprite.y = GROUND_Y;
+      if (arenaEnemySprite) arenaEnemySprite.y = GROUND_Y;
+      drawGroundLine(scene);
+    }
+    updateArenaTuneDisplay();
   });
 
   scene.input.keyboard.on('keydown-LEFT', () => {
-    if (selectedTuneElement === 'bg') arenaTuneSettings.bgX -= STEP;
-    else if (selectedTuneElement === 'fight') arenaTuneSettings.fightOffset -= 10;
-    applyArenaTuneSettings(scene);
+    if (selectedTuneElement === 'bg') {
+      arenaTuneSettings.bgX -= STEP;
+      applyArenaTuneSettings(scene);
+    } else if (selectedTuneElement === 'player' && arenaPlayerSprite) {
+      arenaPlayerSprite.x -= 50;
+      arenaTuneSettings.playerStartX = arenaPlayerSprite.x / WORLD_W;
+    } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
+      arenaEnemySprite.x -= 50;
+      arenaTuneSettings.enemyStartX = arenaEnemySprite.x / WORLD_W;
+    } else if (selectedTuneElement === 'fight') {
+      arenaTuneSettings.fightOffset -= 10;
+      applyArenaTuneSettings(scene);
+    }
+    updateArenaTuneDisplay();
   });
 
   scene.input.keyboard.on('keydown-RIGHT', () => {
-    if (selectedTuneElement === 'bg') arenaTuneSettings.bgX += STEP;
-    else if (selectedTuneElement === 'fight') arenaTuneSettings.fightOffset += 10;
-    applyArenaTuneSettings(scene);
+    if (selectedTuneElement === 'bg') {
+      arenaTuneSettings.bgX += STEP;
+      applyArenaTuneSettings(scene);
+    } else if (selectedTuneElement === 'player' && arenaPlayerSprite) {
+      arenaPlayerSprite.x += 50;
+      arenaTuneSettings.playerStartX = arenaPlayerSprite.x / WORLD_W;
+    } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
+      arenaEnemySprite.x += 50;
+      arenaTuneSettings.enemyStartX = arenaEnemySprite.x / WORLD_W;
+    } else if (selectedTuneElement === 'fight') {
+      arenaTuneSettings.fightOffset += 10;
+      applyArenaTuneSettings(scene);
+    }
+    updateArenaTuneDisplay();
   });
 
   scene.input.keyboard.on('keydown-Q', () => {
@@ -624,14 +665,21 @@ function setupArenaWorld(scene) {
 
   console.log("[ARENA] BG scale:", bgScale.toFixed(2), "WORLD_W:", WORLD_W, "offsetX:", bgOffsetX);
 
-  // Exit button (fixed to screen)
-  arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 100, '[ Выход ]', {
-    fontSize: '28px', color: '#ffffff', backgroundColor: '#222222',
-    padding: { x: 24, y: 12 }
+  // Exit button (fixed to screen, high depth)
+  arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 120, '[ ВЫХОД ]', {
+    fontSize: '32px',
+    fontFamily: 'Arial',
+    color: '#ffffff',
+    backgroundColor: '#333333',
+    padding: { x: 30, y: 15 }
   });
-  arenaExitBtnSprite.setOrigin(0.5).setDepth(300).setScrollFactor(0);
+  arenaExitBtnSprite.setOrigin(0.5);
+  arenaExitBtnSprite.setDepth(500);        // Higher than everything
+  arenaExitBtnSprite.setScrollFactor(0);   // Fixed to screen!
   arenaExitBtnSprite.setInteractive({ useHandCursor: true });
   arenaExitBtnSprite.on('pointerdown', () => exitArena(scene));
+  arenaExitBtnSprite.on('pointerover', () => arenaExitBtnSprite.setStyle({ backgroundColor: '#555555' }));
+  arenaExitBtnSprite.on('pointerout', () => arenaExitBtnSprite.setStyle({ backgroundColor: '#333333' }));
 
   // Initialize tune mode
   if (ARENA_TUNE_ENABLED) {
