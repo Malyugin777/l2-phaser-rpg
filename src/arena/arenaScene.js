@@ -283,7 +283,7 @@ function setupArenaTuneKeys(scene) {
   });
 
   // Helper: zoom camera centered on a target X position
-  function zoomToTarget(targetX, newZoom) {
+  function zoomToTarget(targetX, newZoom, label) {
     const cam = scene.cameras.main;
     cam.setZoom(newZoom);
 
@@ -295,6 +295,7 @@ function setupArenaTuneKeys(scene) {
     const maxScroll = WORLD_W - viewWidth;
     cam.scrollX = Math.max(0, Math.min(scrollX, maxScroll));
 
+    console.log("[TUNE ZOOM]", label, "targetX:", targetX.toFixed(0), "zoom:", newZoom.toFixed(2), "scrollX:", cam.scrollX.toFixed(0));
     updateArenaTuneDisplay();
   }
 
@@ -304,13 +305,18 @@ function setupArenaTuneKeys(scene) {
 
     // Get target based on selection
     let targetX = scene.cameras.main.scrollX + BASE_W / 2; // default: center of current view
+    let label = "center";
+
     if (selectedTuneElement === 'player' && arenaPlayerSprite) {
       targetX = arenaPlayerSprite.x;
+      label = "PLAYER x=" + arenaPlayerSprite.x.toFixed(0);
     } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
       targetX = arenaEnemySprite.x;
+      label = "ENEMY x=" + arenaEnemySprite.x.toFixed(0);
     }
 
-    zoomToTarget(targetX, newZoom);
+    console.log("[TUNE] Z pressed, selected:", selectedTuneElement, "sprite exists:", !!arenaPlayerSprite, !!arenaEnemySprite);
+    zoomToTarget(targetX, newZoom, label);
   });
 
   // X = zoom IN, centered on selected object
@@ -319,13 +325,18 @@ function setupArenaTuneKeys(scene) {
 
     // Get target based on selection
     let targetX = scene.cameras.main.scrollX + BASE_W / 2; // default: center of current view
+    let label = "center";
+
     if (selectedTuneElement === 'player' && arenaPlayerSprite) {
       targetX = arenaPlayerSprite.x;
+      label = "PLAYER x=" + arenaPlayerSprite.x.toFixed(0);
     } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
       targetX = arenaEnemySprite.x;
+      label = "ENEMY x=" + arenaEnemySprite.x.toFixed(0);
     }
 
-    zoomToTarget(targetX, newZoom);
+    console.log("[TUNE] X pressed, selected:", selectedTuneElement, "sprite exists:", !!arenaPlayerSprite, !!arenaEnemySprite);
+    zoomToTarget(targetX, newZoom, label);
   });
 
   // 0 = reset zoom to 1.0
