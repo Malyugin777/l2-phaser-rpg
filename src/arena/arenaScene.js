@@ -65,6 +65,15 @@ let cinematicStartTime = 0;
 const ARENA_TUNE_ENABLED = new URLSearchParams(window.location.search).has('arena_tune');
 if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 
+// Version check - clear old settings on version change
+const ARENA_TUNE_VERSION = 'v2';
+const savedVersion = localStorage.getItem('ARENA_TUNE_VERSION');
+if (savedVersion !== ARENA_TUNE_VERSION) {
+  localStorage.removeItem('ARENA_TUNE');
+  localStorage.setItem('ARENA_TUNE_VERSION', ARENA_TUNE_VERSION);
+  console.log("[ARENA] Cleared old settings (version " + savedVersion + " → " + ARENA_TUNE_VERSION + ")");
+}
+
 // Tunable values (saved to localStorage)
 function getArenaTuneSettings() {
   const defaults = {
