@@ -38,7 +38,7 @@ const ARENA_CONFIG = {
     lerpSpeed: 0.06,
     lockOnEngage: true,
     startZoom: 1.4,
-    endZoom: 1.0,
+    endZoom: 0.5,       // Zoom out for battle view
     zoomLerpSpeed: 0.03
   },
   cinematic: {
@@ -1098,16 +1098,19 @@ function onEngageDistance(scene) {
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
 
-  // === LOCK CAMERA AND ZOOM to 1.0 ===
-  scene.cameras.main.setZoom(1.0);  // Force zoom to 1.0!
+  // === LOCK CAMERA AND ZOOM ===
+  const endZoom = ARENA_CONFIG.camera?.endZoom || 0.5;
+  scene.cameras.main.setZoom(endZoom);
 
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
   const midY = (arenaPlayerSprite.y + arenaEnemySprite.y) / 2;
-  const finalScrollX = Math.max(0, Math.min(midX - BASE_W / 2, WORLD_W - BASE_W));
-  const finalScrollY = Math.min(MAX_SCROLL_Y, Math.max(0, midY - BASE_H * 0.7));
+  const viewWidth = BASE_W / endZoom;
+  const viewHeight = BASE_H / endZoom;
+  const finalScrollX = Math.max(0, Math.min(midX - viewWidth / 2, WORLD_W - viewWidth));
+  const finalScrollY = Math.min(MAX_SCROLL_Y, Math.max(0, midY - viewHeight * 0.7));
   scene.cameras.main.scrollX = finalScrollX;
   scene.cameras.main.scrollY = finalScrollY;
-  console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0), "Y:", finalScrollY.toFixed(0), "Zoom: 1.0");
+  console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0), "Y:", finalScrollY.toFixed(0), "Zoom:", endZoom);
 
   // Pause, then fight
   scene.time.delayedCall(ARENA_CONFIG.engagePause, () => {
