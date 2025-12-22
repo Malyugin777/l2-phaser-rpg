@@ -291,11 +291,17 @@ function setupArenaTuneKeys(scene) {
   // A/D = pan camera left/right (no limits in tune mode)
   const PAN_STEP = 100;
   scene.input.keyboard.on('keydown-A', () => {
+    const before = scene.cameras.main.scrollX;
     scene.cameras.main.scrollX -= PAN_STEP;
+    const after = scene.cameras.main.scrollX;
+    console.log("[TUNE] A pressed: scrollX", before, "→", after, "bounds:", scene.cameras.main._bounds);
     updateArenaTuneDisplay();
   });
   scene.input.keyboard.on('keydown-D', () => {
+    const before = scene.cameras.main.scrollX;
     scene.cameras.main.scrollX += PAN_STEP;
+    const after = scene.cameras.main.scrollX;
+    console.log("[TUNE] D pressed: scrollX", before, "→", after);
     updateArenaTuneDisplay();
   });
 
