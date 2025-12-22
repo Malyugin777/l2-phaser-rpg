@@ -479,22 +479,54 @@ function startArena(scene, enemyData) {
 
   hideCity();
 
-  showVSScreen(scene, enemyData, () => {
-    setupArenaWorld(scene);
-    spawnFighters(scene, enemyData);
+  // Lazy load arena assets before starting
+  lazyLoadArenaAssets(scene, () => {
+    showVSScreen(scene, enemyData, () => {
+      setupArenaWorld(scene);
+      spawnFighters(scene, enemyData);
 
-    // === TUNE MODE: Don't auto-run, wait for SPACE ===
-    if (ARENA_TUNE_ENABLED) {
-      arenaState = "TUNING";
-      console.log("[ARENA] Tune mode - press SPACE to start run");
-      // Fighters stay idle at start positions
-      if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
-      if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
-    } else {
-      // Normal mode - start cinematic intro sequence
-      startCinematicIntro(scene);
-    }
-  });
+      // === TUNE MODE: Don't auto-run, wait for SPACE ===
+      if (ARENA_TUNE_ENABLED) {
+        arenaState = "TUNING";
+        console.log("[ARENA] Tune mode - press SPACE to start run");
+        if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
+        if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+      } else {
+        startCinematicIntro(scene);
+      }
+    });
+  });  // end lazyLoadArenaAssets
+}
+
+// Lazy load arena assets (background + battle audio)
+function lazyLoadArenaAssets(scene, onComplete) {
+  let loaded = 0;
+  const toLoad = 2;  // arena_village + battle_theme
+
+  const checkDone = () => {
+    loaded++;
+    if (loaded >= toLoad && onComplete) onComplete();
+  };
+
+  // Load arena background
+  if (scene.textures.exists('arena_village')) {
+    checkDone();
+  } else {
+    console.log("[ARENA] Lazy loading arena_village...");
+    scene.load.image('arena_village', 'assets/backgrounds/arena_village.png');
+    scene.load.once('filecomplete-image-arena_village', checkDone);
+  }
+
+  // Load battle theme
+  if (scene.cache.audio.exists('battle_theme')) {
+    checkDone();
+  } else {
+    console.log("[ARENA] Lazy loading battle_theme...");
+    scene.load.audio('battle_theme', 'assets/audio/battle_theme.mp3');
+    scene.load.once('filecomplete-audio-battle_theme', checkDone);
+  }
+
+  scene.load.start();
 }
 
 function hideCity() {

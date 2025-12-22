@@ -134,20 +134,15 @@ function preload() {
     if (window.preEntry) window.preEntry.setProgress(value);
   });
 
-  // Audio
+  // === CRITICAL ASSETS ONLY (fast initial load) ===
+
+  // Audio - only city theme (~2 MB), battle loads later
   this.load.audio("city_theme", "assets/audio/city_theme.mp3");
-  this.load.audio("battle_theme", "assets/audio/battle_theme.mp3");
 
-  // Backgrounds
+  // Main background only (~6 MB) - others lazy loaded
   this.load.image("talkingisland_main", "assets/backgrounds/talking_island.png");
-  this.load.image("obelisk_of_victory", "assets/backgrounds/obelisk_of_victory.png");
-  this.load.image("northern_territory", "assets/backgrounds/northern_territory.png");
-  this.load.image("elven_ruins", "assets/backgrounds/elven_ruins.png");
-  this.load.image("orc_barracks", "assets/backgrounds/orc_barracks.png");
-  this.load.image("arena_village", "assets/backgrounds/arena_village.png");
 
-  // UI
-  this.load.image("map_world", "assets/ui/map_world.png");
+  // UI essentials
   this.load.image('ui_bottom', 'assets/ui/bottom.png');
   this.load.image('ui_btn_fight', 'assets/ui/btn_fight_base.png');
   this.load.image('icon_store', 'assets/ui/icon_store.png');
@@ -155,11 +150,37 @@ function preload() {
   this.load.image('icon_helmet', 'assets/ui/icon_helmet.png');
   this.load.image('icon_map', 'assets/ui/icon_map.png');
 
-  // Intro
-  this.load.image("registration_bg", "assets/intro/registration.png");
-
-  // Spine
+  // Spine hero
   this.load.spine('hero', 'assets/spine/hero.json', 'assets/spine/hero.atlas');
+
+  // === LAZY LOADED (on demand): ===
+  // - arena_village (8 MB) - loads when Fight clicked
+  // - map_world (6 MB) - loads when Map opened
+  // - battle_theme (7 MB) - loads when arena starts
+  // - registration_bg - loads if needed
+}
+
+// Lazy load asset helper
+function lazyLoadAsset(scene, type, key, path, onComplete) {
+  if (scene.textures.exists(key) || scene.cache.audio.exists(key)) {
+    if (onComplete) onComplete();
+    return;
+  }
+
+  console.log("[LAZY] Loading:", key);
+
+  if (type === 'image') {
+    scene.load.image(key, path);
+  } else if (type === 'audio') {
+    scene.load.audio(key, path);
+  }
+
+  scene.load.once('complete', () => {
+    console.log("[LAZY] Loaded:", key);
+    if (onComplete) onComplete();
+  });
+
+  scene.load.start();
 }
 
 // ============================================================
@@ -228,27 +249,14 @@ function setupBackground(scene) {
   const w = scene.scale.width;
   const h = scene.scale.height;
 
-  // City background
+  // City background (no resampling - use Phaser's built-in scaling)
   cityBg = scene.add.image(w / 2, h / 2, "talkingisland_main");
   fitBackground(cityBg, scene);
   cityBg.setDepth(10);
   window.cityBg = cityBg;
 
-  // Resample for quality
-  const targetWpx = Math.round(cityBg.displayWidth * dprCap);
-  const targetHpx = Math.round(cityBg.displayHeight * dprCap);
-  const rsKey = makeResampledBg(scene, "talkingisland_main", "talkingisland_main_rs", targetWpx, targetHpx);
-  if (rsKey) {
-    cityBg.setTexture(rsKey);
-    cityBg.setScale(0.48);
-    cityBg.setPosition(w / 2 + 2, h / 2 + 168);
-  }
-
-  // Location background
-  locationBg = scene.add.image(w / 2, h / 2, "obelisk_of_victory");
-  fitBackground(locationBg, scene);
-  locationBg.setDepth(10);
-  locationBg.setVisible(false);
+  // Location background (lazy loaded later)
+  locationBg = null;
 }
 
 function setupHero(scene) {
