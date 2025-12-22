@@ -560,10 +560,10 @@ function showVSScreen(scene, enemyData, onComplete) {
 function setupArenaWorld(scene) {
   console.log("[ARENA] Setup world");
 
-  // Camera bounds - remove in tune mode for free navigation
+  // Camera bounds - huge bounds in tune mode for free navigation
   if (ARENA_TUNE_ENABLED) {
-    scene.cameras.main.removeBounds();
-    console.log("[ARENA] Tune mode - camera bounds REMOVED");
+    scene.cameras.main.setBounds(-WORLD_W, -WORLD_H, WORLD_W * 3, WORLD_H * 3);
+    console.log("[ARENA] Tune mode - extended camera bounds");
   } else {
     scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
     console.log("[ARENA] Camera bounds: 0 to " + (WORLD_W - BASE_W));
