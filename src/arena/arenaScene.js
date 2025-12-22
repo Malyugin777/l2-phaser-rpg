@@ -662,19 +662,19 @@ function setupArenaWorld(scene) {
   scene.cameras.main.setZoom(1);
   scene.cameras.main.scrollY = 0;
 
-  // Background - Single image (covers full world)
+  // Background - Single image (covers full world including extended Y)
   arenaBgSprite = scene.add.image(0, 0, 'arena_village');
   arenaBgSprite.setOrigin(0, 0);
   arenaBgSprite.setDepth(10);
   arenaBgSprite.setScrollFactor(1);
 
-  // Scale to cover full world width AND height
+  // Scale to cover world width AND extended height (for groundY > 100%)
   const scaleW = WORLD_W / arenaBgSprite.width;
-  const scaleH = BASE_H / arenaBgSprite.height;
+  const scaleH = extendedWorldH / arenaBgSprite.height;  // Use extended height!
   const bgScale = Math.max(scaleW, scaleH);
   arenaBgSprite.setScale(bgScale * (arenaTuneSettings.bgScale || 1.0));
 
-  console.log("[ARENA] BG single image, scale:", bgScale.toFixed(2), "WORLD_W:", WORLD_W);
+  console.log("[ARENA] BG scale:", bgScale.toFixed(2), "covers:", WORLD_W, "x", extendedWorldH);
 
   // Exit button (fixed to screen, high depth)
   arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 120, '[ ВЫХОД ]', {
