@@ -17,18 +17,20 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  worldMultiplier: 8,      // World = 8x screen width (6240px)
+  worldMultiplier: 10,     // World = 10x screen width (7800px)
   fightOffset: 150,        // Distance from center for each fighter
   engageDistance: 300,     // Stop when this close
-  groundY: 0.89,           // LOCKED at 89% from tuning
+  groundY: 0.90,           // LOCKED at 90%
   runSpeed: 2500,          // Slower for drama
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
-  fighterScale: 0.80,      // LOCKED at 0.80
+  fighterScale: 1.14,      // LOCKED at 1.14
   // Spawn positions (% of world width)
-  playerSpawnX: 0.08,      // Player at 8% (near left edge)
-  enemySpawnX: 0.92,       // Enemy at 92% (near right edge)
+  playerSpawnX: 0.10,      // LOCKED at 10%
+  enemySpawnX: 0.90,       // 90% for wider world
+  // BG position
+  bgOffsetX: 465,          // LOCKED
   // Camera settings
   camera: {
     lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
@@ -63,15 +65,15 @@ if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 // Tunable values (saved to localStorage)
 function getArenaTuneSettings() {
   const defaults = {
-    bgX: 0,
+    bgX: ARENA_CONFIG.bgOffsetX,  // LOCKED at 465
     bgY: 0,
     bgScale: 1.0,
-    groundY: ARENA_CONFIG.groundY,
-    fighterScale: ARENA_CONFIG.fighterScale,
+    groundY: ARENA_CONFIG.groundY,        // LOCKED at 0.90
+    fighterScale: ARENA_CONFIG.fighterScale,  // LOCKED at 1.14
     fightOffset: ARENA_CONFIG.fightOffset,
     cameraStartX: 0,
-    playerStartX: ARENA_CONFIG.playerSpawnX,  // 20% of world width
-    enemyStartX: ARENA_CONFIG.enemySpawnX,    // 80% of world width
+    playerStartX: ARENA_CONFIG.playerSpawnX,  // LOCKED at 10%
+    enemyStartX: ARENA_CONFIG.enemySpawnX,    // 90%
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
@@ -80,7 +82,7 @@ function getArenaTuneSettings() {
     const saved = localStorage.getItem('ARENA_TUNE');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Validate spawn positions (prevent out-of-bounds from corrupted saves)
+      // Validate spawn positions
       if (parsed.playerStartX > 0.5) parsed.playerStartX = defaults.playerStartX;
       if (parsed.enemyStartX < 0.5) parsed.enemyStartX = defaults.enemyStartX;
       return { ...defaults, ...parsed };
@@ -592,32 +594,32 @@ function showVSScreen(scene, enemyData, onComplete) {
 function setupArenaWorld(scene) {
   console.log("[ARENA] Setup world");
 
-  // Camera bounds
+  // Camera bounds - MUST allow full world traversal
   if (ARENA_TUNE_ENABLED) {
-    scene.cameras.main.setBounds(-1000, 0, WORLD_W + 2000, WORLD_H);
-    console.log("[ARENA] Tune mode - extended bounds for exploration");
+    scene.cameras.main.setBounds(-2000, 0, WORLD_W + 4000, WORLD_H);
+    console.log("[ARENA] Tune mode - extended bounds, WORLD_W:", WORLD_W);
   } else {
     scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
   }
-  console.log("[ARENA] Camera max X:", WORLD_W - BASE_W);
+  console.log("[ARENA] Camera max scroll:", WORLD_W - BASE_W);
 
   // IMPORTANT: Reset camera zoom to 1
   scene.cameras.main.setZoom(1);
 
-  // Background centered in world, scaled to COVER
-  arenaBgSprite = scene.add.image(WORLD_W / 2, BASE_H / 2, 'arena_village');
+  // Background with offset, scaled to COVER world
+  const bgOffsetX = arenaTuneSettings.bgX || ARENA_CONFIG.bgOffsetX || 0;
+  arenaBgSprite = scene.add.image(WORLD_W / 2 + bgOffsetX, BASE_H / 2, 'arena_village');
 
   // COVER: background must cover BOTH world width AND screen height
   const scaleW = WORLD_W / arenaBgSprite.width;   // fit world width
   const scaleH = BASE_H / arenaBgSprite.height;   // fit screen height
   const bgScale = Math.max(scaleW, scaleH);       // cover = max of both
-  arenaBgSprite.setScale(bgScale);
+  arenaBgSprite.setScale(bgScale * (arenaTuneSettings.bgScale || 1.0));
   arenaBgSprite.setOrigin(0.5, 0.5);
   arenaBgSprite.setDepth(10);
   arenaBgSprite.setScrollFactor(1);
 
-  console.log("[ARENA] BG scale:", bgScale.toFixed(2), "covers world:", WORLD_W,
-    "| displaySize:", arenaBgSprite.displayWidth.toFixed(0), "x", arenaBgSprite.displayHeight.toFixed(0));
+  console.log("[ARENA] BG scale:", bgScale.toFixed(2), "WORLD_W:", WORLD_W, "offsetX:", bgOffsetX);
 
   // Exit button (fixed to screen)
   arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 100, '[ Выход ]', {
@@ -775,16 +777,31 @@ function setupFighterDrag(scene) {
     updateArenaTuneDisplay();
   });
 
-  // Visual feedback on hover
+  // Visual feedback on hover (Spine doesn't have setTint)
   scene.input.on('gameobjectover', (pointer, gameObject) => {
     if (gameObject === arenaPlayerSprite || gameObject === arenaEnemySprite) {
-      gameObject.setTint(0x00ff00);
+      if (typeof gameObject.setTint === 'function') {
+        gameObject.setTint(0x44ff44);
+      } else {
+        // Scale up for Spine
+        gameObject.setScale(gameObject.scaleX * 1.05, gameObject.scaleY * 1.05);
+      }
     }
   });
 
   scene.input.on('gameobjectout', (pointer, gameObject) => {
     if (gameObject === arenaPlayerSprite || gameObject === arenaEnemySprite) {
-      gameObject.clearTint();
+      if (typeof gameObject.clearTint === 'function') {
+        gameObject.clearTint();
+      } else {
+        // Restore scale for Spine
+        const s = arenaTuneSettings.fighterScale || ARENA_CONFIG.fighterScale;
+        if (gameObject === arenaPlayerSprite) {
+          gameObject.setScale(s, s);
+        } else {
+          gameObject.setScale(-s, s);
+        }
+      }
     }
   });
 
