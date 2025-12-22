@@ -51,6 +51,7 @@ const ARENA_CONFIG = {
 };
 
 let BASE_W, BASE_H, WORLD_W, WORLD_H, GROUND_Y;
+let MAX_SCROLL_Y = 0;  // Max camera scroll Y (to avoid black edges)
 
 // Cinematic camera tracking
 let cinematicTarget = { x: 0, zoom: 1.0 };
@@ -672,9 +673,14 @@ function setupArenaWorld(scene) {
   const scaleW = WORLD_W / arenaBgSprite.width;
   const scaleH = extendedWorldH / arenaBgSprite.height;  // Use extended height!
   const bgScale = Math.max(scaleW, scaleH);
-  arenaBgSprite.setScale(bgScale * (arenaTuneSettings.bgScale || 1.0));
+  const finalBgScale = bgScale * (arenaTuneSettings.bgScale || 1.0);
+  arenaBgSprite.setScale(finalBgScale);
 
-  console.log("[ARENA] BG scale:", bgScale.toFixed(2), "covers:", WORLD_W, "x", extendedWorldH);
+  // Calculate max scroll Y (BG height - screen height)
+  const actualBgHeight = arenaBgSprite.height * finalBgScale;
+  MAX_SCROLL_Y = Math.max(0, actualBgHeight - BASE_H);
+
+  console.log("[ARENA] BG scale:", finalBgScale.toFixed(2), "height:", actualBgHeight.toFixed(0), "maxScrollY:", MAX_SCROLL_Y.toFixed(0));
 
   // Exit button (fixed to screen, high depth)
   arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 120, '[ ВЫХОД ]', {
@@ -786,7 +792,7 @@ function spawnFighters(scene, enemyData) {
   const viewWidth = BASE_W / startZoom;
   const viewHeight = BASE_H / startZoom;
   const cameraStartX = Math.max(0, arenaPlayerSprite.x - viewWidth / 2);
-  const cameraStartY = Math.max(0, arenaPlayerSprite.y - viewHeight * 0.75);
+  const cameraStartY = Math.min(MAX_SCROLL_Y, Math.max(0, arenaPlayerSprite.y - viewHeight * 0.7));
   scene.cameras.main.scrollX = cameraStartX;
   scene.cameras.main.scrollY = cameraStartY;
 
@@ -902,7 +908,8 @@ function startCinematicIntro(scene) {
 
   // Scroll Y down to show fighter (groundY is 117%, so scroll down)
   // Position camera so fighter's feet are near bottom of zoomed view
-  const playerCamY = Math.max(0, arenaPlayerSprite.y - viewHeight * 0.75);
+  // Clamp to MAX_SCROLL_Y to avoid showing black edges
+  const playerCamY = Math.min(MAX_SCROLL_Y, Math.max(0, arenaPlayerSprite.y - viewHeight * 0.7));
 
   scene.cameras.main.scrollX = playerCamX;
   scene.cameras.main.scrollY = playerCamY;
@@ -931,7 +938,7 @@ function startIntroEnemy(scene) {
   const viewWidth = BASE_W / startZoom;
   const viewHeight = BASE_H / startZoom;
   const enemyCamX = Math.max(0, arenaEnemySprite.x - viewWidth / 2);
-  const enemyCamY = Math.max(0, arenaEnemySprite.y - viewHeight * 0.75);
+  const enemyCamY = Math.min(MAX_SCROLL_Y, Math.max(0, arenaEnemySprite.y - viewHeight * 0.7));
 
   cinematicTarget = { x: enemyCamX, y: enemyCamY, zoom: startZoom };
 
@@ -957,9 +964,11 @@ function startReadyPhase(scene) {
   const viewWidth = BASE_W / endZoom;
   const viewHeight = BASE_H / endZoom;
   const midCamX = Math.max(0, midX - viewWidth / 2);
-  const midCamY = Math.max(0, midY - viewHeight * 0.75);
+  const midCamY = Math.min(MAX_SCROLL_Y, Math.max(0, midY - viewHeight * 0.7));
 
   cinematicTarget = { x: midCamX, y: midCamY, zoom: endZoom };
+
+  console.log("[ARENA] READY - target zoom:", endZoom, "camY:", midCamY.toFixed(0));
 
   // After zoom out, start run
   scene.time.delayedCall(cfg.readyDuration + cfg.zoomOutDuration, () => {
@@ -1049,12 +1058,12 @@ function updateArena(scene) {
     const viewWidth = BASE_W / newZoom;
     const viewHeight = BASE_H / newZoom;
     const targetScrollX = midX - viewWidth / 2;
-    const targetScrollY = midY - viewHeight * 0.75;
+    const targetScrollY = midY - viewHeight * 0.7;
 
-    // Clamp X to world bounds
+    // Clamp to bounds (avoid black edges)
     const maxScrollX = WORLD_W - viewWidth;
     const clampedX = Math.max(0, Math.min(targetScrollX, maxScrollX));
-    const clampedY = Math.max(0, targetScrollY);
+    const clampedY = Math.min(MAX_SCROLL_Y, Math.max(0, targetScrollY));
 
     // Smooth lerp (cinematic feel)
     const currentX = cam.scrollX;
@@ -1090,17 +1099,16 @@ function onEngageDistance(scene) {
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
 
-  // === LOCK CAMERA AND ZOOM ===
-  const endZoom = ARENA_CONFIG.camera?.endZoom || 1.0;
-  scene.cameras.main.setZoom(endZoom);
+  // === LOCK CAMERA AND ZOOM to 1.0 ===
+  scene.cameras.main.setZoom(1.0);  // Force zoom to 1.0!
 
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
   const midY = (arenaPlayerSprite.y + arenaEnemySprite.y) / 2;
   const finalScrollX = Math.max(0, Math.min(midX - BASE_W / 2, WORLD_W - BASE_W));
-  const finalScrollY = Math.max(0, midY - BASE_H * 0.75);
+  const finalScrollY = Math.min(MAX_SCROLL_Y, Math.max(0, midY - BASE_H * 0.7));
   scene.cameras.main.scrollX = finalScrollX;
   scene.cameras.main.scrollY = finalScrollY;
-  console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0), "Y:", finalScrollY.toFixed(0), "Zoom:", endZoom);
+  console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0), "Y:", finalScrollY.toFixed(0), "Zoom: 1.0");
 
   // Pause, then fight
   scene.time.delayedCall(ARENA_CONFIG.engagePause, () => {
