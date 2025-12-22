@@ -17,18 +17,18 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  worldMultiplier: 3,      // World = 3x screen width (allows centering near edges)
+  worldMultiplier: 5,      // World = 5x screen width (wide arena with gates)
   fightOffset: 150,        // Distance from center for each fighter
   engageDistance: 300,     // Stop when this close
-  groundY: 0.38,           // Ground at 38% from top (fence line)
+  groundY: 0.55,           // Ground at 55% from top (lower on screen)
   runSpeed: 2500,          // Slower for drama
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
   fighterScale: 0.8,       // Slightly smaller
   // Spawn positions (% of world width)
-  playerSpawnX: 0.20,      // Player at 20% of world
-  enemySpawnX: 0.80,       // Enemy at 80% of world
+  playerSpawnX: 0.12,      // Player at 12% of world (near left gate)
+  enemySpawnX: 0.88,       // Enemy at 88% of world (near right gate)
   // Camera settings
   camera: {
     lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
