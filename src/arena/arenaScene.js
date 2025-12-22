@@ -288,16 +288,14 @@ function setupArenaTuneKeys(scene) {
     }
   });
 
-  // A/D = pan camera left/right
-  const PAN_STEP = 50;
+  // A/D = pan camera left/right (no limits in tune mode)
+  const PAN_STEP = 100;
   scene.input.keyboard.on('keydown-A', () => {
-    const newX = Math.max(0, scene.cameras.main.scrollX - PAN_STEP);
-    scene.cameras.main.scrollX = newX;
+    scene.cameras.main.scrollX -= PAN_STEP;
     updateArenaTuneDisplay();
   });
   scene.input.keyboard.on('keydown-D', () => {
-    const newX = Math.min(WORLD_W - BASE_W, scene.cameras.main.scrollX + PAN_STEP);
-    scene.cameras.main.scrollX = newX;
+    scene.cameras.main.scrollX += PAN_STEP;
     updateArenaTuneDisplay();
   });
 
@@ -562,9 +560,14 @@ function showVSScreen(scene, enemyData, onComplete) {
 function setupArenaWorld(scene) {
   console.log("[ARENA] Setup world");
 
-  // Camera bounds = full world (3x width gives plenty of room)
-  scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
-  console.log("[ARENA] Camera bounds: 0 to " + (WORLD_W - BASE_W));
+  // Camera bounds - remove in tune mode for free navigation
+  if (ARENA_TUNE_ENABLED) {
+    scene.cameras.main.removeBounds();
+    console.log("[ARENA] Tune mode - camera bounds REMOVED");
+  } else {
+    scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
+    console.log("[ARENA] Camera bounds: 0 to " + (WORLD_W - BASE_W));
+  }
 
   // IMPORTANT: Reset camera zoom to 1
   scene.cameras.main.setZoom(1);
