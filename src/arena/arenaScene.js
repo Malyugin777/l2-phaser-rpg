@@ -418,13 +418,10 @@ function setupArenaTuneKeys(scene) {
 function applyArenaTuneSettings(scene) {
   const s = arenaTuneSettings;
 
-  // Apply BG position/scale (COVER mode)
+  // Apply BG position/scale (tileSprite - height-based scaling)
   if (arenaBgSprite) {
-    const texW = arenaBgSprite.texture.source[0].width;
     const texH = arenaBgSprite.texture.source[0].height;
-    const scaleW = WORLD_W / texW;
-    const scaleH = BASE_H / texH;
-    const baseScale = Math.max(scaleW, scaleH);  // COVER
+    const baseScale = BASE_H / texH;
     arenaBgSprite.setScale(baseScale * s.bgScale);
     arenaBgSprite.setPosition(WORLD_W / 2 + s.bgX, BASE_H / 2 + s.bgY);
   }
@@ -650,20 +647,31 @@ function setupArenaWorld(scene) {
   // IMPORTANT: Reset camera zoom to 1
   scene.cameras.main.setZoom(1);
 
-  // Background with offset, scaled to COVER world
+  // Background - TileSprite (repeats horizontally to fill world)
   const bgOffsetX = arenaTuneSettings.bgX || ARENA_CONFIG.bgOffsetX || 0;
-  arenaBgSprite = scene.add.image(WORLD_W / 2 + bgOffsetX, BASE_H / 2, 'arena_village');
 
-  // COVER: background must cover BOTH world width AND screen height
-  const scaleW = WORLD_W / arenaBgSprite.width;   // fit world width
-  const scaleH = BASE_H / arenaBgSprite.height;   // fit screen height
-  const bgScale = Math.max(scaleW, scaleH);       // cover = max of both
-  arenaBgSprite.setScale(bgScale * (arenaTuneSettings.bgScale || 1.0));
+  // Get texture dimensions
+  const bgTex = scene.textures.get('arena_village');
+  const texW = bgTex.source[0].width;
+  const texH = bgTex.source[0].height;
+
+  // Scale to fit screen height
+  const bgScaleY = BASE_H / texH;
+
+  // Create tileSprite that covers full world width
+  arenaBgSprite = scene.add.tileSprite(
+    WORLD_W / 2 + bgOffsetX,  // center X with offset
+    BASE_H / 2,               // center Y
+    WORLD_W * 2,              // extra wide to cover everything
+    texH,                     // original height (will scale)
+    'arena_village'
+  );
   arenaBgSprite.setOrigin(0.5, 0.5);
+  arenaBgSprite.setScale(bgScaleY * (arenaTuneSettings.bgScale || 1.0));
   arenaBgSprite.setDepth(10);
   arenaBgSprite.setScrollFactor(1);
 
-  console.log("[ARENA] BG scale:", bgScale.toFixed(2), "WORLD_W:", WORLD_W, "offsetX:", bgOffsetX);
+  console.log("[ARENA] BG tileSprite, scaleY:", bgScaleY.toFixed(2), "WORLD_W:", WORLD_W);
 
   // Exit button (fixed to screen, high depth)
   arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 120, '[ ВЫХОД ]', {
