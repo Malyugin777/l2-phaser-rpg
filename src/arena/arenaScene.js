@@ -455,7 +455,7 @@ function drawGroundLine(scene) {
 
   if (groundLine) groundLine.destroy();
 
-  groundLine = scene.add.line(0, 0, 0, GROUND_Y, WORLD_W, GROUND_Y, 0xff0000, 0.5);
+  groundLine = scene.add.line(0, 0, 0, GROUND_Y, WORLD_W * 2, GROUND_Y, 0xff0000, 0.5);
   groundLine.setOrigin(0, 0);
   groundLine.setDepth(999);
   groundLine.setScrollFactor(1);
