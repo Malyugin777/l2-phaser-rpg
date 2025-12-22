@@ -282,17 +282,39 @@ function setupArenaTuneKeys(scene) {
     updateArenaTuneDisplay();
   });
 
-  // Z = zoom out
+  // Z = zoom OUT, centered on selected object
   scene.input.keyboard.on('keydown-Z', () => {
-    const zoom = Math.max(0.5, scene.cameras.main.zoom - 0.1);
-    scene.cameras.main.setZoom(zoom);
+    const cam = scene.cameras.main;
+    const newZoom = Math.max(0.5, cam.zoom - 0.1);
+
+    // Center on selected object before zoom
+    if (selectedTuneElement === 'player' && arenaPlayerSprite) {
+      cam.scrollX = arenaPlayerSprite.x - BASE_W / 2;
+    } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
+      cam.scrollX = arenaEnemySprite.x - BASE_W / 2;
+    }
+    // Clamp
+    cam.scrollX = Math.max(0, Math.min(cam.scrollX, WORLD_W - BASE_W));
+
+    cam.setZoom(newZoom);
     updateArenaTuneDisplay();
   });
 
-  // X = zoom in
+  // X = zoom IN, centered on selected object
   scene.input.keyboard.on('keydown-X', () => {
-    const zoom = Math.min(2.0, scene.cameras.main.zoom + 0.1);
-    scene.cameras.main.setZoom(zoom);
+    const cam = scene.cameras.main;
+    const newZoom = Math.min(2.0, cam.zoom + 0.1);
+
+    // Center on selected object before zoom
+    if (selectedTuneElement === 'player' && arenaPlayerSprite) {
+      cam.scrollX = arenaPlayerSprite.x - BASE_W / 2;
+    } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
+      cam.scrollX = arenaEnemySprite.x - BASE_W / 2;
+    }
+    // Clamp
+    cam.scrollX = Math.max(0, Math.min(cam.scrollX, WORLD_W - BASE_W));
+
+    cam.setZoom(newZoom);
     updateArenaTuneDisplay();
   });
 
