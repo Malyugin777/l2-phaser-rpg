@@ -17,18 +17,18 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  worldMultiplier: 5,      // World = 5x screen width (wide arena with gates)
+  worldMultiplier: 8,      // World = 8x screen width (6240px)
   fightOffset: 150,        // Distance from center for each fighter
   engageDistance: 300,     // Stop when this close
-  groundY: 0.55,           // Ground at 55% from top (lower on screen)
+  groundY: 0.89,           // LOCKED at 89% from tuning
   runSpeed: 2500,          // Slower for drama
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
-  fighterScale: 0.8,       // Slightly smaller
+  fighterScale: 0.80,      // LOCKED at 0.80
   // Spawn positions (% of world width)
-  playerSpawnX: 0.12,      // Player at 12% of world (near left gate)
-  enemySpawnX: 0.88,       // Enemy at 88% of world (near right gate)
+  playerSpawnX: 0.08,      // Player at 8% (near left edge)
+  enemySpawnX: 0.92,       // Enemy at 92% (near right edge)
   // Camera settings
   camera: {
     lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
@@ -288,20 +288,14 @@ function setupArenaTuneKeys(scene) {
     }
   });
 
-  // A/D = pan camera left/right (no limits in tune mode)
-  const PAN_STEP = 100;
+  // A/D = pan camera left/right
+  const PAN_STEP = 150;
   scene.input.keyboard.on('keydown-A', () => {
-    const before = scene.cameras.main.scrollX;
     scene.cameras.main.scrollX -= PAN_STEP;
-    const after = scene.cameras.main.scrollX;
-    console.log("[TUNE] A pressed: scrollX", before, "→", after, "bounds:", scene.cameras.main._bounds);
     updateArenaTuneDisplay();
   });
   scene.input.keyboard.on('keydown-D', () => {
-    const before = scene.cameras.main.scrollX;
     scene.cameras.main.scrollX += PAN_STEP;
-    const after = scene.cameras.main.scrollX;
-    console.log("[TUNE] D pressed: scrollX", before, "→", after);
     updateArenaTuneDisplay();
   });
 
@@ -566,14 +560,14 @@ function showVSScreen(scene, enemyData, onComplete) {
 function setupArenaWorld(scene) {
   console.log("[ARENA] Setup world");
 
-  // Camera bounds - huge bounds in tune mode for free navigation
+  // Camera bounds
   if (ARENA_TUNE_ENABLED) {
-    scene.cameras.main.setBounds(-WORLD_W, -WORLD_H, WORLD_W * 3, WORLD_H * 3);
-    console.log("[ARENA] Tune mode - extended camera bounds");
+    scene.cameras.main.setBounds(-1000, 0, WORLD_W + 2000, WORLD_H);
+    console.log("[ARENA] Tune mode - extended bounds for exploration");
   } else {
     scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
-    console.log("[ARENA] Camera bounds: 0 to " + (WORLD_W - BASE_W));
   }
+  console.log("[ARENA] Camera max X:", WORLD_W - BASE_W);
 
   // IMPORTANT: Reset camera zoom to 1
   scene.cameras.main.setZoom(1);
@@ -590,9 +584,8 @@ function setupArenaWorld(scene) {
   arenaBgSprite.setDepth(10);
   arenaBgSprite.setScrollFactor(1);
 
-  console.log("[ARENA] BG scale:", bgScale.toFixed(3),
-    "(scaleW:", scaleW.toFixed(2), "scaleH:", scaleH.toFixed(2), ")",
-    "size:", arenaBgSprite.displayWidth.toFixed(0), "x", arenaBgSprite.displayHeight.toFixed(0));
+  console.log("[ARENA] BG scale:", bgScale.toFixed(2), "covers world:", WORLD_W,
+    "| displaySize:", arenaBgSprite.displayWidth.toFixed(0), "x", arenaBgSprite.displayHeight.toFixed(0));
 
   // Exit button (fixed to screen)
   arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 100, '[ Выход ]', {
