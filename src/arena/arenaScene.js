@@ -290,14 +290,16 @@ function setupArenaTuneKeys(scene) {
     }
   });
 
-  // A/D = pan camera left/right
+  // A/D = pan camera left/right (NO LIMITS in tune mode)
   const PAN_STEP = 150;
   scene.input.keyboard.on('keydown-A', () => {
     scene.cameras.main.scrollX -= PAN_STEP;
+    console.log("[TUNE] Camera X:", scene.cameras.main.scrollX);
     updateArenaTuneDisplay();
   });
   scene.input.keyboard.on('keydown-D', () => {
     scene.cameras.main.scrollX += PAN_STEP;
+    console.log("[TUNE] Camera X:", scene.cameras.main.scrollX);
     updateArenaTuneDisplay();
   });
 
@@ -594,14 +596,15 @@ function showVSScreen(scene, enemyData, onComplete) {
 function setupArenaWorld(scene) {
   console.log("[ARENA] Setup world");
 
-  // Camera bounds - MUST allow full world traversal
+  // Camera bounds
   if (ARENA_TUNE_ENABLED) {
-    scene.cameras.main.setBounds(-2000, 0, WORLD_W + 4000, WORLD_H);
-    console.log("[ARENA] Tune mode - extended bounds, WORLD_W:", WORLD_W);
+    // NO BOUNDS in tune mode - free camera movement
+    scene.cameras.main.removeBounds();
+    console.log("[ARENA] Tune mode - NO camera bounds, WORLD_W:", WORLD_W);
   } else {
     scene.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
+    console.log("[ARENA] Camera max scroll:", WORLD_W - BASE_W);
   }
-  console.log("[ARENA] Camera max scroll:", WORLD_W - BASE_W);
 
   // IMPORTANT: Reset camera zoom to 1
   scene.cameras.main.setZoom(1);
@@ -657,8 +660,8 @@ function setupCameraDrag(scene) {
   scene.input.on('pointermove', (pointer) => {
     if (isDraggingCamera) {
       const deltaX = dragStartX - pointer.x;
-      const newScrollX = Math.max(0, Math.min(cameraStartX + deltaX, WORLD_W - BASE_W));
-      scene.cameras.main.scrollX = newScrollX;
+      // NO LIMITS in tune mode
+      scene.cameras.main.scrollX = cameraStartX + deltaX;
     }
   });
 
