@@ -9,7 +9,7 @@
 (function() {
 
 let arenaActive = false;
-let arenaState = "NONE"; // NONE, INTRO, TUNING, RUN_IN, ENGAGE, FIGHT
+let arenaState = "NONE"; // NONE, INTRO, TUNING, INTRO_PLAYER, INTRO_ENEMY, READY, RUN_IN, ENGAGE, FIGHT
 
 let arenaBgSprite = null;
 let arenaPlayerSprite = null;
@@ -20,25 +20,38 @@ const ARENA_CONFIG = {
   worldMultiplier: 3,      // World = 3x screen width (allows centering near edges)
   fightOffset: 150,        // Distance from center for each fighter
   engageDistance: 300,     // Stop when this close
-  spawnMargin: 0.30,       // Spawn at 30% from edge
   groundY: 0.38,           // Ground at 38% from top (fence line)
   runSpeed: 2500,          // Slower for drama
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
   fighterScale: 0.8,       // Slightly smaller
+  // Spawn positions (% of world width)
+  playerSpawnX: 0.20,      // Player at 20% of world
+  enemySpawnX: 0.80,       // Enemy at 80% of world
   // Camera settings
   camera: {
     lerpSpeed: 0.06,       // Smooth follow (0.01=slow, 0.1=fast)
-    startDelay: 300,       // Wait before camera starts moving (ms)
     lockOnEngage: true,    // Lock camera when fighters meet
-    startZoom: 1.3,        // Zoomed in on player at start
+    startZoom: 1.4,        // Zoomed in on fighters during intro
     endZoom: 1.0,          // Zoom out to show both fighters
     zoomLerpSpeed: 0.03    // Zoom interpolation speed
+  },
+  // Cinematic intro timings (ms)
+  cinematic: {
+    introPlayerDuration: 1500,  // Show player close-up
+    panToEnemyDuration: 800,    // Pan camera to enemy
+    introEnemyDuration: 1000,   // Show enemy close-up
+    readyDuration: 500,         // "READY" moment before run
+    zoomOutDuration: 600        // Zoom out transition
   }
 };
 
 let BASE_W, BASE_H, WORLD_W, WORLD_H, GROUND_Y;
+
+// Cinematic camera tracking
+let cinematicTarget = { x: 0, zoom: 1.0 };
+let cinematicStartTime = 0;
 
 // ============================================================
 //  ARENA TUNE MODE
@@ -53,19 +66,25 @@ function getArenaTuneSettings() {
     bgX: 0,
     bgY: 0,
     bgScale: 1.0,
-    groundY: 0.38,
-    fighterScale: 0.8,
-    fightOffset: 150,
+    groundY: ARENA_CONFIG.groundY,
+    fighterScale: ARENA_CONFIG.fighterScale,
+    fightOffset: ARENA_CONFIG.fightOffset,
     cameraStartX: 0,
-    playerStartX: 0.15,    // Player at 15% of world width
-    enemyStartX: 0.85,     // Enemy at 85% of world width
+    playerStartX: ARENA_CONFIG.playerSpawnX,  // 20% of world width
+    enemyStartX: ARENA_CONFIG.enemySpawnX,    // 80% of world width
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
 
   try {
     const saved = localStorage.getItem('ARENA_TUNE');
-    if (saved) return { ...defaults, ...JSON.parse(saved) };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Validate spawn positions (prevent out-of-bounds from corrupted saves)
+      if (parsed.playerStartX > 0.5) parsed.playerStartX = defaults.playerStartX;
+      if (parsed.enemyStartX < 0.5) parsed.enemyStartX = defaults.enemyStartX;
+      return { ...defaults, ...parsed };
+    }
   } catch(e) {}
   return defaults;
 }
@@ -402,9 +421,9 @@ function drawGroundLine(scene) {
 
 function resetFighterPositions(scene) {
   const s = arenaTuneSettings;
-  // Use saved tune positions
-  const playerStartX = WORLD_W * (s.playerStartX || 0.15);
-  const enemyStartX = WORLD_W * (s.enemyStartX || 0.85);
+  // Use saved tune positions (or defaults from config)
+  const playerStartX = WORLD_W * (s.playerStartX || ARENA_CONFIG.playerSpawnX);
+  const enemyStartX = WORLD_W * (s.enemyStartX || ARENA_CONFIG.enemySpawnX);
 
   GROUND_Y = BASE_H * s.groundY;
 
@@ -474,8 +493,8 @@ function startArena(scene, enemyData) {
       if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
       if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
     } else {
-      // Normal mode - start run immediately
-      startRunIn(scene);
+      // Normal mode - start cinematic intro sequence
+      startCinematicIntro(scene);
     }
   });
 }
@@ -620,9 +639,9 @@ function setupCameraDrag(scene) {
 // ============================================================
 
 function spawnFighters(scene, enemyData) {
-  // Use tune settings for positions (or defaults)
-  const playerStartX = WORLD_W * (arenaTuneSettings.playerStartX || 0.15);
-  const enemyStartX = WORLD_W * (arenaTuneSettings.enemyStartX || 0.85);
+  // Use tune settings for positions (or defaults from config)
+  const playerStartX = WORLD_W * (arenaTuneSettings.playerStartX || ARENA_CONFIG.playerSpawnX);
+  const enemyStartX = WORLD_W * (arenaTuneSettings.enemyStartX || ARENA_CONFIG.enemySpawnX);
 
   // Use tune settings for ground Y
   GROUND_Y = BASE_H * arenaTuneSettings.groundY;
@@ -739,6 +758,88 @@ function setupFighterDrag(scene) {
 }
 
 // ============================================================
+//  CINEMATIC INTRO SEQUENCE
+// ============================================================
+
+function startCinematicIntro(scene) {
+  const cfg = ARENA_CONFIG.cinematic;
+  const cam = ARENA_CONFIG.camera;
+
+  console.log("[ARENA] Starting cinematic intro...");
+
+  // Fighters in idle during intro
+  if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
+  if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+
+  // === PHASE 1: INTRO_PLAYER ===
+  // Camera zoomed on player
+  arenaState = "INTRO_PLAYER";
+  cinematicStartTime = Date.now();
+
+  const startZoom = cam.startZoom || 1.4;
+  scene.cameras.main.setZoom(startZoom);
+
+  // Center camera on player
+  const viewWidth = BASE_W / startZoom;
+  const playerCamX = Math.max(0, Math.min(arenaPlayerSprite.x - viewWidth / 2, WORLD_W - viewWidth));
+  scene.cameras.main.scrollX = playerCamX;
+
+  cinematicTarget = { x: playerCamX, zoom: startZoom };
+
+  console.log("[ARENA] INTRO_PLAYER - zoom:", startZoom, "camX:", playerCamX.toFixed(0));
+
+  // After delay, transition to INTRO_ENEMY
+  scene.time.delayedCall(cfg.introPlayerDuration, () => {
+    startIntroEnemy(scene);
+  });
+}
+
+function startIntroEnemy(scene) {
+  const cfg = ARENA_CONFIG.cinematic;
+  const cam = ARENA_CONFIG.camera;
+
+  arenaState = "INTRO_ENEMY";
+  cinematicStartTime = Date.now();
+
+  console.log("[ARENA] INTRO_ENEMY - panning to enemy...");
+
+  // Target: center on enemy (camera will lerp there in updateArena)
+  const startZoom = cam.startZoom || 1.4;
+  const viewWidth = BASE_W / startZoom;
+  const enemyCamX = Math.max(0, Math.min(arenaEnemySprite.x - viewWidth / 2, WORLD_W - viewWidth));
+
+  cinematicTarget = { x: enemyCamX, zoom: startZoom };
+
+  // After pan + hold, transition to READY
+  scene.time.delayedCall(cfg.panToEnemyDuration + cfg.introEnemyDuration, () => {
+    startReadyPhase(scene);
+  });
+}
+
+function startReadyPhase(scene) {
+  const cfg = ARENA_CONFIG.cinematic;
+  const cam = ARENA_CONFIG.camera;
+
+  arenaState = "READY";
+  cinematicStartTime = Date.now();
+
+  console.log("[ARENA] READY - zooming out...");
+
+  // Target: zoom out to show both fighters, center between them
+  const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
+  const endZoom = cam.endZoom || 1.0;
+  const viewWidth = BASE_W / endZoom;
+  const midCamX = Math.max(0, Math.min(midX - viewWidth / 2, WORLD_W - viewWidth));
+
+  cinematicTarget = { x: midCamX, zoom: endZoom };
+
+  // After zoom out, start run
+  scene.time.delayedCall(cfg.readyDuration + cfg.zoomOutDuration, () => {
+    startRunIn(scene);
+  });
+}
+
+// ============================================================
 //  RUN-IN SEQUENCE
 // ============================================================
 
@@ -776,18 +877,38 @@ function startRunIn(scene) {
 function updateArena(scene) {
   if (!arenaActive) return;
 
+  const cam = scene.cameras.main;
+  const lerpSpeed = ARENA_CONFIG.camera?.lerpSpeed || 0.06;
+  const zoomLerpSpeed = ARENA_CONFIG.camera?.zoomLerpSpeed || 0.03;
+
+  // === CINEMATIC INTRO STATES ===
+  // Smooth camera pan during INTRO_ENEMY and READY
+  if (arenaState === "INTRO_ENEMY" || arenaState === "READY") {
+    // Lerp camera position
+    const currentX = cam.scrollX;
+    const targetX = cinematicTarget.x;
+    const newX = currentX + (targetX - currentX) * lerpSpeed;
+    cam.scrollX = newX;
+
+    // Lerp zoom
+    const currentZoom = cam.zoom;
+    const targetZoom = cinematicTarget.zoom;
+    const newZoom = currentZoom + (targetZoom - currentZoom) * zoomLerpSpeed;
+    cam.setZoom(newZoom);
+  }
+
+  // === RUN_IN STATE ===
   if (arenaState === "RUN_IN") {
     // Calculate midpoint between fighters
     const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
 
     // Current zoom
-    const currentZoom = scene.cameras.main.zoom;
+    const currentZoom = cam.zoom;
     const endZoom = ARENA_CONFIG.camera?.endZoom || 1.0;
-    const zoomLerpSpeed = ARENA_CONFIG.camera?.zoomLerpSpeed || 0.03;
 
-    // Smooth zoom out
+    // Smooth zoom out (if not already at end zoom)
     const newZoom = currentZoom + (endZoom - currentZoom) * zoomLerpSpeed;
-    scene.cameras.main.setZoom(newZoom);
+    cam.setZoom(newZoom);
 
     // Target: center camera on midpoint (adjust for current zoom)
     const viewWidth = BASE_W / newZoom;
@@ -798,11 +919,10 @@ function updateArena(scene) {
     const clampedX = Math.max(0, Math.min(targetScrollX, maxScrollX));
 
     // Smooth lerp (cinematic feel)
-    const currentX = scene.cameras.main.scrollX;
-    const lerpSpeed = ARENA_CONFIG.camera?.lerpSpeed || 0.06;
+    const currentX = cam.scrollX;
     const newX = currentX + (clampedX - currentX) * lerpSpeed;
 
-    scene.cameras.main.scrollX = newX;
+    cam.scrollX = newX;
 
     // Check engage distance
     const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
