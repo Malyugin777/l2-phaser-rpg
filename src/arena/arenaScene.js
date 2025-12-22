@@ -17,18 +17,18 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  worldMultiplier: 4,      // LOCKED - 3120px world
+  worldMultiplier: 5.5,    // EXPANDED - 4290px world (fits both fighters)
   fightOffset: 150,
   engageDistance: 300,
 
-  // HARDCODED FROM USER'S TUNING:
+  // HARDCODED - Recalculated for 5.5x world:
   groundY: 0.98,           // LOCKED at 98%
   fighterScale: 1.78,      // LOCKED at 1.78
-  playerSpawnX: 0.22,      // LOCKED at 22%
-  enemySpawnX: 0.78,       // LOCKED at 78%
+  playerSpawnX: 0.16,      // 686px / 4290px = 16%
+  enemySpawnX: 0.80,       // 3432px / 4290px = 80%
 
-  bgOffsetX: 370,          // LOCKED
-  bgOffsetY: 95,           // LOCKED
+  bgOffsetX: 0,            // Reset (BG auto-covers world)
+  bgOffsetY: 0,            // Reset
 
   runSpeed: 2500,
   vsScreenDuration: 1500,
@@ -68,15 +68,15 @@ if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 // Tunable values (saved to localStorage)
 function getArenaTuneSettings() {
   const defaults = {
-    bgX: 370,                // HARDCODED
-    bgY: 95,                 // HARDCODED
-    bgScale: 1.0,            // HARDCODED
-    groundY: 0.98,           // HARDCODED at 98%
-    fighterScale: 1.78,      // HARDCODED at 1.78
+    bgX: 0,                  // Reset (BG auto-covers world)
+    bgY: 0,                  // Reset
+    bgScale: 1.0,            // Auto-calculated in setupArenaWorld
+    groundY: 0.98,           // LOCKED at 98%
+    fighterScale: 1.78,      // LOCKED at 1.78
     fightOffset: 150,
     cameraStartX: 0,
-    playerStartX: 0.22,      // HARDCODED at 22%
-    enemyStartX: 0.78,       // HARDCODED at 78%
+    playerStartX: 0.16,      // 686px / 4290px = 16%
+    enemyStartX: 0.80,       // 3432px / 4290px = 80%
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
