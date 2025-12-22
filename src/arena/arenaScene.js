@@ -282,40 +282,50 @@ function setupArenaTuneKeys(scene) {
     updateArenaTuneDisplay();
   });
 
+  // Helper: zoom camera centered on a target X position
+  function zoomToTarget(targetX, newZoom) {
+    const cam = scene.cameras.main;
+    cam.setZoom(newZoom);
+
+    // Calculate scroll to center target in zoomed view
+    const viewWidth = BASE_W / newZoom;
+    const scrollX = targetX - viewWidth / 2;
+
+    // Clamp to world bounds
+    const maxScroll = WORLD_W - viewWidth;
+    cam.scrollX = Math.max(0, Math.min(scrollX, maxScroll));
+
+    updateArenaTuneDisplay();
+  }
+
   // Z = zoom OUT, centered on selected object
   scene.input.keyboard.on('keydown-Z', () => {
-    const cam = scene.cameras.main;
-    const newZoom = Math.max(0.5, cam.zoom - 0.1);
+    const newZoom = Math.max(0.5, scene.cameras.main.zoom - 0.1);
 
-    // Center on selected object before zoom
+    // Get target based on selection
+    let targetX = scene.cameras.main.scrollX + BASE_W / 2; // default: center of current view
     if (selectedTuneElement === 'player' && arenaPlayerSprite) {
-      cam.scrollX = arenaPlayerSprite.x - BASE_W / 2;
+      targetX = arenaPlayerSprite.x;
     } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
-      cam.scrollX = arenaEnemySprite.x - BASE_W / 2;
+      targetX = arenaEnemySprite.x;
     }
-    // Clamp
-    cam.scrollX = Math.max(0, Math.min(cam.scrollX, WORLD_W - BASE_W));
 
-    cam.setZoom(newZoom);
-    updateArenaTuneDisplay();
+    zoomToTarget(targetX, newZoom);
   });
 
   // X = zoom IN, centered on selected object
   scene.input.keyboard.on('keydown-X', () => {
-    const cam = scene.cameras.main;
-    const newZoom = Math.min(2.0, cam.zoom + 0.1);
+    const newZoom = Math.min(2.0, scene.cameras.main.zoom + 0.1);
 
-    // Center on selected object before zoom
+    // Get target based on selection
+    let targetX = scene.cameras.main.scrollX + BASE_W / 2; // default: center of current view
     if (selectedTuneElement === 'player' && arenaPlayerSprite) {
-      cam.scrollX = arenaPlayerSprite.x - BASE_W / 2;
+      targetX = arenaPlayerSprite.x;
     } else if (selectedTuneElement === 'enemy' && arenaEnemySprite) {
-      cam.scrollX = arenaEnemySprite.x - BASE_W / 2;
+      targetX = arenaEnemySprite.x;
     }
-    // Clamp
-    cam.scrollX = Math.max(0, Math.min(cam.scrollX, WORLD_W - BASE_W));
 
-    cam.setZoom(newZoom);
-    updateArenaTuneDisplay();
+    zoomToTarget(targetX, newZoom);
   });
 
   // 0 = reset zoom to 1.0
