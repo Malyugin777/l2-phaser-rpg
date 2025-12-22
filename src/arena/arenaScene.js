@@ -42,11 +42,13 @@ const ARENA_CONFIG = {
     zoomLerpSpeed: 0.03
   },
   cinematic: {
-    introPlayerDuration: 1500,
-    panToEnemyDuration: 800,
-    introEnemyDuration: 1000,
-    readyDuration: 500,
-    zoomOutDuration: 600
+    introArenaDuration: 1200,   // Show both fighters (wide shot)
+    zoomToPlayerDuration: 400,  // Quick zoom to player
+    introPlayerDuration: 1000,  // Hold on player
+    panToEnemyDuration: 600,    // Pan to enemy
+    introEnemyDuration: 800,    // Hold on enemy
+    readyDuration: 300,
+    zoomOutDuration: 500
   }
 };
 
@@ -784,20 +786,24 @@ function spawnFighters(scene, enemyData) {
   }
 
   // === CINEMATIC CAMERA START ===
-  // Start zoomed in on player (lower-left corner)
-  const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
-  scene.cameras.main.setZoom(startZoom);
+  // Start with wide arena view (both fighters visible)
+  const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
+  const padding = 400;
+  const arenaZoom = Math.max(0.3, Math.min(0.8, BASE_W / (distance + padding)));
+  scene.cameras.main.setZoom(arenaZoom);
 
-  // Camera focused on player (center in viewport, scroll down to show fighter)
-  const viewWidth = BASE_W / startZoom;
-  const viewHeight = BASE_H / startZoom;
-  const cameraStartX = Math.max(0, arenaPlayerSprite.x - viewWidth / 2);
-  const cameraStartY = Math.min(MAX_SCROLL_Y, Math.max(0, arenaPlayerSprite.y - viewHeight * 0.7));
+  // Center camera between both fighters
+  const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
+  const midY = (arenaPlayerSprite.y + arenaEnemySprite.y) / 2;
+  const viewWidth = BASE_W / arenaZoom;
+  const viewHeight = BASE_H / arenaZoom;
+  const cameraStartX = Math.max(0, midX - viewWidth / 2);
+  const cameraStartY = Math.min(MAX_SCROLL_Y, Math.max(0, midY - viewHeight * 0.6));
   scene.cameras.main.scrollX = cameraStartX;
   scene.cameras.main.scrollY = cameraStartY;
 
-  console.log("[ARENA] Spawned at Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0), "GroundY:", GROUND_Y.toFixed(0));
-  console.log("[ARENA] Camera start - X:", cameraStartX.toFixed(0), "Y:", cameraStartY.toFixed(0), "Zoom:", startZoom);
+  console.log("[ARENA] Spawned - Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
+  console.log("[ARENA] Camera start - wide view, zoom:", arenaZoom.toFixed(2));
 
   // Draw ground line in tune mode
   if (ARENA_TUNE_ENABLED) {
@@ -893,33 +899,68 @@ function startCinematicIntro(scene) {
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
 
-  // === PHASE 1: INTRO_PLAYER ===
-  // Camera zoomed on player (lower-left corner)
+  // === PHASE 1: INTRO_ARENA (wide shot showing both fighters) ===
+  arenaState = "INTRO_ARENA";
+  cinematicStartTime = Date.now();
+
+  // Calculate zoom to fit both fighters with padding
+  const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
+  const padding = 400;  // Extra space on sides
+  const neededWidth = distance + padding;
+  const arenaZoom = Math.max(0.3, Math.min(0.8, BASE_W / neededWidth));
+
+  scene.cameras.main.setZoom(arenaZoom);
+
+  // Center camera between both fighters
+  const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
+  const midY = (arenaPlayerSprite.y + arenaEnemySprite.y) / 2;
+  const viewWidth = BASE_W / arenaZoom;
+  const viewHeight = BASE_H / arenaZoom;
+  const arenaCamX = Math.max(0, midX - viewWidth / 2);
+  const arenaCamY = Math.min(MAX_SCROLL_Y, Math.max(0, midY - viewHeight * 0.6));
+
+  scene.cameras.main.scrollX = arenaCamX;
+  scene.cameras.main.scrollY = arenaCamY;
+
+  cinematicTarget = { x: arenaCamX, y: arenaCamY, zoom: arenaZoom };
+
+  console.log("[ARENA] INTRO_ARENA - zoom:", arenaZoom.toFixed(2), "fits both fighters");
+
+  // After showing arena, zoom to player
+  scene.time.delayedCall(cfg.introArenaDuration, () => {
+    startIntroPlayer(scene);
+  });
+}
+
+function startIntroPlayer(scene) {
+  const cfg = ARENA_CONFIG.cinematic;
+  const cam = ARENA_CONFIG.camera;
+
   arenaState = "INTRO_PLAYER";
   cinematicStartTime = Date.now();
 
   const startZoom = cam.startZoom || 1.4;
-  scene.cameras.main.setZoom(startZoom);
 
-  // Center camera on player X
+  // Quick zoom tween to player
+  scene.tweens.add({
+    targets: scene.cameras.main,
+    zoom: startZoom,
+    duration: cfg.zoomToPlayerDuration,
+    ease: 'Sine.easeOut'
+  });
+
+  // Center camera on player
   const viewWidth = BASE_W / startZoom;
   const viewHeight = BASE_H / startZoom;
   const playerCamX = Math.max(0, arenaPlayerSprite.x - viewWidth / 2);
-
-  // Scroll Y down to show fighter (groundY is 117%, so scroll down)
-  // Position camera so fighter's feet are near bottom of zoomed view
-  // Clamp to MAX_SCROLL_Y to avoid showing black edges
   const playerCamY = Math.min(MAX_SCROLL_Y, Math.max(0, arenaPlayerSprite.y - viewHeight * 0.7));
-
-  scene.cameras.main.scrollX = playerCamX;
-  scene.cameras.main.scrollY = playerCamY;
 
   cinematicTarget = { x: playerCamX, y: playerCamY, zoom: startZoom };
 
-  console.log("[ARENA] INTRO_PLAYER - zoom:", startZoom, "camX:", playerCamX.toFixed(0), "camY:", playerCamY.toFixed(0));
+  console.log("[ARENA] INTRO_PLAYER - quick zoom to:", startZoom);
 
-  // After delay, transition to INTRO_ENEMY
-  scene.time.delayedCall(cfg.introPlayerDuration, () => {
+  // After hold, transition to enemy
+  scene.time.delayedCall(cfg.zoomToPlayerDuration + cfg.introPlayerDuration, () => {
     startIntroEnemy(scene);
   });
 }
@@ -1027,8 +1068,8 @@ function updateArena(scene) {
   const zoomLerpSpeed = ARENA_CONFIG.camera?.zoomLerpSpeed || 0.03;
 
   // === CINEMATIC INTRO STATES ===
-  // Smooth camera pan during INTRO_ENEMY and READY
-  if (arenaState === "INTRO_ENEMY" || arenaState === "READY") {
+  // Smooth camera pan during intro phases
+  if (arenaState === "INTRO_ARENA" || arenaState === "INTRO_PLAYER" || arenaState === "INTRO_ENEMY" || arenaState === "READY") {
     // Lerp camera X position
     const currentX = cam.scrollX;
     const targetX = cinematicTarget.x;
