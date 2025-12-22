@@ -955,7 +955,7 @@ function startReadyPhase(scene) {
   arenaState = "READY";
   cinematicStartTime = Date.now();
 
-  console.log("[ARENA] READY - zooming out...");
+  console.log("[ARENA] READY - zooming out with tween...");
 
   // Target: zoom out to show both fighters, center between them
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
@@ -968,7 +968,15 @@ function startReadyPhase(scene) {
 
   cinematicTarget = { x: midCamX, y: midCamY, zoom: endZoom };
 
-  console.log("[ARENA] READY - target zoom:", endZoom, "camY:", midCamY.toFixed(0));
+  // Smooth zoom out with tween (more cinematic than lerp)
+  scene.tweens.add({
+    targets: scene.cameras.main,
+    zoom: endZoom,
+    duration: cfg.zoomOutDuration,
+    ease: 'Sine.easeInOut'
+  });
+
+  console.log("[ARENA] READY - tween zoom to:", endZoom, "duration:", cfg.zoomOutDuration);
 
   // After zoom out, start run
   scene.time.delayedCall(cfg.readyDuration + cfg.zoomOutDuration, () => {
@@ -1033,11 +1041,7 @@ function updateArena(scene) {
     const newY = currentY + (targetY - currentY) * lerpSpeed;
     cam.scrollY = newY;
 
-    // Lerp zoom
-    const currentZoom = cam.zoom;
-    const targetZoom = cinematicTarget.zoom;
-    const newZoom = currentZoom + (targetZoom - currentZoom) * zoomLerpSpeed;
-    cam.setZoom(newZoom);
+    // Zoom is handled by tween in startReadyPhase
   }
 
   // === RUN_IN STATE ===
@@ -1046,17 +1050,12 @@ function updateArena(scene) {
     const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
     const midY = (arenaPlayerSprite.y + arenaEnemySprite.y) / 2;
 
-    // Current zoom
+    // Zoom should already be at 1.0 from tween
     const currentZoom = cam.zoom;
-    const endZoom = ARENA_CONFIG.camera?.endZoom || 1.0;
-
-    // Smooth zoom out (if not already at end zoom)
-    const newZoom = currentZoom + (endZoom - currentZoom) * zoomLerpSpeed;
-    cam.setZoom(newZoom);
 
     // Target: center camera on midpoint (adjust for current zoom)
-    const viewWidth = BASE_W / newZoom;
-    const viewHeight = BASE_H / newZoom;
+    const viewWidth = BASE_W / currentZoom;
+    const viewHeight = BASE_H / currentZoom;
     const targetScrollX = midX - viewWidth / 2;
     const targetScrollY = midY - viewHeight * 0.7;
 
