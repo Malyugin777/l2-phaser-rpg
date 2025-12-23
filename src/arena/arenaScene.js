@@ -17,19 +17,23 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  worldMultiplier: 5.5,
+  // World = BG image width (4096px) / screen width (780px) ≈ 5.25
+  worldMultiplier: 5.25,
+
+  // Fighter positions as percentages of world width
+  playerSpawnX: 0.09,      // 9% = ~368px
+  enemySpawnX: 0.91,       // 91% = ~3727px
+
+  // Ground at 85% of screen height (on the grass)
+  groundY: 0.85,
+  fighterScale: 1.92,
+
+  // Combat
   fightOffset: 150,
   engageDistance: 300,
-
-  // FINAL VALUES - DO NOT CHANGE
-  groundY: 1.17,           // 117% (below screen for feet anchoring)
-  fighterScale: 1.92,
-  playerSpawnX: 0.09,      // 9%
-  enemySpawnX: 0.93,       // 93%
-  bgOffsetX: 0,
-  bgOffsetY: 0,
-
   runSpeed: 2500,
+
+  // Transitions
   vsScreenDuration: 1500,
   fadeTime: 300,
   engagePause: 300,
@@ -37,23 +41,22 @@ const ARENA_CONFIG = {
   camera: {
     lerpSpeed: 0.06,
     lockOnEngage: true,
-    startZoom: 1.4,
-    endZoom: 0.5,       // Zoom out for battle view
+    startZoom: 1.0,      // No zoom - native BG size
+    endZoom: 1.0,
     zoomLerpSpeed: 0.03
   },
   cinematic: {
-    introArenaDuration: 1200,   // Show both fighters (wide shot)
-    zoomToPlayerDuration: 400,  // Quick zoom to player
-    introPlayerDuration: 1000,  // Hold on player
-    panToEnemyDuration: 600,    // Pan to enemy
-    introEnemyDuration: 800,    // Hold on enemy
+    introArenaDuration: 1200,
+    zoomToPlayerDuration: 400,
+    introPlayerDuration: 1000,
+    panToEnemyDuration: 600,
+    introEnemyDuration: 800,
     readyDuration: 300,
     zoomOutDuration: 500
   }
 };
 
 let BASE_W, BASE_H, WORLD_W, WORLD_H, GROUND_Y;
-let MAX_SCROLL_Y = 0;  // Max camera scroll Y (to avoid black edges)
 
 // Cinematic camera tracking
 let cinematicTarget = { x: 0, zoom: 1.0 };
@@ -67,7 +70,7 @@ const ARENA_TUNE_ENABLED = new URLSearchParams(window.location.search).has('aren
 if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 
 // Version check - clear old settings on version change
-const ARENA_TUNE_VERSION = 'v4';
+const ARENA_TUNE_VERSION = 'v6';
 const savedVersion = localStorage.getItem('ARENA_TUNE_VERSION');
 if (savedVersion !== ARENA_TUNE_VERSION) {
   localStorage.removeItem('ARENA_TUNE');
@@ -79,15 +82,15 @@ if (savedVersion !== ARENA_TUNE_VERSION) {
 function getArenaTuneSettings() {
   const defaults = {
     bgX: 0,
-    bgY: 0,
-    bgScale: 1.0,
-    groundY: 1.17,           // FINAL: 117%
-    fighterScale: 1.92,      // FINAL
+    bgY: -180,             // Shift up to center grass on screen
+    bgScale: 1.0,          // Native size (4096x2048)
+    groundY: 0.85,         // 85% of screen height (on grass)
+    fighterScale: 1.92,
     fightOffset: 150,
     cameraStartX: 0,
-    playerStartX: 0.09,      // FINAL: 9%
-    enemyStartX: 0.93,       // FINAL: 93%
-    cameraStartZoom: 1.4,
+    playerStartX: 0.09,    // 9%
+    enemyStartX: 0.91,     // 91%
+    cameraStartZoom: 1.0,
     cameraEndZoom: 1.0,
   };
 
@@ -495,11 +498,10 @@ function resetFighterPositions(scene) {
     if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
   }
 
-  // Reset camera with start zoom (center on player)
-  const startZoom = ARENA_CONFIG.camera?.startZoom || 1.3;
-  scene.cameras.main.setZoom(startZoom);
-  const viewWidth = BASE_W / startZoom;
-  const cameraStartX = Math.max(0, Math.min(arenaPlayerSprite.x - viewWidth / 2, WORLD_W - BASE_W));
+  // Reset camera (zoom 1.0, center on player)
+  scene.cameras.main.setZoom(1.0);
+  scene.cameras.main.scrollY = 0;
+  const cameraStartX = Math.max(0, Math.min(arenaPlayerSprite.x - BASE_W / 2, WORLD_W - BASE_W));
   scene.cameras.main.scrollX = cameraStartX;
 
   console.log("[ARENA TUNE] Reset - Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
@@ -646,43 +648,36 @@ function showVSScreen(scene, enemyData, onComplete) {
 // ============================================================
 
 function setupArenaWorld(scene) {
-  console.log("[ARENA] Setup world");
+  console.log("[ARENA] Setup world - native BG size approach");
 
-  // World height extended for zoom 0.5 (view is 2x screen height)
-  const extendedWorldH = BASE_H * 2.2;  // 220% to cover zoom 0.5 view
-
-  // Camera bounds
+  // Camera bounds = world size (no zoom, no extended height)
   if (ARENA_TUNE_ENABLED) {
-    // NO BOUNDS in tune mode - free camera movement
     scene.cameras.main.removeBounds();
-    console.log("[ARENA] Tune mode - NO camera bounds, WORLD_W:", WORLD_W);
+    console.log("[ARENA] Tune mode - NO camera bounds");
   } else {
-    scene.cameras.main.setBounds(0, 0, WORLD_W, extendedWorldH);
-    console.log("[ARENA] Camera bounds:", WORLD_W, "x", extendedWorldH);
+    scene.cameras.main.setBounds(0, 0, WORLD_W, BASE_H);
+    console.log("[ARENA] Camera bounds:", WORLD_W, "x", BASE_H);
   }
 
-  // IMPORTANT: Reset camera zoom and scrollY
+  // Reset camera
   scene.cameras.main.setZoom(1);
+  scene.cameras.main.scrollX = 0;
   scene.cameras.main.scrollY = 0;
 
-  // Background - Single image (covers full world including extended Y)
+  // Background at native size (4096x2048)
   arenaBgSprite = scene.add.image(0, 0, 'arena_village');
   arenaBgSprite.setOrigin(0, 0);
-  arenaBgSprite.setDepth(10);
+  arenaBgSprite.setDepth(-100);
   arenaBgSprite.setScrollFactor(1);
+  arenaBgSprite.setScale(arenaTuneSettings.bgScale || 1.0);
 
-  // Scale to cover world width AND extended height (for groundY > 100%)
-  const scaleW = WORLD_W / arenaBgSprite.width;
-  const scaleH = extendedWorldH / arenaBgSprite.height;  // Use extended height!
-  const bgScale = Math.max(scaleW, scaleH);
-  const finalBgScale = bgScale * (arenaTuneSettings.bgScale || 1.0);
-  arenaBgSprite.setScale(finalBgScale);
+  // Position BG (shift up to show grass)
+  const bgY = arenaTuneSettings.bgY || -180;
+  arenaBgSprite.setPosition(arenaTuneSettings.bgX || 0, bgY);
 
-  // Calculate max scroll Y (BG height - screen height)
-  const actualBgHeight = arenaBgSprite.height * finalBgScale;
-  MAX_SCROLL_Y = Math.max(0, actualBgHeight - BASE_H);
-
-  console.log("[ARENA] BG scale:", finalBgScale.toFixed(2), "height:", actualBgHeight.toFixed(0), "maxScrollY:", MAX_SCROLL_Y.toFixed(0));
+  console.log("[ARENA] BG native:", arenaBgSprite.width, "x", arenaBgSprite.height);
+  console.log("[ARENA] BG position: (", arenaBgSprite.x, ",", bgY, ")");
+  console.log("[ARENA] WORLD_W:", WORLD_W, "BASE_H:", BASE_H);
 
   // Exit button (fixed to screen, high depth)
   arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 120, '[ ВЫХОД ]', {
@@ -745,14 +740,14 @@ function setupCameraDrag(scene) {
 // ============================================================
 
 function spawnFighters(scene, enemyData) {
-  // Use tune settings for positions (or defaults from config)
+  // Fighter positions (percentage of world width)
   const playerStartX = WORLD_W * (arenaTuneSettings.playerStartX || ARENA_CONFIG.playerSpawnX);
   const enemyStartX = WORLD_W * (arenaTuneSettings.enemyStartX || ARENA_CONFIG.enemySpawnX);
 
-  // Use tune settings for ground Y
-  GROUND_Y = BASE_H * arenaTuneSettings.groundY;
+  // Ground Y (percentage of screen height)
+  GROUND_Y = BASE_H * (arenaTuneSettings.groundY || ARENA_CONFIG.groundY);
 
-  console.log("[ARENA] Ground Y:", GROUND_Y.toFixed(0));
+  console.log("[ARENA] Spawning fighters at groundY:", GROUND_Y.toFixed(0), "px (", (arenaTuneSettings.groundY * 100).toFixed(0), "%)");
 
   // Player (left side)
   if (scene.spine) {
@@ -780,27 +775,21 @@ function spawnFighters(scene, enemyData) {
   }
   arenaEnemySprite.setDepth(100).setScrollFactor(1);
 
-  // === TUNE MODE: Make fighters draggable ===
+  // Tune mode: make fighters draggable
   if (ARENA_TUNE_ENABLED) {
     setupFighterDrag(scene);
   }
 
-  // === CINEMATIC CAMERA START ===
-  // Start with wide arena view (both fighters visible)
-  const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
-  const padding = 400;
-  const arenaZoom = Math.max(0.3, Math.min(0.8, BASE_W / (distance + padding)));
-  scene.cameras.main.setZoom(arenaZoom);
-
-  // Center camera X between both fighters, keep Y at 0
-  const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
-  const viewWidth = BASE_W / arenaZoom;
-  const cameraStartX = Math.max(0, midX - viewWidth / 2);
-  scene.cameras.main.scrollX = cameraStartX;
+  // Camera: zoom 1.0, center on player, no Y scrolling
+  scene.cameras.main.setZoom(1.0);
   scene.cameras.main.scrollY = 0;
 
-  console.log("[ARENA] Spawned - Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
-  console.log("[ARENA] Camera start - wide view, zoom:", arenaZoom.toFixed(2));
+  // Center camera on player initially
+  const cameraStartX = Math.max(0, playerStartX - BASE_W / 2);
+  scene.cameras.main.scrollX = cameraStartX;
+
+  console.log("[ARENA] Player:", playerStartX.toFixed(0), "Enemy:", enemyStartX.toFixed(0));
+  console.log("[ARENA] Camera X:", cameraStartX.toFixed(0));
 
   // Draw ground line in tune mode
   if (ARENA_TUNE_ENABLED) {
@@ -888,97 +877,45 @@ function setupFighterDrag(scene) {
 
 function startCinematicIntro(scene) {
   const cfg = ARENA_CONFIG.cinematic;
-  const cam = ARENA_CONFIG.camera;
 
-  console.log("[ARENA] Starting cinematic intro...");
+  console.log("[ARENA] Starting cinematic intro (no zoom, horizontal pan only)");
 
   // Fighters in idle during intro
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
 
-  // === PHASE 1: INTRO_ARENA (wide shot showing both fighters) ===
-  arenaState = "INTRO_ARENA";
-  cinematicStartTime = Date.now();
+  // Camera: zoom 1.0, no Y scrolling
+  scene.cameras.main.setZoom(1.0);
+  scene.cameras.main.scrollY = 0;
 
-  // Calculate zoom to fit both fighters with padding
-  const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
-  const padding = 400;  // Extra space on sides
-  const neededWidth = distance + padding;
-  const arenaZoom = Math.max(0.3, Math.min(0.8, BASE_W / neededWidth));
-
-  scene.cameras.main.setZoom(arenaZoom);
-
-  // Center camera X between both fighters
-  const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
-  const viewWidth = BASE_W / arenaZoom;
-  const arenaCamX = Math.max(0, midX - viewWidth / 2);
-
-  // For zoomed out views, keep Y at 0 to avoid black edges
-  const arenaCamY = 0;
-
-  scene.cameras.main.scrollX = arenaCamX;
-  scene.cameras.main.scrollY = arenaCamY;
-
-  cinematicTarget = { x: arenaCamX, y: arenaCamY, zoom: arenaZoom };
-
-  console.log("[ARENA] INTRO_ARENA - zoom:", arenaZoom.toFixed(2), "fits both fighters");
-
-  // After showing arena, zoom to player
-  scene.time.delayedCall(cfg.introArenaDuration, () => {
-    startIntroPlayer(scene);
-  });
-}
-
-function startIntroPlayer(scene) {
-  const cfg = ARENA_CONFIG.cinematic;
-  const cam = ARENA_CONFIG.camera;
-
+  // === PHASE 1: INTRO_PLAYER ===
   arenaState = "INTRO_PLAYER";
   cinematicStartTime = Date.now();
 
-  const startZoom = cam.startZoom || 1.4;
-
-  // Quick zoom tween to player
-  scene.tweens.add({
-    targets: scene.cameras.main,
-    zoom: startZoom,
-    duration: cfg.zoomToPlayerDuration,
-    ease: 'Sine.easeOut'
-  });
-
   // Center camera on player
-  const viewWidth = BASE_W / startZoom;
-  const viewHeight = BASE_H / startZoom;
-  const playerCamX = Math.max(0, arenaPlayerSprite.x - viewWidth / 2);
-  const playerCamY = Math.min(MAX_SCROLL_Y, Math.max(0, arenaPlayerSprite.y - viewHeight * 0.7));
+  const playerCamX = Math.max(0, Math.min(arenaPlayerSprite.x - BASE_W / 2, WORLD_W - BASE_W));
+  scene.cameras.main.scrollX = playerCamX;
+  cinematicTarget = { x: playerCamX };
 
-  cinematicTarget = { x: playerCamX, y: playerCamY, zoom: startZoom };
-
-  console.log("[ARENA] INTRO_PLAYER - quick zoom to:", startZoom);
+  console.log("[ARENA] INTRO_PLAYER - camX:", playerCamX.toFixed(0));
 
   // After hold, transition to enemy
-  scene.time.delayedCall(cfg.zoomToPlayerDuration + cfg.introPlayerDuration, () => {
+  scene.time.delayedCall(cfg.introPlayerDuration, () => {
     startIntroEnemy(scene);
   });
 }
 
 function startIntroEnemy(scene) {
   const cfg = ARENA_CONFIG.cinematic;
-  const cam = ARENA_CONFIG.camera;
 
   arenaState = "INTRO_ENEMY";
   cinematicStartTime = Date.now();
 
-  console.log("[ARENA] INTRO_ENEMY - panning to enemy...");
-
   // Target: center on enemy (camera will lerp there in updateArena)
-  const startZoom = cam.startZoom || 1.4;
-  const viewWidth = BASE_W / startZoom;
-  const viewHeight = BASE_H / startZoom;
-  const enemyCamX = Math.max(0, arenaEnemySprite.x - viewWidth / 2);
-  const enemyCamY = Math.min(MAX_SCROLL_Y, Math.max(0, arenaEnemySprite.y - viewHeight * 0.7));
+  const enemyCamX = Math.max(0, Math.min(arenaEnemySprite.x - BASE_W / 2, WORLD_W - BASE_W));
+  cinematicTarget = { x: enemyCamX };
 
-  cinematicTarget = { x: enemyCamX, y: enemyCamY, zoom: startZoom };
+  console.log("[ARENA] INTRO_ENEMY - panning to camX:", enemyCamX.toFixed(0));
 
   // After pan + hold, transition to READY
   scene.time.delayedCall(cfg.panToEnemyDuration + cfg.introEnemyDuration, () => {
@@ -988,34 +925,19 @@ function startIntroEnemy(scene) {
 
 function startReadyPhase(scene) {
   const cfg = ARENA_CONFIG.cinematic;
-  const cam = ARENA_CONFIG.camera;
 
   arenaState = "READY";
   cinematicStartTime = Date.now();
 
-  console.log("[ARENA] READY - zooming out with tween...");
-
-  // Target: zoom out to show both fighters, center X between them
+  // Target: center between both fighters
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
-  const endZoom = cam.endZoom || 0.5;
-  const viewWidth = BASE_W / endZoom;
-  const midCamX = Math.max(0, midX - viewWidth / 2);
+  const midCamX = Math.max(0, Math.min(midX - BASE_W / 2, WORLD_W - BASE_W));
+  cinematicTarget = { x: midCamX };
 
-  // For zoomed out views, keep Y at 0 to avoid black edges
-  cinematicTarget = { x: midCamX, y: 0, zoom: endZoom };
+  console.log("[ARENA] READY - panning to center, camX:", midCamX.toFixed(0));
 
-  // Smooth zoom out with tween (more cinematic than lerp)
-  scene.tweens.add({
-    targets: scene.cameras.main,
-    zoom: endZoom,
-    duration: cfg.zoomOutDuration,
-    ease: 'Sine.easeInOut'
-  });
-
-  console.log("[ARENA] READY - tween zoom to:", endZoom, "duration:", cfg.zoomOutDuration);
-
-  // After zoom out, start run
-  scene.time.delayedCall(cfg.readyDuration + cfg.zoomOutDuration, () => {
+  // After brief pause, start run
+  scene.time.delayedCall(cfg.readyDuration, () => {
     startRunIn(scene);
   });
 }
@@ -1060,53 +982,27 @@ function updateArena(scene) {
 
   const cam = scene.cameras.main;
   const lerpSpeed = ARENA_CONFIG.camera?.lerpSpeed || 0.06;
-  const zoomLerpSpeed = ARENA_CONFIG.camera?.zoomLerpSpeed || 0.03;
 
   // === CINEMATIC INTRO STATES ===
-  // Smooth camera pan during intro phases
-  if (arenaState === "INTRO_ARENA" || arenaState === "INTRO_PLAYER" || arenaState === "INTRO_ENEMY" || arenaState === "READY") {
-    // Lerp camera X position
+  // Smooth horizontal camera pan during intro phases
+  if (arenaState === "INTRO_PLAYER" || arenaState === "INTRO_ENEMY" || arenaState === "READY") {
     const currentX = cam.scrollX;
     const targetX = cinematicTarget.x;
     const newX = currentX + (targetX - currentX) * lerpSpeed;
     cam.scrollX = newX;
-
-    // Lerp camera Y position
-    const currentY = cam.scrollY;
-    const targetY = cinematicTarget.y || 0;
-    const newY = currentY + (targetY - currentY) * lerpSpeed;
-    cam.scrollY = newY;
-
-    // Zoom is handled by tween in startReadyPhase
+    // No Y scrolling - stays at 0
   }
 
   // === RUN_IN STATE ===
   if (arenaState === "RUN_IN") {
-    // Calculate midpoint between fighters
+    // Follow midpoint between fighters (horizontal only)
     const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
+    const targetScrollX = Math.max(0, Math.min(midX - BASE_W / 2, WORLD_W - BASE_W));
 
-    // Zoom should already be at 0.5 from tween
-    const currentZoom = cam.zoom;
-
-    // Target: center camera X on midpoint
-    const viewWidth = BASE_W / currentZoom;
-    const targetScrollX = midX - viewWidth / 2;
-
-    // Clamp X to bounds
-    const maxScrollX = WORLD_W - viewWidth;
-    const clampedX = Math.max(0, Math.min(targetScrollX, maxScrollX));
-
-    // Keep Y at 0 for zoomed out view
-    const targetY = 0;
-
-    // Smooth lerp (cinematic feel)
+    // Smooth lerp
     const currentX = cam.scrollX;
-    const currentY = cam.scrollY;
-    const newX = currentX + (clampedX - currentX) * lerpSpeed;
-    const newY = currentY + (targetY - currentY) * lerpSpeed;
-
+    const newX = currentX + (targetScrollX - currentX) * lerpSpeed;
     cam.scrollX = newX;
-    cam.scrollY = newY;
 
     // Check engage distance
     const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
@@ -1133,18 +1029,13 @@ function onEngageDistance(scene) {
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
   if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
 
-  // === LOCK CAMERA AND ZOOM ===
-  const endZoom = ARENA_CONFIG.camera?.endZoom || 0.5;
-  scene.cameras.main.setZoom(endZoom);
-
+  // Lock camera centered on fighters (no zoom change)
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
-  const viewWidth = BASE_W / endZoom;
-  const finalScrollX = Math.max(0, Math.min(midX - viewWidth / 2, WORLD_W - viewWidth));
+  const finalScrollX = Math.max(0, Math.min(midX - BASE_W / 2, WORLD_W - BASE_W));
 
-  // Keep Y at 0 for zoomed out view
   scene.cameras.main.scrollX = finalScrollX;
   scene.cameras.main.scrollY = 0;
-  console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0), "Y: 0, Zoom:", endZoom);
+  console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0));
 
   // Pause, then fight
   scene.time.delayedCall(ARENA_CONFIG.engagePause, () => {
