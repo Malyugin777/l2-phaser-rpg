@@ -9,7 +9,7 @@
 (function() {
 
 let arenaActive = false;
-let arenaState = "NONE"; // NONE, INTRO, TUNING, INTRO_PLAYER, INTRO_ENEMY, READY, RUN_IN, ENGAGE, FIGHT
+let arenaState = "NONE"; // NONE, INTRO, TUNING, INTRO_PLAYER, INTRO_ENEMY, READY, RUN_IN, ENGAGE, COUNTDOWN, FIGHT, RESULT
 
 let arenaBgLeft = null;
 let arenaBgRight = null;
@@ -1130,18 +1130,36 @@ function updateArena(scene) {
     // Process events
     events.forEach(event => {
       if (event.type === "attack") {
+        // Camera shake on crit
+        if (event.isCrit) {
+          scene.cameras.main.shake(200, 0.01);
+        }
+
         if (event.attacker === "player") {
           // Player attacks
           if (arenaPlayerSprite?.play) {
             arenaPlayerSprite.play("attack", false);
-            // Return to idle after attack
             scene.time.delayedCall(400, () => {
               if (arenaPlayerSprite?.play && arenaState === "FIGHT") {
                 arenaPlayerSprite.play("idle", true);
               }
             });
           }
+          // Enemy takes hit
+          if (arenaEnemySprite?.play) {
+            scene.time.delayedCall(200, () => {
+              if (arenaEnemySprite?.play && arenaState === "FIGHT") {
+                arenaEnemySprite.play("fall", false);
+                scene.time.delayedCall(300, () => {
+                  if (arenaEnemySprite?.play && arenaState === "FIGHT") {
+                    arenaEnemySprite.play("idle", true);
+                  }
+                });
+              }
+            });
+          }
           spawnArenaDamageText(scene, arenaEnemySprite, event.damage, event.isCrit);
+          spawnHitParticles(scene, arenaEnemySprite.x, arenaEnemySprite.y - 50, event.isCrit);
         } else {
           // Enemy attacks
           if (arenaEnemySprite?.play) {
@@ -1152,7 +1170,21 @@ function updateArena(scene) {
               }
             });
           }
+          // Player takes hit
+          if (arenaPlayerSprite?.play) {
+            scene.time.delayedCall(200, () => {
+              if (arenaPlayerSprite?.play && arenaState === "FIGHT") {
+                arenaPlayerSprite.play("fall", false);
+                scene.time.delayedCall(300, () => {
+                  if (arenaPlayerSprite?.play && arenaState === "FIGHT") {
+                    arenaPlayerSprite.play("idle", true);
+                  }
+                });
+              }
+            });
+          }
           spawnArenaDamageText(scene, arenaPlayerSprite, event.damage, event.isCrit);
+          spawnHitParticles(scene, arenaPlayerSprite.x, arenaPlayerSprite.y - 50, event.isCrit);
         }
 
         // Update HP bars
@@ -1195,35 +1227,77 @@ function onEngageDistance(scene) {
   scene.cameras.main.scrollY = 0;
   console.log("[ARENA] Camera locked - X:", finalScrollX.toFixed(0));
 
-  // Pause, then fight
+  // Pause, then countdown
   scene.time.delayedCall(ARENA_CONFIG.engagePause, () => {
-    arenaState = "FIGHT";
-    console.log("[ARENA] State: FIGHT");
-
-    // Initialize combat with player and enemy stats
-    const playerStats = {
-      maxHealth: stats.derived?.maxHealth || 100,
-      physicalPower: stats.derived?.physicalPower || 10,
-      physicalDefense: stats.derived?.physicalDefense || 40,
-      attackSpeed: stats.derived?.attackSpeed || 300,
-      critChance: stats.derived?.critChance || 0.05,
-      critMultiplier: stats.derived?.critMultiplier || 2.0
-    };
-
-    // Generate enemy stats based on player level
-    const enemyLevel = (stats.progression?.level || 1) + Math.floor(Math.random() * 3) - 1;
-    const enemyStats = {
-      maxHealth: Math.floor(playerStats.maxHealth * (0.8 + Math.random() * 0.4)),
-      physicalPower: Math.floor(playerStats.physicalPower * (0.8 + Math.random() * 0.4)),
-      physicalDefense: Math.floor(playerStats.physicalDefense * (0.8 + Math.random() * 0.4)),
-      attackSpeed: Math.floor(playerStats.attackSpeed * (0.9 + Math.random() * 0.2)),
-      critChance: 0.05 + Math.random() * 0.05,
-      critMultiplier: 2.0
-    };
-
-    arenaCombat.init(playerStats, enemyStats);
-    createArenaUI(scene);
+    startFightCountdown(scene);
   });
+}
+
+function startFightCountdown(scene) {
+  arenaState = "COUNTDOWN";
+  console.log("[ARENA] State: COUNTDOWN");
+
+  const w = scene.scale.width;
+  const h = scene.scale.height;
+
+  let count = 3;
+  const countText = scene.add.text(w / 2, h / 2, "3", {
+    fontSize: "120px",
+    color: "#ffffff",
+    fontFamily: "Georgia",
+    stroke: "#000000",
+    strokeThickness: 8
+  }).setOrigin(0.5).setDepth(350).setScrollFactor(0);
+
+  const countEvent = scene.time.addEvent({
+    delay: 800,
+    repeat: 3,
+    callback: () => {
+      count--;
+      if (count > 0) {
+        countText.setText(count.toString());
+        countText.setScale(1.2);
+        scene.tweens.add({ targets: countText, scale: 1, duration: 200 });
+      } else if (count === 0) {
+        countText.setText("FIGHT!");
+        countText.setColor("#ff4444");
+        countText.setScale(1.5);
+        scene.cameras.main.shake(300, 0.015);
+      } else {
+        countText.destroy();
+        startArenaFight(scene);
+      }
+    }
+  });
+}
+
+function startArenaFight(scene) {
+  arenaState = "FIGHT";
+  console.log("[ARENA] State: FIGHT");
+
+  // Initialize combat with player and enemy stats
+  const playerStats = {
+    maxHealth: stats.derived?.maxHealth || 100,
+    physicalPower: stats.derived?.physicalPower || 10,
+    physicalDefense: stats.derived?.physicalDefense || 40,
+    attackSpeed: stats.derived?.attackSpeed || 300,
+    critChance: stats.derived?.critChance || 0.05,
+    critMultiplier: stats.derived?.critMultiplier || 2.0
+  };
+
+  // Generate enemy stats based on player level
+  const enemyLevel = (stats.progression?.level || 1) + Math.floor(Math.random() * 3) - 1;
+  const enemyStats = {
+    maxHealth: Math.floor(playerStats.maxHealth * (0.8 + Math.random() * 0.4)),
+    physicalPower: Math.floor(playerStats.physicalPower * (0.8 + Math.random() * 0.4)),
+    physicalDefense: Math.floor(playerStats.physicalDefense * (0.8 + Math.random() * 0.4)),
+    attackSpeed: Math.floor(playerStats.attackSpeed * (0.9 + Math.random() * 0.2)),
+    critChance: 0.05 + Math.random() * 0.05,
+    critMultiplier: 2.0
+  };
+
+  arenaCombat.init(playerStats, enemyStats);
+  createArenaUI(scene);
 }
 
 // ============================================================
@@ -1234,24 +1308,53 @@ function spawnArenaDamageText(scene, target, damage, isCrit) {
   if (!target) return;
 
   const color = isCrit ? "#ffdd00" : "#ffffff";
-  const size = isCrit ? "32px" : "24px";
-  const prefix = isCrit ? "CRIT " : "";
+  const size = isCrit ? "48px" : "36px";
 
-  const text = scene.add.text(target.x, target.y - 100, prefix + "-" + damage, {
+  const text = scene.add.text(target.x, target.y - 150, "-" + damage, {
     fontSize: size,
     color: color,
     fontFamily: "Arial",
     stroke: "#000000",
-    strokeThickness: 4
-  }).setOrigin(0.5).setDepth(200);
+    strokeThickness: 6,
+    shadow: { offsetX: 2, offsetY: 2, color: "#000000", blur: 4, fill: true }
+  }).setOrigin(0.5).setDepth(250);
 
   scene.tweens.add({
     targets: text,
-    y: text.y - 50,
+    y: text.y - 80,
     alpha: 0,
-    duration: 800,
+    scale: 1.3,
+    duration: 1000,
+    ease: "Power2",
     onComplete: () => text.destroy()
   });
+}
+
+function spawnHitParticles(scene, x, y, isCrit) {
+  const count = isCrit ? 12 : 6;
+  const colors = isCrit ? [0xffdd00, 0xffaa00, 0xff6600] : [0xffffff, 0xcccccc];
+
+  for (let i = 0; i < count; i++) {
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const particle = scene.add.circle(x, y, isCrit ? 6 : 4, color)
+      .setDepth(240);
+
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 100 + Math.random() * 150;
+    const vx = Math.cos(angle) * speed;
+    const vy = Math.sin(angle) * speed - 100;
+
+    scene.tweens.add({
+      targets: particle,
+      x: particle.x + vx * 0.5,
+      y: particle.y + vy * 0.5,
+      alpha: 0,
+      scale: 0,
+      duration: 400 + Math.random() * 200,
+      ease: "Power2",
+      onComplete: () => particle.destroy()
+    });
+  }
 }
 
 function handleArenaEnd(scene, result) {
