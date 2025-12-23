@@ -4,39 +4,99 @@
 //  heroState.js — ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ ДЛЯ ДАННЫХ ГЕРОЯ
 // ============================================================
 
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 
-// ----- БОЕВЫЕ ХАРАКТЕРИСТИКИ -----
+// ----- БОЕВЫЕ ХАРАКТЕРИСТИКИ (v2) -----
 const stats = {
-  level: 1,
-  exp: 0,
-  expToNext: 100,
-  sp: 0,
+  version: 2,
 
-  // Derived stats (рассчитываются через statSystem)
-  maxHp: 80,
-  hp: 80,
-  maxMp: 30,
-  mp: 30,
+  attributes: {
+    power: 10,
+    agility: 10,
+    vitality: 10,
+    intellect: 10,
+    concentration: 10,
+    spirit: 10
+  },
 
-  pAtk: 4,
-  mAtk: 2,
-  pDef: 40,
-  mDef: 25,
-  atkSpd: 300,
-  castSpd: 200,
+  resources: {
+    health: 100,
+    mana: 50,
+    energy: 30
+  },
 
-  critChance: 0.05,
-  critMultiplier: 2.0,
+  progression: {
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    sp: 0,
+    rating: 1000
+  },
 
-  // Legacy (для совместимости)
-  minAttack: 10,
-  maxAttack: 20,
-  atkSpeed: 100,
-  castSpeed: 100,
-  weight: 0,
-  maxWeight: 1000,
+  build: {
+    race: null,      // human | elf | darkelf
+    classId: null,   // fighter | mage
+    specId: null     // knight | rogue | wizard
+  },
+
+  bonuses: {
+    flat: {
+      healthMax: 0, manaMax: 0,
+      physicalPower: 0, magicPower: 0,
+      physicalDefense: 0, magicDefense: 0,
+      attackSpeed: 0, castSpeed: 0,
+      critChance: 0, critMultiplier: 0
+    },
+    pct: {
+      healthMax: 0, manaMax: 0,
+      physicalPower: 0, magicPower: 0,
+      physicalDefense: 0, magicDefense: 0,
+      attackSpeed: 0, castSpeed: 0,
+      critChance: 0, critMultiplier: 0,
+      healthRegen: 0, manaRegen: 0
+    }
+  },
+
+  // DERIVED (вычисляются, не сохраняются)
+  derived: {
+    maxHealth: 100,
+    maxMana: 50,
+    physicalPower: 10,
+    magicPower: 5,
+    physicalDefense: 40,
+    magicDefense: 25,
+    attackSpeed: 300,
+    castSpeed: 200,
+    critChance: 0.05,
+    critMultiplier: 2.0
+  }
 };
+
+// Legacy aliases (для обратной совместимости)
+Object.defineProperties(stats, {
+  'level': { get() { return this.progression.level; }, set(v) { this.progression.level = v; } },
+  'exp': { get() { return this.progression.xp; }, set(v) { this.progression.xp = v; } },
+  'expToNext': { get() { return this.progression.xpToNext; }, set(v) { this.progression.xpToNext = v; } },
+  'sp': { get() { return this.progression.sp; }, set(v) { this.progression.sp = v; } },
+  'hp': { get() { return this.resources.health; }, set(v) { this.resources.health = v; } },
+  'mp': { get() { return this.resources.mana; }, set(v) { this.resources.mana = v; } },
+  'maxHp': { get() { return this.derived.maxHealth; } },
+  'maxMp': { get() { return this.derived.maxMana; } },
+  'pAtk': { get() { return this.derived.physicalPower; } },
+  'mAtk': { get() { return this.derived.magicPower; } },
+  'pDef': { get() { return this.derived.physicalDefense; } },
+  'mDef': { get() { return this.derived.magicDefense; } },
+  'atkSpd': { get() { return this.derived.attackSpeed; } },
+  'castSpd': { get() { return this.derived.castSpeed; } },
+  'critChance': { get() { return this.derived.critChance; } },
+  'critMultiplier': { get() { return this.derived.critMultiplier; } },
+  'minAttack': { get() { return Math.floor(this.derived.physicalPower * 0.8); } },
+  'maxAttack': { get() { return Math.floor(this.derived.physicalPower * 1.2); } },
+  'atkSpeed': { get() { return this.derived.attackSpeed; } },
+  'castSpeed': { get() { return this.derived.castSpeed; } },
+  'weight': { get() { return 0; } },
+  'maxWeight': { get() { return 1000; } }
+});
 
 // ----- ПРОФИЛЬ ПЕРСОНАЖА -----
 const profile = {

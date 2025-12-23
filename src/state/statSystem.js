@@ -145,63 +145,135 @@ function calcDerivedStats(hero) {
   };
 }
 
-// ----- ПЕРЕСЧЁТ СТАТОВ ГЕРОЯ -----
+// ----- ПЕРЕСЧЁТ СТАТОВ ГЕРОЯ (v2 — использует новую систему) -----
 function recalculateHeroStats() {
-  if (typeof profile === "undefined" || typeof stats === "undefined") {
-    console.warn("[StatSystem] Cannot recalculate - globals not ready");
+  if (typeof stats === "undefined") {
+    console.warn("[StatSystem] Cannot recalculate - stats not ready");
     return;
   }
-  if (typeof heroModifiers === "undefined") {
-    console.warn("[StatSystem] Cannot recalculate - heroModifiers not ready");
-    return;
-  }
-  if (typeof getAllEquipmentStats !== "function") {
-    console.warn("[StatSystem] Cannot recalculate - getAllEquipmentStats not ready");
-    return;
-  }
-  if (!profile.race || !profile.archetype) return;
 
-  const safeLevel = Math.max(1, Math.min(99, Number(stats.level) || 1));
+  // Поддержка старого формата (profile.race) и нового (stats.build.race)
+  const race = stats.build?.race || profile?.race;
+  const classId = stats.build?.classId || profile?.archetype;
 
-  const hero = {
-    race: profile.race,
-    archetype: profile.archetype,
-    level: safeLevel,
-    tattooBonus: heroModifiers.tattoo,
-    setBonus: heroModifiers.set,
-    equipStats: getAllEquipmentStats()
+  if (!race || !classId) {
+    // Fallback для старых сейвов без класса
+    return;
+  }
+
+  // Синхронизируем build с profile (для обратной совместимости)
+  if (stats.build) {
+    stats.build.race = race;
+    stats.build.classId = classId;
+  }
+
+  const templateKey = race + "_" + classId;
+
+  // Используем новую систему если доступна
+  const baseAttr = typeof CLASS_BASE_ATTRIBUTES !== "undefined"
+    ? CLASS_BASE_ATTRIBUTES[templateKey]
+    : null;
+  const template = typeof CLASS_TEMPLATES !== "undefined"
+    ? CLASS_TEMPLATES[templateKey]
+    : null;
+
+  if (!baseAttr || !template) {
+    // Fallback на старую систему
+    console.warn("[StatSystem] Unknown class:", templateKey, "- using legacy");
+    return recalculateHeroStatsLegacy();
+  }
+
+  // Merge base + flat bonuses from equipment/buffs
+  const effectiveAttr = {
+    power: baseAttr.power + (stats.bonuses?.flat?.power || 0),
+    agility: baseAttr.agility + (stats.bonuses?.flat?.agility || 0),
+    vitality: baseAttr.vitality + (stats.bonuses?.flat?.vitality || 0),
+    intellect: baseAttr.intellect + (stats.bonuses?.flat?.intellect || 0),
+    concentration: baseAttr.concentration + (stats.bonuses?.flat?.concentration || 0),
+    spirit: baseAttr.spirit + (stats.bonuses?.flat?.spirit || 0)
   };
 
-  const derived = calcDerivedStats(hero);
-  if (!derived) return;
+  // Calculate derived using new formulas
+  const derived = calculateDerived(
+    effectiveAttr,
+    stats.progression?.level || stats.level || 1,
+    template,
+    stats.bonuses
+  );
 
-  const oldMaxHp = Number(stats.maxHp) || 1;
-  const oldMaxMp = Number(stats.maxMp) || 1;
+  // Save old values for proportional scaling
+  const oldMaxHealth = stats.derived?.maxHealth || 100;
+  const oldMaxMana = stats.derived?.maxMana || 50;
 
-  stats.maxHp = derived.maxHp;
-  stats.maxMp = derived.maxMp;
-  stats.pAtk = derived.pAtk;
-  stats.mAtk = derived.mAtk;
-  stats.pDef = derived.pDef;
-  stats.mDef = derived.mDef;
-  stats.atkSpd = derived.atkSpd;
-  stats.castSpd = derived.castSpd;
-  stats.critChance = derived.critChance;
-  stats.critMultiplier = derived.critMultiplier;
-
-  // Legacy совместимость
-  stats.minAttack = Math.floor(stats.pAtk * 0.8);
-  stats.maxAttack = Math.floor(stats.pAtk * 1.2);
-
-  // Корректируем текущие HP/MP пропорционально
-  if (oldMaxHp > 0) {
-    stats.hp = Math.floor(stats.hp * (stats.maxHp / oldMaxHp));
-  }
-  if (oldMaxMp > 0) {
-    stats.mp = Math.floor(stats.mp * (stats.maxMp / oldMaxMp));
+  // Update derived stats
+  if (stats.derived) {
+    Object.assign(stats.derived, derived);
   }
 
-  // Ограничиваем
-  stats.hp = Math.min(Math.max(0, stats.hp), stats.maxHp);
-  stats.mp = Math.min(Math.max(0, stats.mp), stats.maxMp);
+  // Scale current resources proportionally
+  if (stats.resources) {
+    stats.resources.health = Math.floor(stats.resources.health * (derived.maxHealth / oldMaxHealth));
+    stats.resources.mana = Math.floor(stats.resources.mana * (derived.maxMana / oldMaxMana));
+
+    // Clamp
+    stats.resources.health = Math.min(Math.max(0, stats.resources.health), derived.maxHealth);
+    stats.resources.mana = Math.min(Math.max(0, stats.resources.mana), derived.maxMana);
+  }
 }
+
+// Legacy fallback для старых сейвов
+function recalculateHeroStatsLegacy() {
+  if (!profile?.race || !profile?.archetype) return;
+
+  const classKey = profile.race + "_" + profile.archetype;
+  const template = CLASS_TEMPLATES_LEGACY[classKey];
+  const baseStats = BASE_STATS[classKey];
+
+  if (!template || !baseStats) return;
+
+  const safeLevel = Math.max(1, Math.min(99, Number(stats.level) || 1));
+  const eff = getEffectiveStats(baseStats, heroModifiers?.tattoo, heroModifiers?.set);
+
+  const conMult = CON_MOD[clampStat(eff.con)] / CON_MOD[clampStat(baseStats.con)];
+  const menMult = MEN_MOD[clampStat(eff.men)] / MEN_MOD[clampStat(baseStats.men)];
+  const strMult = STR_MOD[clampStat(eff.str)] / STR_MOD[clampStat(baseStats.str)];
+  const intMult = INT_MOD[clampStat(eff.int)] / INT_MOD[clampStat(baseStats.int)];
+  const dexMult = DEX_MOD[clampStat(eff.dex)] / DEX_MOD[clampStat(baseStats.dex)];
+  const witMult = WIT_MOD[clampStat(eff.wit)] / WIT_MOD[clampStat(baseStats.wit)];
+
+  const baseHp = calcBaseHp(safeLevel, template);
+  const baseMp = calcBaseMp(safeLevel, template);
+
+  const equipStats = typeof getAllEquipmentStats === "function" ? getAllEquipmentStats() : {};
+
+  const oldMaxHp = stats.derived?.maxHealth || 100;
+  const oldMaxMp = stats.derived?.maxMana || 50;
+
+  // Update derived
+  if (stats.derived) {
+    stats.derived.maxHealth = Math.floor(baseHp * conMult);
+    stats.derived.maxMana = Math.floor(baseMp * menMult);
+    stats.derived.physicalPower = Math.floor((template.basePAtk + (equipStats.pAtk || 0)) * strMult);
+    stats.derived.magicPower = Math.floor((template.baseMAtk + (equipStats.mAtk || 0)) * intMult);
+    stats.derived.attackSpeed = Math.floor((template.baseAtkSpd + (equipStats.atkSpd || 0)) * dexMult);
+    stats.derived.castSpeed = Math.floor(template.baseCastSpd * witMult);
+    stats.derived.physicalDefense = template.basePDef + (equipStats.pDef || 0);
+    stats.derived.magicDefense = template.baseMDef + (equipStats.mDef || 0);
+
+    const baseCrit = 0.05;
+    const dexCritBonus = (clampStat(eff.dex) - clampStat(baseStats.dex)) * 0.002;
+    stats.derived.critChance = Math.min(0.5, Math.max(0, baseCrit + dexCritBonus + (equipStats.critChance || 0)));
+    stats.derived.critMultiplier = 2.0;
+  }
+
+  // Scale resources
+  if (stats.resources) {
+    stats.resources.health = Math.floor(stats.resources.health * (stats.derived.maxHealth / oldMaxHp));
+    stats.resources.mana = Math.floor(stats.resources.mana * (stats.derived.maxMana / oldMaxMp));
+    stats.resources.health = Math.min(Math.max(0, stats.resources.health), stats.derived.maxHealth);
+    stats.resources.mana = Math.min(Math.max(0, stats.resources.mana), stats.derived.maxMana);
+  }
+}
+
+// Rename old CLASS_TEMPLATES for legacy fallback
+const CLASS_TEMPLATES_LEGACY = CLASS_TEMPLATES;
