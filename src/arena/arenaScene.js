@@ -1163,7 +1163,7 @@ function updateArena(scene) {
         }
 
         // Update HP bars
-        updateArenaHPBars(arenaCombat.getState());
+        updateArenaUI(arenaCombat.getState());
       }
 
       if (event.type === "end") {
@@ -1171,8 +1171,6 @@ function updateArena(scene) {
       }
     });
 
-    // Update timer display
-    updateArenaTimer(arenaCombat.getState().timeLeft);
   }
 
   // Clamp camera to prevent black edges
@@ -1231,77 +1229,13 @@ function onEngageDistance(scene) {
     };
 
     arenaCombat.init(playerStats, enemyStats);
-    createArenaHPBars(scene);
+    createArenaUI(scene);
   });
 }
 
 // ============================================================
-//  ARENA UI (HP Bars, Timer, Damage Text)
+//  ARENA COMBAT HELPERS (Damage Text, End Handler)
 // ============================================================
-
-let arenaPlayerHPBar = null;
-let arenaEnemyHPBar = null;
-let arenaTimerText = null;
-let arenaResultOverlay = null;
-
-function createArenaHPBars(scene) {
-  const barWidth = 200;
-  const barHeight = 20;
-  const yPos = 50;
-
-  // Player HP bar (left side)
-  const playerBarBg = scene.add.rectangle(120, yPos, barWidth, barHeight, 0x333333);
-  const playerBarFill = scene.add.rectangle(120, yPos, barWidth, barHeight, 0x22aa22);
-  playerBarBg.setScrollFactor(0).setDepth(300);
-  playerBarFill.setScrollFactor(0).setDepth(301);
-
-  arenaPlayerHPBar = { bg: playerBarBg, fill: playerBarFill, width: barWidth };
-
-  // Enemy HP bar (right side)
-  const enemyBarBg = scene.add.rectangle(BASE_W - 120, yPos, barWidth, barHeight, 0x333333);
-  const enemyBarFill = scene.add.rectangle(BASE_W - 120, yPos, barWidth, barHeight, 0xcc2222);
-  enemyBarBg.setScrollFactor(0).setDepth(300);
-  enemyBarFill.setScrollFactor(0).setDepth(301);
-
-  arenaEnemyHPBar = { bg: enemyBarBg, fill: enemyBarFill, width: barWidth };
-
-  // Timer in center
-  arenaTimerText = scene.add.text(BASE_W / 2, yPos, "30", {
-    fontSize: "32px",
-    fontFamily: "Arial",
-    color: "#ffffff",
-    stroke: "#000000",
-    strokeThickness: 4
-  });
-  arenaTimerText.setOrigin(0.5).setScrollFactor(0).setDepth(300);
-
-  console.log("[ARENA] HP bars created");
-}
-
-function updateArenaHPBars(state) {
-  if (arenaPlayerHPBar) {
-    const pct = state.playerHealth / state.playerMaxHealth;
-    arenaPlayerHPBar.fill.scaleX = Math.max(0, pct);
-  }
-  if (arenaEnemyHPBar) {
-    const pct = state.enemyHealth / state.enemyMaxHealth;
-    arenaEnemyHPBar.fill.scaleX = Math.max(0, pct);
-  }
-}
-
-function updateArenaTimer(timeLeft) {
-  if (arenaTimerText) {
-    const seconds = Math.max(0, Math.ceil(timeLeft / 1000));
-    arenaTimerText.setText(seconds.toString());
-
-    // Red warning when low
-    if (seconds <= 5) {
-      arenaTimerText.setColor("#ff4444");
-    } else if (seconds <= 10) {
-      arenaTimerText.setColor("#ffaa00");
-    }
-  }
-}
 
 function spawnArenaDamageText(scene, target, damage, isCrit) {
   if (!target) return;
@@ -1348,104 +1282,8 @@ function handleArenaEnd(scene, result) {
 
   // Show result screen after brief delay
   scene.time.delayedCall(1000, () => {
-    showArenaResultScreen(scene, isWin, rewards, result);
+    showArenaResult(scene, isWin, rewards, result);
   });
-}
-
-function showArenaResultScreen(scene, isWin, rewards, result) {
-  const w = BASE_W, h = BASE_H;
-
-  // Dark overlay
-  const overlay = scene.add.rectangle(w/2, h/2, w, h, 0x000000, 0.8);
-  overlay.setScrollFactor(0).setDepth(400);
-
-  // Result text
-  const resultText = isWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
-  const resultColor = isWin ? "#44ff44" : "#ff4444";
-
-  const titleText = scene.add.text(w/2, h/2 - 100, resultText, {
-    fontSize: "48px",
-    fontFamily: "Arial",
-    color: resultColor,
-    stroke: "#000000",
-    strokeThickness: 6
-  });
-  titleText.setOrigin(0.5).setScrollFactor(0).setDepth(401);
-
-  // Stats
-  const statsStr = [
-    `Рейтинг: ${rewards.ratingChange >= 0 ? "+" : ""}${rewards.ratingChange} (${rewards.newRating})`,
-    `Опыт: +${rewards.expReward}`,
-    `Золото: +${rewards.goldReward}`,
-    ``,
-    `Урон нанесён: ${result.playerDamageDealt}`,
-    `Урон получен: ${result.enemyDamageDealt}`
-  ].join("\n");
-
-  const statsText = scene.add.text(w/2, h/2 + 20, statsStr, {
-    fontSize: "20px",
-    fontFamily: "Arial",
-    color: "#ffffff",
-    align: "center",
-    stroke: "#000000",
-    strokeThickness: 2
-  });
-  statsText.setOrigin(0.5).setScrollFactor(0).setDepth(401);
-
-  // Continue button
-  const continueBtn = scene.add.text(w/2, h/2 + 150, "[ ПРОДОЛЖИТЬ ]", {
-    fontSize: "28px",
-    fontFamily: "Arial",
-    color: "#ffffff",
-    backgroundColor: "#444444",
-    padding: { x: 30, y: 15 }
-  });
-  continueBtn.setOrigin(0.5).setScrollFactor(0).setDepth(401);
-  continueBtn.setInteractive({ useHandCursor: true });
-  continueBtn.on("pointerover", () => continueBtn.setStyle({ backgroundColor: "#666666" }));
-  continueBtn.on("pointerout", () => continueBtn.setStyle({ backgroundColor: "#444444" }));
-  continueBtn.on("pointerdown", () => {
-    // Apply rewards to player
-    if (stats.progression) {
-      stats.progression.xp += rewards.expReward;
-    }
-    if (wallet) {
-      wallet.gold += rewards.goldReward;
-    }
-
-    // Cleanup and exit
-    overlay.destroy();
-    titleText.destroy();
-    statsText.destroy();
-    continueBtn.destroy();
-    exitArena(scene);
-  });
-
-  arenaResultOverlay = { overlay, titleText, statsText, continueBtn };
-}
-
-function destroyArenaUI() {
-  if (arenaPlayerHPBar) {
-    arenaPlayerHPBar.bg?.destroy();
-    arenaPlayerHPBar.fill?.destroy();
-    arenaPlayerHPBar = null;
-  }
-  if (arenaEnemyHPBar) {
-    arenaEnemyHPBar.bg?.destroy();
-    arenaEnemyHPBar.fill?.destroy();
-    arenaEnemyHPBar = null;
-  }
-  if (arenaTimerText) {
-    arenaTimerText.destroy();
-    arenaTimerText = null;
-  }
-  if (arenaResultOverlay) {
-    arenaResultOverlay.overlay?.destroy();
-    arenaResultOverlay.titleText?.destroy();
-    arenaResultOverlay.statsText?.destroy();
-    arenaResultOverlay.continueBtn?.destroy();
-    arenaResultOverlay = null;
-  }
 }
 
 // ============================================================
