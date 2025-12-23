@@ -191,9 +191,6 @@ function update(time, delta) {
   if (typeof processTick === "function") {
     processTick(delta);
   }
-  if (mode === "runner" && typeof updateRunnerBattle === "function") {
-    updateRunnerBattle(this, delta);
-  }
   if (typeof updateArena === "function") {
     updateArena(this);
   }
@@ -431,8 +428,6 @@ function setupFullUIMode(scene) {
   if (typeof createGameUI === "function") createGameUI(scene);
   if (typeof createMapUI === "function") createMapUI(scene);
   if (typeof createForgeUI === "function") createForgeUI(scene);
-  if (typeof initRunnerBattle === "function") initRunnerBattle(scene);
-
   // Setup handlers
   setupNewUIHandlers(scene);
 
