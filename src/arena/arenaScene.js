@@ -43,7 +43,7 @@ const ARENA_CONFIG = {
     lerpSpeed: 0.06,
     lockOnEngage: true,
     startZoom: 1.2,      // Intro - close up on player
-    endZoom: 0.8,        // Battle - standard view
+    endZoom: 0.86,       // Battle - no black edges (0.8 showed bottom bar)
     zoomLerpSpeed: 0.02  // Slower for smooth transition
   },
   cinematic: {
@@ -92,7 +92,7 @@ function getArenaTuneSettings() {
     playerStartX: 0.26,    // 26%
     enemyStartX: 0.73,     // 73%
     cameraStartZoom: 1.2,  // Close up on player
-    cameraEndZoom: 0.8,    // Battle view
+    cameraEndZoom: 0.86,   // Battle view (no black edges)
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
