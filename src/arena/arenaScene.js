@@ -694,8 +694,8 @@ function setupArenaWorld(scene) {
   arenaBgLeft.setScrollFactor(1);
   arenaBgLeft.setScale(bgScale);
 
-  // RIGHT part (2048 to 4096)
-  arenaBgRight = scene.add.image(bgX + 2048 * bgScale, bgY, 'arena_village_right');
+  // RIGHT part - overlap by 1px to hide seam
+  arenaBgRight = scene.add.image(bgX + 2048 * bgScale - 1, bgY, 'arena_village_right');
   arenaBgRight.setOrigin(0, 0);
   arenaBgRight.setDepth(-100);
   arenaBgRight.setScrollFactor(1);
