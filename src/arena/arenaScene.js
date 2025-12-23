@@ -67,7 +67,7 @@ const ARENA_TUNE_ENABLED = new URLSearchParams(window.location.search).has('aren
 if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 
 // Version check - clear old settings on version change
-const ARENA_TUNE_VERSION = 'v3';
+const ARENA_TUNE_VERSION = 'v4';
 const savedVersion = localStorage.getItem('ARENA_TUNE_VERSION');
 if (savedVersion !== ARENA_TUNE_VERSION) {
   localStorage.removeItem('ARENA_TUNE');
