@@ -42,8 +42,8 @@ const ARENA_CONFIG = {
   camera: {
     lerpSpeed: 0.06,
     lockOnEngage: true,
-    startZoom: 1.0,      // No zoom - native BG size
-    endZoom: 1.0,
+    startZoom: 1.2,      // Intro - closer view
+    endZoom: 0.8,        // Battle - wider view
     zoomLerpSpeed: 0.03
   },
   cinematic: {
@@ -434,13 +434,17 @@ function setupArenaTuneKeys(scene) {
 function applyArenaTuneSettings(scene) {
   const s = arenaTuneSettings;
 
-  // Apply BG position/scale (single image - COVER mode)
-  if (arenaBgSprite) {
-    const scaleW = WORLD_W / arenaBgSprite.width;
-    const scaleH = BASE_H / arenaBgSprite.height;
-    const baseScale = Math.max(scaleW, scaleH);
-    arenaBgSprite.setScale(baseScale * s.bgScale);
-    arenaBgSprite.setPosition(s.bgX, s.bgY);
+  // Apply BG position/scale (2-part background)
+  if (arenaBgLeft && arenaBgRight) {
+    const bgX = s.bgX || 0;
+    const bgY = s.bgY || 0;
+    const bgScale = s.bgScale || 1.0;
+
+    arenaBgLeft.setPosition(bgX, bgY);
+    arenaBgLeft.setScale(bgScale);
+
+    arenaBgRight.setPosition(bgX + 2048 * bgScale - 1, bgY);
+    arenaBgRight.setScale(bgScale);
   }
 
   // Apply ground Y
@@ -654,6 +658,31 @@ function showVSScreen(scene, enemyData, onComplete) {
 }
 
 // ============================================================
+//  CLAMP CAMERA TO BG (prevents black edges with zoom)
+// ============================================================
+
+function clampCameraToBG(scene) {
+  const cam = scene.cameras.main;
+  const bgScale = arenaTuneSettings.bgScale || 1.0;
+  const bgX = arenaTuneSettings.bgX || 0;
+  const bgY = arenaTuneSettings.bgY || 0;
+  const bgWidth = 4096 * bgScale;
+  const bgHeight = 2048 * bgScale;
+  const viewWidth = BASE_W / cam.zoom;
+  const viewHeight = BASE_H / cam.zoom;
+
+  // Clamp X
+  const minScrollX = bgX;
+  const maxScrollX = Math.max(bgX, bgX + bgWidth - viewWidth);
+  cam.scrollX = Math.max(minScrollX, Math.min(cam.scrollX, maxScrollX));
+
+  // Clamp Y
+  const minScrollY = bgY;
+  const maxScrollY = Math.max(bgY, bgY + bgHeight - viewHeight);
+  cam.scrollY = Math.max(minScrollY, Math.min(cam.scrollY, maxScrollY));
+}
+
+// ============================================================
 //  SETUP ARENA WORLD
 // ============================================================
 
@@ -805,6 +834,13 @@ function spawnFighters(scene, enemyData) {
   if (ARENA_TUNE_ENABLED) {
     setupFighterDrag(scene);
   }
+
+  // DEBUG: visible markers at fighter positions
+  scene.add.rectangle(arenaPlayerSprite.x, arenaPlayerSprite.y, 50, 50, 0xff0000).setDepth(1000).setScrollFactor(1);
+  scene.add.rectangle(arenaEnemySprite.x, arenaEnemySprite.y, 50, 50, 0x0000ff).setDepth(1000).setScrollFactor(1);
+  console.log("[ARENA DEBUG] Player pos:", arenaPlayerSprite.x.toFixed(0), ",", arenaPlayerSprite.y.toFixed(0));
+  console.log("[ARENA DEBUG] Enemy pos:", arenaEnemySprite.x.toFixed(0), ",", arenaEnemySprite.y.toFixed(0));
+  console.log("[ARENA DEBUG] BASE_H:", BASE_H, "GROUND_Y:", GROUND_Y.toFixed(0), "(", (GROUND_Y/BASE_H*100).toFixed(0), "%)");
 
   // Camera: zoom 1.0, center on player, no Y scrolling
   scene.cameras.main.setZoom(1.0);
@@ -1036,6 +1072,9 @@ function updateArena(scene) {
       onEngageDistance(scene);
     }
   }
+
+  // Clamp camera to prevent black edges
+  clampCameraToBG(scene);
 }
 
 // ============================================================
