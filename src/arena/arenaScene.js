@@ -1129,6 +1129,52 @@ function updateArena(scene) {
     }
   }
 
+  // === FIGHT STATE ===
+  if (arenaState === "FIGHT") {
+    const delta = scene.game.loop.delta;
+    const events = arenaCombat.update(delta);
+
+    // Process events
+    events.forEach(event => {
+      if (event.type === "attack") {
+        if (event.attacker === "player") {
+          // Player attacks
+          if (arenaPlayerSprite?.play) {
+            arenaPlayerSprite.play("attack", false);
+            // Return to idle after attack
+            scene.time.delayedCall(400, () => {
+              if (arenaPlayerSprite?.play && arenaState === "FIGHT") {
+                arenaPlayerSprite.play("idle", true);
+              }
+            });
+          }
+          spawnArenaDamageText(scene, arenaEnemySprite, event.damage, event.isCrit);
+        } else {
+          // Enemy attacks
+          if (arenaEnemySprite?.play) {
+            arenaEnemySprite.play("attack", false);
+            scene.time.delayedCall(400, () => {
+              if (arenaEnemySprite?.play && arenaState === "FIGHT") {
+                arenaEnemySprite.play("idle", true);
+              }
+            });
+          }
+          spawnArenaDamageText(scene, arenaPlayerSprite, event.damage, event.isCrit);
+        }
+
+        // Update HP bars
+        updateArenaHPBars(arenaCombat.getState());
+      }
+
+      if (event.type === "end") {
+        handleArenaEnd(scene, event.result);
+      }
+    });
+
+    // Update timer display
+    updateArenaTimer(arenaCombat.getState().timeLeft);
+  }
+
   // Clamp camera to prevent black edges
   clampCameraToBG(scene);
 }
@@ -1162,7 +1208,244 @@ function onEngageDistance(scene) {
   scene.time.delayedCall(ARENA_CONFIG.engagePause, () => {
     arenaState = "FIGHT";
     console.log("[ARENA] State: FIGHT");
+
+    // Initialize combat with player and enemy stats
+    const playerStats = {
+      maxHealth: stats.derived?.maxHealth || 100,
+      physicalPower: stats.derived?.physicalPower || 10,
+      physicalDefense: stats.derived?.physicalDefense || 40,
+      attackSpeed: stats.derived?.attackSpeed || 300,
+      critChance: stats.derived?.critChance || 0.05,
+      critMultiplier: stats.derived?.critMultiplier || 2.0
+    };
+
+    // Generate enemy stats based on player level
+    const enemyLevel = (stats.progression?.level || 1) + Math.floor(Math.random() * 3) - 1;
+    const enemyStats = {
+      maxHealth: Math.floor(playerStats.maxHealth * (0.8 + Math.random() * 0.4)),
+      physicalPower: Math.floor(playerStats.physicalPower * (0.8 + Math.random() * 0.4)),
+      physicalDefense: Math.floor(playerStats.physicalDefense * (0.8 + Math.random() * 0.4)),
+      attackSpeed: Math.floor(playerStats.attackSpeed * (0.9 + Math.random() * 0.2)),
+      critChance: 0.05 + Math.random() * 0.05,
+      critMultiplier: 2.0
+    };
+
+    arenaCombat.init(playerStats, enemyStats);
+    createArenaHPBars(scene);
   });
+}
+
+// ============================================================
+//  ARENA UI (HP Bars, Timer, Damage Text)
+// ============================================================
+
+let arenaPlayerHPBar = null;
+let arenaEnemyHPBar = null;
+let arenaTimerText = null;
+let arenaResultOverlay = null;
+
+function createArenaHPBars(scene) {
+  const barWidth = 200;
+  const barHeight = 20;
+  const yPos = 50;
+
+  // Player HP bar (left side)
+  const playerBarBg = scene.add.rectangle(120, yPos, barWidth, barHeight, 0x333333);
+  const playerBarFill = scene.add.rectangle(120, yPos, barWidth, barHeight, 0x22aa22);
+  playerBarBg.setScrollFactor(0).setDepth(300);
+  playerBarFill.setScrollFactor(0).setDepth(301);
+
+  arenaPlayerHPBar = { bg: playerBarBg, fill: playerBarFill, width: barWidth };
+
+  // Enemy HP bar (right side)
+  const enemyBarBg = scene.add.rectangle(BASE_W - 120, yPos, barWidth, barHeight, 0x333333);
+  const enemyBarFill = scene.add.rectangle(BASE_W - 120, yPos, barWidth, barHeight, 0xcc2222);
+  enemyBarBg.setScrollFactor(0).setDepth(300);
+  enemyBarFill.setScrollFactor(0).setDepth(301);
+
+  arenaEnemyHPBar = { bg: enemyBarBg, fill: enemyBarFill, width: barWidth };
+
+  // Timer in center
+  arenaTimerText = scene.add.text(BASE_W / 2, yPos, "30", {
+    fontSize: "32px",
+    fontFamily: "Arial",
+    color: "#ffffff",
+    stroke: "#000000",
+    strokeThickness: 4
+  });
+  arenaTimerText.setOrigin(0.5).setScrollFactor(0).setDepth(300);
+
+  console.log("[ARENA] HP bars created");
+}
+
+function updateArenaHPBars(state) {
+  if (arenaPlayerHPBar) {
+    const pct = state.playerHealth / state.playerMaxHealth;
+    arenaPlayerHPBar.fill.scaleX = Math.max(0, pct);
+  }
+  if (arenaEnemyHPBar) {
+    const pct = state.enemyHealth / state.enemyMaxHealth;
+    arenaEnemyHPBar.fill.scaleX = Math.max(0, pct);
+  }
+}
+
+function updateArenaTimer(timeLeft) {
+  if (arenaTimerText) {
+    const seconds = Math.max(0, Math.ceil(timeLeft / 1000));
+    arenaTimerText.setText(seconds.toString());
+
+    // Red warning when low
+    if (seconds <= 5) {
+      arenaTimerText.setColor("#ff4444");
+    } else if (seconds <= 10) {
+      arenaTimerText.setColor("#ffaa00");
+    }
+  }
+}
+
+function spawnArenaDamageText(scene, target, damage, isCrit) {
+  if (!target) return;
+
+  const color = isCrit ? "#ffdd00" : "#ffffff";
+  const size = isCrit ? "32px" : "24px";
+  const prefix = isCrit ? "CRIT " : "";
+
+  const text = scene.add.text(target.x, target.y - 100, prefix + "-" + damage, {
+    fontSize: size,
+    color: color,
+    fontFamily: "Arial",
+    stroke: "#000000",
+    strokeThickness: 4
+  }).setOrigin(0.5).setDepth(200);
+
+  scene.tweens.add({
+    targets: text,
+    y: text.y - 50,
+    alpha: 0,
+    duration: 800,
+    onComplete: () => text.destroy()
+  });
+}
+
+function handleArenaEnd(scene, result) {
+  arenaState = "RESULT";
+  console.log("[ARENA] Battle ended:", result);
+
+  const isWin = result.winner === "player";
+
+  // Play death/victory animations
+  if (isWin) {
+    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("idle", true);
+    if (arenaEnemySprite?.play) arenaEnemySprite.play("death", false);
+  } else {
+    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("death", false);
+    if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
+  }
+
+  // Calculate rewards
+  const enemyRating = arenaData.rating + Math.floor(Math.random() * 200) - 100;
+  const rewards = applyArenaResult(isWin, enemyRating);
+
+  // Show result screen after brief delay
+  scene.time.delayedCall(1000, () => {
+    showArenaResultScreen(scene, isWin, rewards, result);
+  });
+}
+
+function showArenaResultScreen(scene, isWin, rewards, result) {
+  const w = BASE_W, h = BASE_H;
+
+  // Dark overlay
+  const overlay = scene.add.rectangle(w/2, h/2, w, h, 0x000000, 0.8);
+  overlay.setScrollFactor(0).setDepth(400);
+
+  // Result text
+  const resultText = isWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
+  const resultColor = isWin ? "#44ff44" : "#ff4444";
+
+  const titleText = scene.add.text(w/2, h/2 - 100, resultText, {
+    fontSize: "48px",
+    fontFamily: "Arial",
+    color: resultColor,
+    stroke: "#000000",
+    strokeThickness: 6
+  });
+  titleText.setOrigin(0.5).setScrollFactor(0).setDepth(401);
+
+  // Stats
+  const statsStr = [
+    `Рейтинг: ${rewards.ratingChange >= 0 ? "+" : ""}${rewards.ratingChange} (${rewards.newRating})`,
+    `Опыт: +${rewards.expReward}`,
+    `Золото: +${rewards.goldReward}`,
+    ``,
+    `Урон нанесён: ${result.playerDamageDealt}`,
+    `Урон получен: ${result.enemyDamageDealt}`
+  ].join("\n");
+
+  const statsText = scene.add.text(w/2, h/2 + 20, statsStr, {
+    fontSize: "20px",
+    fontFamily: "Arial",
+    color: "#ffffff",
+    align: "center",
+    stroke: "#000000",
+    strokeThickness: 2
+  });
+  statsText.setOrigin(0.5).setScrollFactor(0).setDepth(401);
+
+  // Continue button
+  const continueBtn = scene.add.text(w/2, h/2 + 150, "[ ПРОДОЛЖИТЬ ]", {
+    fontSize: "28px",
+    fontFamily: "Arial",
+    color: "#ffffff",
+    backgroundColor: "#444444",
+    padding: { x: 30, y: 15 }
+  });
+  continueBtn.setOrigin(0.5).setScrollFactor(0).setDepth(401);
+  continueBtn.setInteractive({ useHandCursor: true });
+  continueBtn.on("pointerover", () => continueBtn.setStyle({ backgroundColor: "#666666" }));
+  continueBtn.on("pointerout", () => continueBtn.setStyle({ backgroundColor: "#444444" }));
+  continueBtn.on("pointerdown", () => {
+    // Apply rewards to player
+    if (stats.progression) {
+      stats.progression.xp += rewards.expReward;
+    }
+    if (wallet) {
+      wallet.gold += rewards.goldReward;
+    }
+
+    // Cleanup and exit
+    overlay.destroy();
+    titleText.destroy();
+    statsText.destroy();
+    continueBtn.destroy();
+    exitArena(scene);
+  });
+
+  arenaResultOverlay = { overlay, titleText, statsText, continueBtn };
+}
+
+function destroyArenaUI() {
+  if (arenaPlayerHPBar) {
+    arenaPlayerHPBar.bg?.destroy();
+    arenaPlayerHPBar.fill?.destroy();
+    arenaPlayerHPBar = null;
+  }
+  if (arenaEnemyHPBar) {
+    arenaEnemyHPBar.bg?.destroy();
+    arenaEnemyHPBar.fill?.destroy();
+    arenaEnemyHPBar = null;
+  }
+  if (arenaTimerText) {
+    arenaTimerText.destroy();
+    arenaTimerText = null;
+  }
+  if (arenaResultOverlay) {
+    arenaResultOverlay.overlay?.destroy();
+    arenaResultOverlay.titleText?.destroy();
+    arenaResultOverlay.statsText?.destroy();
+    arenaResultOverlay.continueBtn?.destroy();
+    arenaResultOverlay = null;
+  }
 }
 
 // ============================================================
@@ -1172,6 +1455,9 @@ function onEngageDistance(scene) {
 function exitArena(scene) {
   if (!arenaActive) return;
   console.log("[ARENA] Exit");
+
+  // Destroy arena UI
+  destroyArenaUI();
 
   // Destroy tune UI
   destroyTuneUI();
