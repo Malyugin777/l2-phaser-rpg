@@ -18,16 +18,16 @@ let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
 const ARENA_CONFIG = {
-  // World = BG image width (4096px) / screen width (780px) ≈ 5.25
   worldMultiplier: 5.25,
 
-  // Fighter positions as percentages of world width
-  playerSpawnX: 0.09,      // 9% = ~368px
-  enemySpawnX: 0.91,       // 91% = ~3727px
-
-  // Ground at 85% of screen height (on the grass)
-  groundY: 0.85,
-  fighterScale: 1.92,
+  // FINAL HARDCODED VALUES
+  groundY: 0.88,             // 88%
+  fighterScale: 1.38,
+  playerSpawnX: 0.26,        // 26%
+  enemySpawnX: 0.73,         // 73%
+  bgOffsetX: 0,
+  bgOffsetY: 5,
+  bgScale: 0.96,
 
   // Combat
   fightOffset: 150,
@@ -42,8 +42,8 @@ const ARENA_CONFIG = {
   camera: {
     lerpSpeed: 0.06,
     lockOnEngage: true,
-    startZoom: 1.2,      // Intro - closer view
-    endZoom: 0.8,        // Battle - wider view
+    startZoom: 0.8,      // Standard zoom
+    endZoom: 0.8,        // Same
     zoomLerpSpeed: 0.03
   },
   cinematic: {
@@ -71,7 +71,7 @@ const ARENA_TUNE_ENABLED = new URLSearchParams(window.location.search).has('aren
 if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 
 // Version check - clear old settings on version change
-const ARENA_TUNE_VERSION = 'v7';
+const ARENA_TUNE_VERSION = 'v8';
 const savedVersion = localStorage.getItem('ARENA_TUNE_VERSION');
 if (savedVersion !== ARENA_TUNE_VERSION) {
   localStorage.removeItem('ARENA_TUNE');
@@ -83,16 +83,16 @@ if (savedVersion !== ARENA_TUNE_VERSION) {
 function getArenaTuneSettings() {
   const defaults = {
     bgX: 0,
-    bgY: 0,                // 2-part BG (2048x2048 each)
-    bgScale: 1.0,          // Native size
-    groundY: 0.85,         // 85% of screen height (on grass)
-    fighterScale: 1.92,
+    bgY: 5,
+    bgScale: 0.96,
+    groundY: 0.88,         // 88%
+    fighterScale: 1.38,
     fightOffset: 150,
     cameraStartX: 0,
-    playerStartX: 0.09,    // 9%
-    enemyStartX: 0.91,     // 91%
-    cameraStartZoom: 1.0,
-    cameraEndZoom: 1.0,
+    playerStartX: 0.26,    // 26%
+    enemyStartX: 0.73,     // 73%
+    cameraStartZoom: 0.8,
+    cameraEndZoom: 0.8,
   };
 
   if (!ARENA_TUNE_ENABLED) return defaults;
@@ -698,8 +698,8 @@ function setupArenaWorld(scene) {
     console.log("[ARENA] Camera bounds:", WORLD_W, "x", BASE_H);
   }
 
-  // Reset camera
-  scene.cameras.main.setZoom(1);
+  // Reset camera with standard zoom
+  scene.cameras.main.setZoom(0.8);
   scene.cameras.main.scrollX = 0;
   scene.cameras.main.scrollY = 0;
 
@@ -842,8 +842,8 @@ function spawnFighters(scene, enemyData) {
   console.log("[ARENA DEBUG] Enemy pos:", arenaEnemySprite.x.toFixed(0), ",", arenaEnemySprite.y.toFixed(0));
   console.log("[ARENA DEBUG] BASE_H:", BASE_H, "GROUND_Y:", GROUND_Y.toFixed(0), "(", (GROUND_Y/BASE_H*100).toFixed(0), "%)");
 
-  // Camera: zoom 1.0, center on player, no Y scrolling
-  scene.cameras.main.setZoom(1.0);
+  // Camera: standard zoom 0.8, center on player
+  scene.cameras.main.setZoom(0.8);
   scene.cameras.main.scrollY = 0;
 
   // Center camera on player initially
