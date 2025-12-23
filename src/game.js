@@ -571,7 +571,21 @@ function setupNewUIHandlers(scene) {
         isShopOpen ? hideShopPanel() : (hideAllPanels(), showShopPanel());
       } else if (item.action === "openArena") {
         hideAllPanels();
-        if (typeof onArenaButtonClick === "function") onArenaButtonClick(scene);
+        // Check energy
+        if (typeof canStartArenaBattle === "function" && !canStartArenaBattle()) {
+          const msg = scene.add.text(scene.scale.width / 2, scene.scale.height / 2,
+            "Не хватает энергии! (" + arenaData.energy + "/" + arenaData.energyCost + ")", {
+            fontSize: "20px", color: "#ffcc00", backgroundColor: "#000000",
+            padding: { x: 12, y: 8 }
+          }).setOrigin(0.5).setDepth(300);
+          scene.tweens.add({ targets: msg, alpha: 0, y: msg.y - 30, duration: 2000, delay: 1000, onComplete: () => msg.destroy() });
+          return;
+        }
+        // Spend energy and start new arena
+        if (typeof spendArenaEnergy === "function") spendArenaEnergy();
+        if (typeof startArena === "function") {
+          startArena(scene, null);
+        }
       } else if (item.action === "openDungeon") {
         isDungeonOpen ? hideDungeonPanel() : (hideAllPanels(), showDungeonPanel());
       } else if (item.action === "openMerc") {

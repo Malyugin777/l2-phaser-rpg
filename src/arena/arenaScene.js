@@ -835,13 +835,6 @@ function spawnFighters(scene, enemyData) {
     setupFighterDrag(scene);
   }
 
-  // DEBUG: visible markers at fighter positions
-  scene.add.rectangle(arenaPlayerSprite.x, arenaPlayerSprite.y, 50, 50, 0xff0000).setDepth(1000).setScrollFactor(1);
-  scene.add.rectangle(arenaEnemySprite.x, arenaEnemySprite.y, 50, 50, 0x0000ff).setDepth(1000).setScrollFactor(1);
-  console.log("[ARENA DEBUG] Player pos:", arenaPlayerSprite.x.toFixed(0), ",", arenaPlayerSprite.y.toFixed(0));
-  console.log("[ARENA DEBUG] Enemy pos:", arenaEnemySprite.x.toFixed(0), ",", arenaEnemySprite.y.toFixed(0));
-  console.log("[ARENA DEBUG] BASE_H:", BASE_H, "GROUND_Y:", GROUND_Y.toFixed(0), "(", (GROUND_Y/BASE_H*100).toFixed(0), "%)");
-
   // Camera: start zoomed in on player (1.2), will zoom out to 0.8 during RUN_IN
   const startZoom = ARENA_CONFIG.camera.startZoom;
   scene.cameras.main.setZoom(startZoom);
@@ -1293,6 +1286,13 @@ function handleArenaEnd(scene, result) {
 function exitArena(scene) {
   if (!arenaActive) return;
   console.log("[ARENA] Exit");
+
+  // Reset combat state
+  if (typeof arenaCombat !== "undefined" && arenaCombat) {
+    arenaCombat.player = null;
+    arenaCombat.enemy = null;
+    arenaCombat.isFinished = false;
+  }
 
   // Destroy arena UI
   destroyArenaUI();
