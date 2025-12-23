@@ -11,7 +11,8 @@
 let arenaActive = false;
 let arenaState = "NONE"; // NONE, INTRO, TUNING, INTRO_PLAYER, INTRO_ENEMY, READY, RUN_IN, ENGAGE, FIGHT
 
-let arenaBgSprite = null;
+let arenaBgLeft = null;
+let arenaBgRight = null;
 let arenaPlayerSprite = null;
 let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
@@ -70,7 +71,7 @@ const ARENA_TUNE_ENABLED = new URLSearchParams(window.location.search).has('aren
 if (ARENA_TUNE_ENABLED) console.log("[ARENA] Tune mode ENABLED");
 
 // Version check - clear old settings on version change
-const ARENA_TUNE_VERSION = 'v6';
+const ARENA_TUNE_VERSION = 'v7';
 const savedVersion = localStorage.getItem('ARENA_TUNE_VERSION');
 if (savedVersion !== ARENA_TUNE_VERSION) {
   localStorage.removeItem('ARENA_TUNE');
@@ -82,8 +83,8 @@ if (savedVersion !== ARENA_TUNE_VERSION) {
 function getArenaTuneSettings() {
   const defaults = {
     bgX: 0,
-    bgY: -180,             // Shift up to center grass on screen
-    bgScale: 1.0,          // Native size (4096x2048)
+    bgY: 0,                // 2-part BG (2048x2048 each)
+    bgScale: 1.0,          // Native size
     groundY: 0.85,         // 85% of screen height (on grass)
     fighterScale: 1.92,
     fightOffset: 150,
@@ -556,23 +557,32 @@ function startArena(scene, enemyData) {
   });  // end lazyLoadArenaAssets
 }
 
-// Lazy load arena assets (background + battle audio)
+// Lazy load arena assets (2-part background + battle audio)
 function lazyLoadArenaAssets(scene, onComplete) {
   let loaded = 0;
-  const toLoad = 2;  // arena_village + battle_theme
+  const toLoad = 3;  // arena_village_left + arena_village_right + battle_theme
 
   const checkDone = () => {
     loaded++;
     if (loaded >= toLoad && onComplete) onComplete();
   };
 
-  // Load arena background
-  if (scene.textures.exists('arena_village')) {
+  // Load arena background LEFT part
+  if (scene.textures.exists('arena_village_left')) {
     checkDone();
   } else {
-    console.log("[ARENA] Lazy loading arena_village...");
-    scene.load.image('arena_village', 'assets/backgrounds/arena_village.png');
-    scene.load.once('filecomplete-image-arena_village', checkDone);
+    console.log("[ARENA] Lazy loading arena_village_left...");
+    scene.load.image('arena_village_left', 'assets/backgrounds/arena_village_left.png');
+    scene.load.once('filecomplete-image-arena_village_left', checkDone);
+  }
+
+  // Load arena background RIGHT part
+  if (scene.textures.exists('arena_village_right')) {
+    checkDone();
+  } else {
+    console.log("[ARENA] Lazy loading arena_village_right...");
+    scene.load.image('arena_village_right', 'assets/backgrounds/arena_village_right.png');
+    scene.load.once('filecomplete-image-arena_village_right', checkDone);
   }
 
   // Load battle theme
@@ -664,19 +674,35 @@ function setupArenaWorld(scene) {
   scene.cameras.main.scrollX = 0;
   scene.cameras.main.scrollY = 0;
 
-  // Background at native size (4096x2048)
-  arenaBgSprite = scene.add.image(0, 0, 'arena_village');
-  arenaBgSprite.setOrigin(0, 0);
-  arenaBgSprite.setDepth(-100);
-  arenaBgSprite.setScrollFactor(1);
-  arenaBgSprite.setScale(arenaTuneSettings.bgScale || 1.0);
+  // Debug: show actual loaded texture sizes
+  const bgLeftTex = scene.textures.get('arena_village_left');
+  const bgRightTex = scene.textures.get('arena_village_right');
+  const bgLeftSrc = bgLeftTex?.getSourceImage();
+  const bgRightSrc = bgRightTex?.getSourceImage();
+  console.log("[ARENA] BG LEFT texture:", bgLeftSrc?.width, "x", bgLeftSrc?.height);
+  console.log("[ARENA] BG RIGHT texture:", bgRightSrc?.width, "x", bgRightSrc?.height);
 
-  // Position BG (shift up to show grass)
-  const bgY = arenaTuneSettings.bgY || -180;
-  arenaBgSprite.setPosition(arenaTuneSettings.bgX || 0, bgY);
+  // Tune settings
+  const bgX = arenaTuneSettings.bgX || 0;
+  const bgY = arenaTuneSettings.bgY || 0;
+  const bgScale = arenaTuneSettings.bgScale || 1.0;
 
-  console.log("[ARENA] BG native:", arenaBgSprite.width, "x", arenaBgSprite.height);
-  console.log("[ARENA] BG position: (", arenaBgSprite.x, ",", bgY, ")");
+  // LEFT part (0 to 2048)
+  arenaBgLeft = scene.add.image(bgX, bgY, 'arena_village_left');
+  arenaBgLeft.setOrigin(0, 0);
+  arenaBgLeft.setDepth(-100);
+  arenaBgLeft.setScrollFactor(1);
+  arenaBgLeft.setScale(bgScale);
+
+  // RIGHT part (2048 to 4096)
+  arenaBgRight = scene.add.image(bgX + 2048 * bgScale, bgY, 'arena_village_right');
+  arenaBgRight.setOrigin(0, 0);
+  arenaBgRight.setDepth(-100);
+  arenaBgRight.setScrollFactor(1);
+  arenaBgRight.setScale(bgScale);
+
+  console.log("[ARENA] BG LEFT pos:", arenaBgLeft.x, ",", arenaBgLeft.y, "size:", arenaBgLeft.width, "x", arenaBgLeft.height);
+  console.log("[ARENA] BG RIGHT pos:", arenaBgRight.x, ",", arenaBgRight.y, "size:", arenaBgRight.width, "x", arenaBgRight.height);
   console.log("[ARENA] WORLD_W:", WORLD_W, "BASE_H:", BASE_H);
 
   // Exit button (fixed to screen, high depth)
@@ -1055,7 +1081,8 @@ function exitArena(scene) {
   // Destroy tune UI
   destroyTuneUI();
 
-  if (arenaBgSprite) { arenaBgSprite.destroy(); arenaBgSprite = null; }
+  if (arenaBgLeft) { arenaBgLeft.destroy(); arenaBgLeft = null; }
+  if (arenaBgRight) { arenaBgRight.destroy(); arenaBgRight = null; }
   if (arenaPlayerSprite) { arenaPlayerSprite.destroy(); arenaPlayerSprite = null; }
   if (arenaEnemySprite) { arenaEnemySprite.destroy(); arenaEnemySprite = null; }
   if (arenaExitBtnSprite) { arenaExitBtnSprite.destroy(); arenaExitBtnSprite = null; }
