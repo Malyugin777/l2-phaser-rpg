@@ -120,10 +120,12 @@ function processTick(delta) {
 }
 
 function processRegenTick() {
-  stats.hp = Number(stats.hp) || 0;
-  stats.mp = Number(stats.mp) || 0;
-  stats.maxHp = Math.max(1, Number(stats.maxHp) || 1);
-  stats.maxMp = Math.max(1, Number(stats.maxMp) || 1);
+  // Use resources for current HP/MP (writable)
+  const currentHp = Number(stats.hp) || 0;
+  const currentMp = Number(stats.mp) || 0;
+  // Use derived for max values (read-only getters)
+  const maxHp = Math.max(1, Number(stats.maxHp) || 1);
+  const maxMp = Math.max(1, Number(stats.maxMp) || 1);
 
   // === СМЕРТЬ ===
   if (stats.hp <= 0) {

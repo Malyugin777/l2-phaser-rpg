@@ -16,8 +16,8 @@ const BASE_STATS = {
   }
 };
 
-// ----- CLASS TEMPLATES (формулы роста HP/MP) -----
-const CLASS_TEMPLATES = {
+// ----- CLASS TEMPLATES LEGACY (формулы роста HP/MP для старой системы) -----
+const CLASS_TEMPLATES_OLD = {
   human_fighter: {
     baseHpMax: 80,  lvlHpAdd: 12.0,  lvlHpMod: 0.37,
     baseMpMax: 30,  lvlMpAdd: 5.5,   lvlMpMod: 0.16,
@@ -275,5 +275,5 @@ function recalculateHeroStatsLegacy() {
   }
 }
 
-// Rename old CLASS_TEMPLATES for legacy fallback
-const CLASS_TEMPLATES_LEGACY = CLASS_TEMPLATES;
+// Legacy alias
+const CLASS_TEMPLATES_LEGACY = CLASS_TEMPLATES_OLD;
