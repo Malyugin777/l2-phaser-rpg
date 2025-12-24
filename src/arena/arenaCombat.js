@@ -70,8 +70,14 @@ const arenaCombat = {
     const events = [];
     const now = Date.now();
 
+    // DEBUG: Show timing info every ~60 frames
+    if (Math.random() < 0.02) {
+      console.log("[Combat] now:", now, "playerNext:", this.playerNextAttack, "diff:", (this.playerNextAttack - now));
+    }
+
     // Player атакует
     if (now >= this.playerNextAttack) {
+      console.log("[Combat] Player attacks!");
       const result = this.doAttack(this.player, this.enemy);
       this.playerDamageDealt += result.damage;
       this.playerNextAttack = now + this.getAttackInterval(this.player.attackSpeed);
@@ -88,6 +94,7 @@ const arenaCombat = {
 
     // Enemy атакует
     if (now >= this.enemyNextAttack) {
+      console.log("[Combat] Enemy attacks!");
       const result = this.doAttack(this.enemy, this.player);
       this.enemyDamageDealt += result.damage;
       this.enemyNextAttack = now + this.getAttackInterval(this.enemy.attackSpeed);

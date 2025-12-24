@@ -1184,33 +1184,41 @@ function updateArena(scene) {
 
   // === FIGHT STATE ===
   if (arenaState === "FIGHT") {
-    const delta = scene.game.loop.delta;
+    const delta = scene.game.loop.delta || 16;
     const events = arenaCombat.update(delta);
 
+    // DEBUG: Log events
+    if (events && events.length > 0) {
+      console.log("[FIGHT] Events received:", events.length, events);
+    }
+
     // Process events
-    events.forEach(event => {
-      if (event.type === "attack") {
-        if (event.attacker === "player") {
-          // Player attacks enemy
-          playAttackAnimation(arenaPlayerSprite, true, scene);
-          playHitEffects(scene, arenaEnemySprite, event.isCrit, false);
-          spawnArenaDamageText(scene, arenaEnemySprite, event.damage, event.isCrit);
-        } else {
-          // Enemy attacks player
-          playAttackAnimation(arenaEnemySprite, false, scene);
-          playHitEffects(scene, arenaPlayerSprite, event.isCrit, true);
-          spawnArenaDamageText(scene, arenaPlayerSprite, event.damage, event.isCrit);
+    if (events && Array.isArray(events)) {
+      events.forEach(event => {
+        if (event.type === "attack") {
+          console.log("[FIGHT] Attack event:", event.attacker, "damage:", event.damage, "crit:", event.isCrit);
+
+          if (event.attacker === "player") {
+            // Player attacks enemy
+            playAttackAnimation(arenaPlayerSprite, true, scene);
+            playHitEffects(scene, arenaEnemySprite, event.isCrit, false);
+            spawnArenaDamageText(scene, arenaEnemySprite, event.damage, event.isCrit);
+          } else {
+            // Enemy attacks player
+            playAttackAnimation(arenaEnemySprite, false, scene);
+            playHitEffects(scene, arenaPlayerSprite, event.isCrit, true);
+            spawnArenaDamageText(scene, arenaPlayerSprite, event.damage, event.isCrit);
+          }
+
+          // Update HP bars
+          updateArenaUI(arenaCombat.getState());
         }
 
-        // Update HP bars
-        updateArenaUI(arenaCombat.getState());
-      }
-
-      if (event.type === "end") {
-        handleArenaEnd(scene, event.result);
-      }
-    });
-
+        if (event.type === "end") {
+          handleArenaEnd(scene, event.result);
+        }
+      });
+    }
   }
 
   // Clamp camera to prevent black edges
