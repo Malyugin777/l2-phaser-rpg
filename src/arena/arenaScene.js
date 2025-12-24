@@ -1342,26 +1342,50 @@ function spawnArenaDamageText(scene, target, damage, isCrit) {
   if (!target) return;
 
   const color = isCrit ? "#ffdd00" : "#ffffff";
-  const size = isCrit ? "48px" : "36px";
+  const size = isCrit ? "72px" : "56px";  // MUCH BIGGER
 
-  const text = scene.add.text(target.x, target.y - 150, "-" + damage, {
+  const text = scene.add.text(target.x, target.y - 180, "-" + damage, {
     fontSize: size,
     color: color,
-    fontFamily: "Arial",
+    fontFamily: "Arial Black, Arial",
+    fontStyle: "bold",
     stroke: "#000000",
-    strokeThickness: 6,
-    shadow: { offsetX: 2, offsetY: 2, color: "#000000", blur: 4, fill: true }
-  }).setOrigin(0.5).setDepth(250);
+    strokeThickness: 8,  // THICK stroke
+    shadow: {
+      offsetX: 3,
+      offsetY: 3,
+      color: "#000000",
+      blur: 5,
+      fill: true
+    }
+  }).setOrigin(0.5).setDepth(350);
+
+  // Animate: pop up, scale, fade
+  text.setScale(0.5);
 
   scene.tweens.add({
     targets: text,
-    y: text.y - 80,
-    alpha: 0,
-    scale: 1.3,
-    duration: 1000,
-    ease: "Power2",
-    onComplete: () => text.destroy()
+    y: text.y - 100,
+    scale: isCrit ? 1.4 : 1.0,
+    duration: 150,
+    ease: "Back.easeOut",
+    onComplete: () => {
+      scene.tweens.add({
+        targets: text,
+        y: text.y - 50,
+        alpha: 0,
+        duration: 600,
+        delay: 200,
+        ease: "Power2",
+        onComplete: () => text.destroy()
+      });
+    }
   });
+
+  // Crit gets extra tint
+  if (isCrit) {
+    text.setTint(0xffdd00);
+  }
 }
 
 function spawnHitParticles(scene, x, y, isCrit) {
@@ -1398,12 +1422,18 @@ function handleArenaEnd(scene, result) {
   const isWin = result.winner === "player";
   const isDraw = result.winner === "draw";
 
-  // Play death/victory animations
+  // Play death/victory animations (use "fall" animation for death)
   if (isWin) {
+    // Player wins - play victory idle, enemy falls
     if (arenaPlayerSprite?.play) arenaPlayerSprite.play("idle", true);
-    if (arenaEnemySprite?.play) arenaEnemySprite.play("death", false);
+    if (arenaEnemySprite?.play) arenaEnemySprite.play("fall", false);  // Stay fallen
+  } else if (isDraw) {
+    // Draw - both idle
+    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("idle", true);
+    if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
   } else {
-    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("death", false);
+    // Player loses - player falls, enemy idle
+    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("fall", false);  // Stay fallen
     if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
   }
 

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spine Viewer</title>
+  <style>
+    body { margin: 0; background: #222; font-family: Arial; }
+    #game-container { display: inline-block; }
+    #controls {
+      position: fixed; right: 20px; top: 20px;
+      background: #333; padding: 20px; border-radius: 8px;
+      color: white; width: 250px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    button {
+      display: block; width: 100%; margin: 5px 0; padding: 10px;
+      background: #555; color: white; border: none; border-radius: 4px;
+      cursor: pointer; font-size: 14px;
+    }
+    button:hover { background: #666; }
+    h3 { margin: 0 0 10px 0; color: #aaa; }
+    .section { margin-bottom: 20px; }
+    #current-anim { color: #44ff44; font-size: 18px; margin-bottom: 10px; }
+    #skins-list button { background: #446; }
+    #skins-list button:hover { background: #558; }
+  </style>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <div id="controls">
+    <div id="current-anim">Animation: idle</div>
+
+    <div class="section">
+      <h3>Animations</h3>
+      <div id="anim-list"></div>
+    </div>
+
+    <div class="section">
+      <h3>Skins</h3>
+      <div id="skins-list"></div>
+    </div>
+
+    <div class="section">
+      <h3>Controls</h3>
+      <button onclick="toggleLoop()">Toggle Loop: ON</button>
+      <button onclick="resetPose()">Reset Pose</button>
+      <button onclick="flipX()">Flip X</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/plugins/spine4.1/dist/SpinePlugin.js"></script>
+
+  <script>
+    let spineObject = null;
+    let isLooping = true;
+    let currentAnim = "idle";
+
+    const config = {
+      type: Phaser.WEBGL,
+      width: 500,
+      height: 700,
+      parent: "game-container",
+      backgroundColor: 0x333333,
+      scene: { preload, create },
+      plugins: {
+        scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
+      }
+    };
+
+    new Phaser.Game(config);
+
+    function preload() {
+      this.load.spine("hero", "assets/spine/hero.json", "assets/spine/hero.atlas");
+    }
+
+    function create() {
+      // Create spine object
+      spineObject = this.add.spine(250, 550, "hero", "idle", true);
+      spineObject.setScale(1.5);
+
+      // Get available animations
+      const anims = spineObject.skeleton.data.animations;
+      const animList = document.getElementById("anim-list");
+
+      anims.forEach(anim => {
+        const btn = document.createElement("button");
+        btn.textContent = anim.name;
+        btn.onclick = () => playAnim(anim.name);
+        animList.appendChild(btn);
+      });
+
+      // Get available skins
+      const skins = spineObject.skeleton.data.skins;
+      const skinsList = document.getElementById("skins-list");
+
+      skins.forEach(skin => {
+        const btn = document.createElement("button");
+        btn.textContent = skin.name;
+        btn.onclick = () => setSkin(skin.name);
+        skinsList.appendChild(btn);
+      });
+
+      console.log("Animations:", anims.map(a => a.name));
+      console.log("Skins:", skins.map(s => s.name));
+    }
+
+    function playAnim(name) {
+      if (spineObject) {
+        spineObject.play(name, isLooping);
+        currentAnim = name;
+        document.getElementById("current-anim").textContent = "Animation: " + name;
+      }
+    }
+
+    function setSkin(name) {
+      if (spineObject) {
+        spineObject.skeleton.setSkinByName(name);
+        spineObject.skeleton.setSlotsToSetupPose();
+        console.log("Skin set to:", name);
+      }
+    }
+
+    function toggleLoop() {
+      isLooping = !isLooping;
+      event.target.textContent = "Toggle Loop: " + (isLooping ? "ON" : "OFF");
+      playAnim(currentAnim);
+    }
+
+    function resetPose() {
+      if (spineObject) {
+        spineObject.skeleton.setToSetupPose();
+      }
+    }
+
+    function flipX() {
+      if (spineObject) {
+        spineObject.scaleX *= -1;
+      }
+    }
+  </script>
+</body>
+</html>

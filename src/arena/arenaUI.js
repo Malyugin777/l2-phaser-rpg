@@ -32,38 +32,42 @@ let arenaUIElements = {
 
 const ARENA_UI_CONFIG = {
   hpBar: {
-    width: 300,
-    height: 24,
-    playerX: 50,
-    enemyX: null,  // calculated from screen width
-    y: 50,
-    bgColor: 0x333333,
-    fillColor: 0x44aa44,
-    enemyFillColor: 0xaa4444,
+    width: 320,       // Wider
+    height: 32,       // Taller
+    playerX: 40,
+    enemyX: null,     // calculated from screen width
+    y: 60,            // Lower from top
+    bgColor: 0x111111,
+    fillColor: 0x22dd22,       // Brighter green
+    enemyFillColor: 0xdd2222,  // Brighter red
     borderColor: 0xffffff,
-    borderWidth: 2
+    borderWidth: 3
   },
   timer: {
-    y: 30,
-    fontSize: "28px"
+    y: 50,
+    fontSize: "36px"  // Bigger
   }
 };
 
 function createArenaUI(scene) {
+  console.log("[ArenaUI] Creating UI for scene:", scene ? "exists" : "null");
+
   const w = scene.scale.width;
   const h = scene.scale.height;
   const cfg = ARENA_UI_CONFIG.hpBar;
 
-  cfg.enemyX = w - cfg.width - 50;
+  console.log("[ArenaUI] Screen size:", w, "x", h);
+
+  cfg.enemyX = w - cfg.width - 40;
 
   // === PLAYER HP BAR ===
   arenaUIElements.playerHpBg = scene.add.rectangle(
     cfg.playerX, cfg.y, cfg.width, cfg.height, cfg.bgColor
-  ).setOrigin(0, 0).setDepth(300).setScrollFactor(0);
+  ).setOrigin(0, 0).setDepth(500).setScrollFactor(0);
 
   arenaUIElements.playerHpBar = scene.add.rectangle(
     cfg.playerX, cfg.y, cfg.width, cfg.height, cfg.fillColor
-  ).setOrigin(0, 0).setDepth(301).setScrollFactor(0);
+  ).setOrigin(0, 0).setDepth(501).setScrollFactor(0);
 
   arenaUIElements.playerNameText = scene.add.text(
     cfg.playerX, cfg.y - 22, "YOU", {
@@ -71,7 +75,7 @@ function createArenaUI(scene) {
       color: "#44ff44",
       fontFamily: "Arial"
     }
-  ).setDepth(302).setScrollFactor(0);
+  ).setDepth(502).setScrollFactor(0);
 
   arenaUIElements.playerHpText = scene.add.text(
     cfg.playerX + cfg.width / 2, cfg.y + cfg.height / 2, "100%", {
@@ -79,16 +83,16 @@ function createArenaUI(scene) {
       color: "#ffffff",
       fontFamily: "Arial"
     }
-  ).setOrigin(0.5).setDepth(302).setScrollFactor(0);
+  ).setOrigin(0.5).setDepth(502).setScrollFactor(0);
 
   // === ENEMY HP BAR ===
   arenaUIElements.enemyHpBg = scene.add.rectangle(
     cfg.enemyX, cfg.y, cfg.width, cfg.height, cfg.bgColor
-  ).setOrigin(0, 0).setDepth(300).setScrollFactor(0);
+  ).setOrigin(0, 0).setDepth(500).setScrollFactor(0);
 
   arenaUIElements.enemyHpBar = scene.add.rectangle(
     cfg.enemyX, cfg.y, cfg.width, cfg.height, cfg.enemyFillColor
-  ).setOrigin(0, 0).setDepth(301).setScrollFactor(0);
+  ).setOrigin(0, 0).setDepth(501).setScrollFactor(0);
 
   arenaUIElements.enemyNameText = scene.add.text(
     cfg.enemyX + cfg.width, cfg.y - 22, "ENEMY", {
@@ -96,7 +100,7 @@ function createArenaUI(scene) {
       color: "#ff4444",
       fontFamily: "Arial"
     }
-  ).setOrigin(1, 0).setDepth(302).setScrollFactor(0);
+  ).setOrigin(1, 0).setDepth(502).setScrollFactor(0);
 
   arenaUIElements.enemyHpText = scene.add.text(
     cfg.enemyX + cfg.width / 2, cfg.y + cfg.height / 2, "100%", {
@@ -104,12 +108,12 @@ function createArenaUI(scene) {
       color: "#ffffff",
       fontFamily: "Arial"
     }
-  ).setOrigin(0.5).setDepth(302).setScrollFactor(0);
+  ).setOrigin(0.5).setDepth(502).setScrollFactor(0);
 
   // === TIMER ===
   arenaUIElements.timerBg = scene.add.rectangle(
     w / 2, ARENA_UI_CONFIG.timer.y, 80, 40, 0x000000, 0.7
-  ).setDepth(300).setScrollFactor(0);
+  ).setDepth(500).setScrollFactor(0);
 
   arenaUIElements.timerText = scene.add.text(
     w / 2, ARENA_UI_CONFIG.timer.y, "30", {
@@ -117,9 +121,13 @@ function createArenaUI(scene) {
       color: "#ffffff",
       fontFamily: "Arial"
     }
-  ).setOrigin(0.5).setDepth(301).setScrollFactor(0);
+  ).setOrigin(0.5).setDepth(501).setScrollFactor(0);
 
-  console.log("[ArenaUI] Created");
+  console.log("[ArenaUI] Created elements:", {
+    playerHpBar: !!arenaUIElements.playerHpBar,
+    enemyHpBar: !!arenaUIElements.enemyHpBar,
+    timerText: !!arenaUIElements.timerText
+  });
 }
 
 function updateArenaUI(state) {
@@ -158,13 +166,13 @@ function showArenaResult(scene, isWin, rewards, battleResult) {
   // Overlay
   arenaUIElements.resultOverlay = scene.add.rectangle(
     w / 2, h / 2, w, h, 0x000000, 0.8
-  ).setDepth(400).setScrollFactor(0);
+  ).setDepth(600).setScrollFactor(0);
 
   // Panel
   arenaUIElements.resultPanel = scene.add.rectangle(
     w / 2, h / 2, 350, 400, 0x1a1a2e, 0.95
   ).setStrokeStyle(4, isWin ? 0x44ff44 : 0xff4444)
-  .setDepth(401).setScrollFactor(0);
+  .setDepth(601).setScrollFactor(0);
 
   // Title
   const titleText = isWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
@@ -176,7 +184,7 @@ function showArenaResult(scene, isWin, rewards, battleResult) {
       color: titleColor,
       fontFamily: "Georgia"
     }
-  ).setOrigin(0.5).setDepth(402).setScrollFactor(0);
+  ).setOrigin(0.5).setDepth(602).setScrollFactor(0);
 
   // Battle stats
   const statsText = [
@@ -194,7 +202,7 @@ function showArenaResult(scene, isWin, rewards, battleResult) {
       align: "center",
       lineSpacing: 6
     }
-  ).setOrigin(0.5).setDepth(402).setScrollFactor(0);
+  ).setOrigin(0.5).setDepth(602).setScrollFactor(0);
 
   // Rewards
   const league = getLeague(rewards.newRating);
@@ -215,14 +223,14 @@ function showArenaResult(scene, isWin, rewards, battleResult) {
       align: "center",
       lineSpacing: 8
     }
-  ).setOrigin(0.5).setDepth(402).setScrollFactor(0);
+  ).setOrigin(0.5).setDepth(602).setScrollFactor(0);
 
   // Button
   arenaUIElements.resultButton = scene.add.rectangle(
     w / 2, h / 2 + 160, 180, 50, 0x4a6a4a
   ).setStrokeStyle(2, 0x6a8a6a)
   .setInteractive({ useHandCursor: true })
-  .setDepth(402).setScrollFactor(0);
+  .setDepth(602).setScrollFactor(0);
 
   arenaUIElements.resultButtonText = scene.add.text(
     w / 2, h / 2 + 160, "В ГОРОД", {
@@ -230,7 +238,7 @@ function showArenaResult(scene, isWin, rewards, battleResult) {
       color: "#ffffff",
       fontFamily: "Arial"
     }
-  ).setOrigin(0.5).setDepth(403).setScrollFactor(0);
+  ).setOrigin(0.5).setDepth(603).setScrollFactor(0);
 
   // Button hover
   arenaUIElements.resultButton.on("pointerover", () => {
