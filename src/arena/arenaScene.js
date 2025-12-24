@@ -1416,13 +1416,23 @@ function setAnimationSpeed(sprite, attackSpeed) {
 //  HIT VISUAL EFFECTS
 // ============================================================
 
-// Flash effect — target turns white briefly
+// Flash effect — white overlay that fades out
 function flashSprite(scene, sprite) {
-  if (!sprite || typeof sprite.setTint !== "function") return;
+  if (!sprite) return;
 
-  sprite.setTint(0xffffff);
-  scene.time.delayedCall(80, () => {
-    if (sprite && typeof sprite.clearTint === "function") sprite.clearTint();
+  // Create white overlay flash at sprite position
+  const flash = scene.add.rectangle(sprite.x, sprite.y - 60, 100, 150, 0xffffff, 0.7)
+    .setDepth(245);
+
+  // Fade out quickly
+  scene.tweens.add({
+    targets: flash,
+    alpha: 0,
+    scaleX: 1.5,
+    scaleY: 1.5,
+    duration: 100,
+    ease: "Power2",
+    onComplete: () => flash.destroy()
   });
 }
 
@@ -1457,12 +1467,17 @@ function spawnSlashEffect(scene, x, y, facingRight, isCrit) {
 
 // Combined hit effects
 function playHitEffects(scene, target, isCrit, isPlayer) {
-  if (!target) return;
+  console.log("[ARENA] Hit effects - isCrit:", isCrit, "isPlayer:", isPlayer);
+
+  if (!target) {
+    console.warn("[ARENA] No target for hit effects!");
+    return;
+  }
 
   const x = target.x;
   const y = target.y - 80;
 
-  // Flash
+  // Flash (creates white overlay since Spine doesn't support tint)
   flashSprite(scene, target);
 
   // Particles
