@@ -357,7 +357,30 @@ function setupCleanMode(scene) {
   // Hide all panels initially
   if (typeof hideAllPanels === "function") hideAllPanels();
 
+  // Apply final hardcoded positions
+  applyFinalPositions(scene);
+
   console.log("[CLEAN MODE] Initialized");
+}
+
+// HARDCODED FINAL POSITIONS (from tune mode)
+function applyFinalPositions(scene) {
+  const w = scene.scale.width;
+  const h = scene.scale.height;
+
+  // Background position
+  if (window.cityBg) {
+    window.cityBg.x = w / 2;
+    window.cityBg.y = h / 2 + 144;  // ~988 on 1688h screen (offset from center)
+    window.cityBg.setScale(0.412);
+  }
+
+  // Hero position
+  if (window.spineHero) {
+    window.spineHero.x = w / 2 - 54;  // ~336 on 780w screen
+    window.spineHero.y = h - 196;     // ~1492 on 1688h screen
+    window.spineHero.setScale(1.23);
+  }
 }
 
 function fixHeroVisibility(scene) {
