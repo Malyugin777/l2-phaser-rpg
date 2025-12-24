@@ -37,8 +37,8 @@ const ARENA_CONFIG = {
   bgScale: 0.96,
 
   // Combat
-  fightOffset: 250,
-  engageDistance: 550,  // Must be > fightOffset * 2 to trigger before tweens end
+  fightOffset: 180,
+  engageDistance: 420,  // Must be > fightOffset * 2 to trigger before tweens end
   runSpeed: 2500,
 
   // Transitions
@@ -94,7 +94,7 @@ function getArenaTuneSettings() {
     bgScale: 0.96,
     groundY: 0.88,         // 88%
     fighterScale: 1.38,
-    fightOffset: 250,
+    fightOffset: 180,
     cameraStartX: 0,
     playerStartX: 0.26,    // 26%
     enemyStartX: 0.73,     // 73%
@@ -1193,17 +1193,11 @@ function updateArena(scene) {
         if (event.attacker === "player") {
           // Player attacks enemy
           playAttackAnimation(arenaPlayerSprite, true, scene);
-          scene.time.delayedCall(200, () => {
-            playHitAnimation(scene, arenaEnemySprite, false);
-          });
           playHitEffects(scene, arenaEnemySprite, event.isCrit, false);
           spawnArenaDamageText(scene, arenaEnemySprite, event.damage, event.isCrit);
         } else {
           // Enemy attacks player
           playAttackAnimation(arenaEnemySprite, false, scene);
-          scene.time.delayedCall(200, () => {
-            playHitAnimation(scene, arenaPlayerSprite, true);
-          });
           playHitEffects(scene, arenaPlayerSprite, event.isCrit, true);
           spawnArenaDamageText(scene, arenaPlayerSprite, event.damage, event.isCrit);
         }
@@ -1395,37 +1389,13 @@ function playAttackAnimation(sprite, isPlayer, scene) {
 }
 
 // ============================================================
-//  HIT ANIMATION (only when not attacking)
+//  HIT ANIMATION (disabled - using visual effects only)
 // ============================================================
 
 function playHitAnimation(scene, sprite, isPlayer) {
-  if (!sprite || !sprite.play) return;
-
-  // Only play hit if NOT attacking
-  const isAttacking = isPlayer ? playerAttacking : enemyAttacking;
-  if (isAttacking) return;  // Don't interrupt attack
-
-  // Knockback direction (away from attacker)
-  const knockbackX = isPlayer ? -30 : 30;
-  const originalX = sprite.x;
-
-  sprite.play("fall", false);
-
-  // Knockback tween
-  scene.tweens.add({
-    targets: sprite,
-    x: originalX + knockbackX,
-    duration: 100,
-    ease: "Power2",
-    yoyo: true,
-    onComplete: () => {
-      scene.time.delayedCall(150, () => {
-        if (sprite?.play && arenaState === "FIGHT") {
-          sprite.play("idle", true);
-        }
-      });
-    }
-  });
+  // Disabled - we only use visual effects (flash, particles, slash)
+  // No fall animation = cleaner combat
+  return;
 }
 
 // ============================================================
