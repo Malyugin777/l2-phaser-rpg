@@ -50,25 +50,23 @@ const ARENA_UI_CONFIG = {
 };
 
 function createArenaUI(scene) {
-  console.log("[ArenaUI] Creating UI in CENTER for debug");
+  console.log("[ArenaUI] Creating UI - HP bars at Y=250");
 
   const w = scene.scale.width;
-  const h = scene.scale.height;
   const centerX = w / 2;
-  const centerY = h / 2;
 
   // === TIMER — center top ===
-  arenaUIElements.timerBg = scene.add.rectangle(centerX, 150, 140, 70, 0x000000, 0.9)
+  arenaUIElements.timerBg = scene.add.rectangle(centerX, 80, 140, 70, 0x000000, 0.9)
     .setScrollFactor(0).setDepth(999).setStrokeStyle(4, 0xffaa00);
 
-  arenaUIElements.timerText = scene.add.text(centerX, 150, "30", {
+  arenaUIElements.timerText = scene.add.text(centerX, 80, "30", {
     fontSize: "48px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
   }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
 
-  // === HP BARS — center of screen for debug ===
+  // === HP BARS — fixed Y position ===
   const barW = 280;
   const barH = 36;
-  const barY = centerY - 200;  // Above center
+  const barY = 250;  // Fixed position
   const gap = 50;
 
   // PLAYER HP — left of center

@@ -1197,19 +1197,10 @@ function updateArena(scene) {
               }
             });
           }
-          // Enemy takes hit
-          if (arenaEnemySprite?.play) {
-            scene.time.delayedCall(200, () => {
-              if (arenaEnemySprite?.play && arenaState === "FIGHT") {
-                arenaEnemySprite.play("fall", false);
-                scene.time.delayedCall(300, () => {
-                  if (arenaEnemySprite?.play && arenaState === "FIGHT") {
-                    arenaEnemySprite.play("idle", true);
-                  }
-                });
-              }
-            });
-          }
+          // Enemy takes hit with knockback
+          scene.time.delayedCall(200, () => {
+            playHitAnimation(scene, arenaEnemySprite, false);
+          });
           spawnArenaDamageText(scene, arenaEnemySprite, event.damage, event.isCrit);
           spawnHitParticles(scene, arenaEnemySprite.x, arenaEnemySprite.y - 50, event.isCrit);
         } else {
@@ -1222,19 +1213,10 @@ function updateArena(scene) {
               }
             });
           }
-          // Player takes hit
-          if (arenaPlayerSprite?.play) {
-            scene.time.delayedCall(200, () => {
-              if (arenaPlayerSprite?.play && arenaState === "FIGHT") {
-                arenaPlayerSprite.play("fall", false);
-                scene.time.delayedCall(300, () => {
-                  if (arenaPlayerSprite?.play && arenaState === "FIGHT") {
-                    arenaPlayerSprite.play("idle", true);
-                  }
-                });
-              }
-            });
-          }
+          // Player takes hit with knockback
+          scene.time.delayedCall(200, () => {
+            playHitAnimation(scene, arenaPlayerSprite, true);
+          });
           spawnArenaDamageText(scene, arenaPlayerSprite, event.damage, event.isCrit);
           spawnHitParticles(scene, arenaPlayerSprite.x, arenaPlayerSprite.y - 50, event.isCrit);
         }
@@ -1363,12 +1345,69 @@ function startArenaFight(scene) {
   };
 
   arenaCombat.init(playerStats, enemyStats);
+
+  // Set animation speed based on attack speed
+  setAnimationSpeed(arenaPlayerSprite, playerStats.attackSpeed);
+  setAnimationSpeed(arenaEnemySprite, enemyStats.attackSpeed);
+
+  // Create arena UI for the fight
   createArenaUI(scene);
+
+  console.log("[ARENA] Fight started - Player speed:", playerStats.attackSpeed, "Enemy speed:", enemyStats.attackSpeed);
 }
 
 // ============================================================
 //  ARENA COMBAT HELPERS (Damage Text, End Handler)
 // ============================================================
+
+// ============================================================
+//  HIT ANIMATION WITH KNOCKBACK
+// ============================================================
+
+function playHitAnimation(scene, sprite, isPlayer) {
+  if (!sprite) return;
+
+  // Knockback direction (away from attacker)
+  const knockbackX = isPlayer ? -30 : 30;
+  const originalX = sprite.x;
+
+  // Play hit/fall animation
+  if (sprite.play) {
+    sprite.play("fall", false);
+  }
+
+  // Knockback tween
+  scene.tweens.add({
+    targets: sprite,
+    x: originalX + knockbackX,
+    duration: 100,
+    ease: "Power2",
+    yoyo: true,
+    onComplete: () => {
+      // Return to idle after knockback
+      scene.time.delayedCall(150, () => {
+        if (sprite?.play && arenaState === "FIGHT") {
+          sprite.play("idle", true);
+        }
+      });
+    }
+  });
+}
+
+// ============================================================
+//  ANIMATION SPEED CONTROL
+// ============================================================
+
+function setAnimationSpeed(sprite, attackSpeed) {
+  if (!sprite || !sprite.state) return;
+
+  // Base attack speed is 300, scale animation accordingly
+  const baseSpeed = 300;
+  const timeScale = attackSpeed / baseSpeed;
+
+  // Clamp between 0.5x and 2.0x
+  sprite.state.timeScale = Math.max(0.5, Math.min(2.0, timeScale));
+}
 
 function spawnArenaDamageText(scene, target, damage, isCrit) {
   if (!target) return;
