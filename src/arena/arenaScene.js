@@ -796,6 +796,68 @@ function setupCameraDrag(scene) {
 }
 
 // ============================================================
+//  WEAPON SKIN ACTIVATION
+// ============================================================
+
+function activateWeaponSkin(sprite, name) {
+  if (!sprite || !sprite.skeleton) return;
+
+  const skeleton = sprite.skeleton;
+  const skeletonData = skeleton.data;
+
+  // Log all available skins
+  const skinNames = skeletonData.skins.map(s => s.name);
+  console.log("[ARENA]", name, "available skins:", skinNames);
+
+  // Try to create combined skin (default + weapon)
+  try {
+    const newSkin = new spine.Skin("combined");
+
+    // Add default skin
+    const defaultSkin = skeletonData.findSkin("default");
+    if (defaultSkin) {
+      newSkin.addSkin(defaultSkin);
+    }
+
+    // Try different weapon skin names
+    const weaponSkinNames = ["weapon/sword", "sword", "weapon-sword"];
+    let weaponFound = false;
+
+    for (const skinName of weaponSkinNames) {
+      const weaponSkin = skeletonData.findSkin(skinName);
+      if (weaponSkin) {
+        newSkin.addSkin(weaponSkin);
+        console.log("[ARENA]", name, "weapon skin found:", skinName);
+        weaponFound = true;
+        break;
+      }
+    }
+
+    if (!weaponFound) {
+      console.log("[ARENA]", name, "no weapon skin found, using default only");
+    }
+
+    // Apply combined skin
+    skeleton.setSkin(newSkin);
+    skeleton.setSlotsToSetupPose();
+
+    console.log("[ARENA]", name, "combined skin applied!");
+
+  } catch(e) {
+    console.error("[ARENA] Weapon skin error for", name, ":", e);
+
+    // Fallback: just use default skin
+    try {
+      skeleton.setSkinByName("default");
+      skeleton.setSlotsToSetupPose();
+      console.log("[ARENA]", name, "fallback to default skin");
+    } catch(e2) {
+      console.error("[ARENA] Fallback also failed:", e2);
+    }
+  }
+}
+
+// ============================================================
 //  SPAWN FIGHTERS
 // ============================================================
 
@@ -815,33 +877,11 @@ function spawnFighters(scene, enemyData) {
       arenaPlayerSprite = scene.add.spine(playerStartX, GROUND_Y, 'hero', 'idle', true);
       arenaPlayerSprite.setScale(arenaTuneSettings.fighterScale);
 
-      // Activate skin and weapon
-      if (arenaPlayerSprite.skeleton) {
-        try {
-          arenaPlayerSprite.skeleton.setSkinByName("default");
-          arenaPlayerSprite.skeleton.setSlotsToSetupPose();
+      // Activate weapon via skin
+      activateWeaponSkin(arenaPlayerSprite, "Player");
 
-          // Debug: show available slots
-          console.log("[ARENA] Player slots:", arenaPlayerSprite.skeleton.slots.map(s => s.data.name));
-
-          // Try to attach weapon
-          const weaponSlot = arenaPlayerSprite.skeleton.findSlot("weapon-sword");
-          if (weaponSlot) {
-            const attachment = arenaPlayerSprite.skeleton.getAttachmentByName("weapon-sword", "sword");
-            if (attachment) {
-              weaponSlot.setAttachment(attachment);
-              console.log("[ARENA] Player weapon attached!");
-            } else {
-              console.log("[ARENA] Player weapon attachment not found");
-            }
-          } else {
-            console.log("[ARENA] Player weapon-sword slot not found");
-          }
-        } catch(e) {
-          console.warn("[ARENA] Player weapon error:", e);
-        }
-      }
     } catch(e) {
+      console.warn("[ARENA] Player spine error:", e);
       arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 60, 120, 0x3366cc);
     }
   } else {
@@ -855,26 +895,11 @@ function spawnFighters(scene, enemyData) {
       arenaEnemySprite = scene.add.spine(enemyStartX, GROUND_Y, 'hero', 'idle', true);
       arenaEnemySprite.setScale(-arenaTuneSettings.fighterScale, arenaTuneSettings.fighterScale);
 
-      // Activate skin and weapon
-      if (arenaEnemySprite.skeleton) {
-        try {
-          arenaEnemySprite.skeleton.setSkinByName("default");
-          arenaEnemySprite.skeleton.setSlotsToSetupPose();
+      // Activate weapon via skin
+      activateWeaponSkin(arenaEnemySprite, "Enemy");
 
-          // Try to attach weapon
-          const weaponSlot = arenaEnemySprite.skeleton.findSlot("weapon-sword");
-          if (weaponSlot) {
-            const attachment = arenaEnemySprite.skeleton.getAttachmentByName("weapon-sword", "sword");
-            if (attachment) {
-              weaponSlot.setAttachment(attachment);
-              console.log("[ARENA] Enemy weapon attached!");
-            }
-          }
-        } catch(e) {
-          console.warn("[ARENA] Enemy weapon error:", e);
-        }
-      }
     } catch(e) {
+      console.warn("[ARENA] Enemy spine error:", e);
       arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 60, 120, 0xcc3333);
     }
   } else {
