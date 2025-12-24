@@ -813,6 +813,14 @@ function spawnFighters(scene, enemyData) {
     try {
       arenaPlayerSprite = scene.add.spine(playerStartX, GROUND_Y, 'hero', 'idle', true);
       arenaPlayerSprite.setScale(arenaTuneSettings.fighterScale);
+
+      // Activate skin to show weapon
+      if (arenaPlayerSprite.setSkinByName) {
+        arenaPlayerSprite.setSkinByName("default");
+      }
+      if (arenaPlayerSprite.setSlotsToSetupPose) {
+        arenaPlayerSprite.setSlotsToSetupPose();
+      }
     } catch(e) {
       arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 60, 120, 0x3366cc);
     }
@@ -826,6 +834,14 @@ function spawnFighters(scene, enemyData) {
     try {
       arenaEnemySprite = scene.add.spine(enemyStartX, GROUND_Y, 'hero', 'idle', true);
       arenaEnemySprite.setScale(-arenaTuneSettings.fighterScale, arenaTuneSettings.fighterScale);
+
+      // Activate skin to show weapon
+      if (arenaEnemySprite.setSkinByName) {
+        arenaEnemySprite.setSkinByName("default");
+      }
+      if (arenaEnemySprite.setSlotsToSetupPose) {
+        arenaEnemySprite.setSlotsToSetupPose();
+      }
     } catch(e) {
       arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 60, 120, 0xcc3333);
     }
