@@ -23,6 +23,12 @@ const arenaData = {
   }
 };
 
+// История матчей (последние 20 боёв)
+const arenaHistory = {
+  matches: [],
+  maxMatches: 20
+};
+
 function getLeague(rating) {
   if (rating >= 2500) return arenaData.leagues.gold;
   if (rating >= 1000) return arenaData.leagues.silver;
@@ -76,6 +82,51 @@ function applyArenaResult(isWin, enemyRating) {
   arenaData.rating = Math.max(0, arenaData.rating + ratingChange);
 
   return { ratingChange, expReward, goldReward, newRating: arenaData.rating };
+}
+
+// Добавление матча в историю
+function addMatchToHistory(matchData) {
+  arenaHistory.matches.unshift({
+    timestamp: matchData.timestamp || Date.now(),
+    result: matchData.result,  // "win" | "loss" | "draw"
+    myRating: matchData.myRating,
+    ratingChange: matchData.ratingChange,
+    enemyName: matchData.enemyName,
+    enemyRating: matchData.enemyRating,
+    myDamageDealt: matchData.myDamageDealt || 0,
+    enemyDamageDealt: matchData.enemyDamageDealt || 0,
+    duration: matchData.duration || 0,
+    expGained: matchData.expGained || 0,
+    goldGained: matchData.goldGained || 0
+  });
+
+  if (arenaHistory.matches.length > arenaHistory.maxMatches) {
+    arenaHistory.matches.pop();
+  }
+
+  if (typeof saveGame === "function") saveGame();
+}
+
+// Получить историю матчей
+function getMatchHistory() {
+  return arenaHistory.matches;
+}
+
+// Статистика по истории
+function getHistoryStats() {
+  const matches = arenaHistory.matches;
+  if (matches.length === 0) {
+    return { winRate: 0, avgDuration: 0, totalMatches: 0 };
+  }
+
+  const wins = matches.filter(m => m.result === "win").length;
+  const totalDuration = matches.reduce((sum, m) => sum + (m.duration || 0), 0);
+
+  return {
+    winRate: Math.round((wins / matches.length) * 100),
+    avgDuration: Math.round(totalDuration / matches.length / 1000),  // секунды
+    totalMatches: matches.length
+  };
 }
 
 console.log("[ArenaState] Module loaded");

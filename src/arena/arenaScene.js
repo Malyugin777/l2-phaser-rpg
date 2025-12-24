@@ -17,6 +17,10 @@ let arenaPlayerSprite = null;
 let arenaEnemySprite = null;
 let arenaExitBtnSprite = null;
 
+// Current match data for history
+let currentMatchData = null;
+let matchStartTime = 0;
+
 const ARENA_CONFIG = {
   worldMultiplier: 5.25,
 
@@ -1275,6 +1279,9 @@ function startArenaFight(scene) {
   arenaState = "FIGHT";
   console.log("[ARENA] State: FIGHT");
 
+  // Record start time
+  matchStartTime = Date.now();
+
   // Initialize combat with player and enemy stats
   const playerStats = {
     maxHealth: stats.derived?.maxHealth || 100,
@@ -1294,6 +1301,17 @@ function startArenaFight(scene) {
     attackSpeed: Math.floor(playerStats.attackSpeed * (0.9 + Math.random() * 0.2)),
     critChance: 0.05 + Math.random() * 0.05,
     critMultiplier: 2.0
+  };
+
+  // Generate enemy name/rating for match history
+  const enemyNames = ["Knight", "Warrior", "Paladin", "Gladiator", "Berserker", "Champion", "Duelist", "Fighter"];
+  const randomName = enemyNames[Math.floor(Math.random() * enemyNames.length)] + Math.floor(Math.random() * 1000);
+  const enemyRating = arenaData.rating + Math.floor(Math.random() * 200) - 100;
+
+  currentMatchData = {
+    enemyName: randomName,
+    enemyRating: enemyRating,
+    myRatingBefore: arenaData.rating
   };
 
   arenaCombat.init(playerStats, enemyStats);
@@ -1362,6 +1380,7 @@ function handleArenaEnd(scene, result) {
   console.log("[ARENA] Battle ended:", result);
 
   const isWin = result.winner === "player";
+  const isDraw = result.winner === "draw";
 
   // Play death/victory animations
   if (isWin) {
@@ -1372,9 +1391,32 @@ function handleArenaEnd(scene, result) {
     if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
   }
 
-  // Calculate rewards
-  const enemyRating = arenaData.rating + Math.floor(Math.random() * 200) - 100;
+  // Use enemy rating from currentMatchData (set at fight start)
+  const enemyRating = currentMatchData?.enemyRating || (arenaData.rating + Math.floor(Math.random() * 200) - 100);
   const rewards = applyArenaResult(isWin, enemyRating);
+
+  // Calculate match duration
+  const duration = Date.now() - matchStartTime;
+
+  // Record match to history
+  if (typeof addMatchToHistory === "function" && currentMatchData) {
+    addMatchToHistory({
+      timestamp: Date.now(),
+      result: isDraw ? "draw" : (isWin ? "win" : "loss"),
+      myRating: arenaData.rating,
+      ratingChange: rewards.ratingChange,
+      enemyName: currentMatchData.enemyName,
+      enemyRating: currentMatchData.enemyRating,
+      myDamageDealt: result.playerDamageDealt || 0,
+      enemyDamageDealt: result.enemyDamageDealt || 0,
+      duration: duration,
+      expGained: rewards.expReward || 0,
+      goldGained: rewards.goldReward || 0
+    });
+  }
+
+  // Clear current match data
+  currentMatchData = null;
 
   // Show result screen after brief delay
   scene.time.delayedCall(1000, () => {

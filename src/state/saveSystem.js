@@ -30,6 +30,10 @@ function saveGame() {
       heroModifiers: heroModifiers,
       arenaState: arenaState,
 
+      // Arena (new system)
+      arenaData: typeof arenaData !== "undefined" ? arenaData : null,
+      arenaHistory: typeof arenaHistory !== "undefined" ? arenaHistory : null,
+
       // Глобальные переменные
       currentLocationIndex: typeof currentLocationIndex !== "undefined" ? currentLocationIndex : 0,
       isDungeonRun: typeof isDungeonRun !== "undefined" ? isDungeonRun : false,
@@ -72,6 +76,15 @@ function loadGame() {
     if (data.pet) Object.assign(pet, data.pet);
     if (data.heroModifiers) Object.assign(heroModifiers, data.heroModifiers);
     if (data.arenaState) Object.assign(arenaState, data.arenaState);
+
+    // Arena (new system)
+    if (data.arenaData && typeof arenaData !== "undefined") {
+      Object.assign(arenaData, data.arenaData);
+    }
+    if (data.arenaHistory && typeof arenaHistory !== "undefined") {
+      arenaHistory.matches = data.arenaHistory.matches || [];
+    }
+
     if (data.inventory && Array.isArray(data.inventory)) {
       inventory.length = 0;
       inventory.push(...data.inventory);
