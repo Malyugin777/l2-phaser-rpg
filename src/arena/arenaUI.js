@@ -50,128 +50,90 @@ const ARENA_UI_CONFIG = {
 };
 
 function createArenaUI(scene) {
-  console.log("[ArenaUI] === CREATING UI ===");
+  console.log("[ArenaUI] Creating UI in CENTER for debug");
 
   const w = scene.scale.width;
   const h = scene.scale.height;
-  const cam = scene.cameras.main;
-  const cfg = ARENA_UI_CONFIG.hpBar;
+  const centerX = w / 2;
+  const centerY = h / 2;
 
-  console.log("[ArenaUI] Screen:", w, "x", h);
-  console.log("[ArenaUI] Camera scroll:", cam.scrollX, cam.scrollY, "zoom:", cam.zoom);
+  // === TIMER — center top ===
+  arenaUIElements.timerBg = scene.add.rectangle(centerX, 150, 140, 70, 0x000000, 0.9)
+    .setScrollFactor(0).setDepth(999).setStrokeStyle(4, 0xffaa00);
 
-  cfg.enemyX = w - cfg.width - cfg.playerX;
+  arenaUIElements.timerText = scene.add.text(centerX, 150, "30", {
+    fontSize: "48px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
 
-  // === PLAYER HP BAR ===
-  arenaUIElements.playerHpBg = scene.add.rectangle(
-    cfg.playerX + cfg.width / 2, cfg.y + cfg.height / 2,
-    cfg.width, cfg.height, 0x000000
-  ).setScrollFactor(0).setDepth(500).setStrokeStyle(3, 0xffffff);
+  // === HP BARS — center of screen for debug ===
+  const barW = 280;
+  const barH = 36;
+  const barY = centerY - 200;  // Above center
+  const gap = 50;
 
-  arenaUIElements.playerHpBar = scene.add.rectangle(
-    cfg.playerX + cfg.width / 2, cfg.y + cfg.height / 2,
-    cfg.width - 6, cfg.height - 6, cfg.fillColor
-  ).setScrollFactor(0).setDepth(501);
+  // PLAYER HP — left of center
+  arenaUIElements.playerHpBg = scene.add.rectangle(centerX - gap - barW/2, barY, barW, barH, 0x111111)
+    .setScrollFactor(0).setDepth(999).setStrokeStyle(3, 0x44ff44);
 
-  arenaUIElements.playerNameText = scene.add.text(
-    cfg.playerX + cfg.width / 2, cfg.y - 15, "YOU", {
-      fontSize: "22px",
-      color: "#44ff44",
-      fontFamily: "Arial",
-      fontStyle: "bold"
-    }
-  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
+  arenaUIElements.playerHpBar = scene.add.rectangle(centerX - gap - barW/2, barY, barW - 8, barH - 8, 0x22dd22)
+    .setScrollFactor(0).setDepth(1000);
 
-  arenaUIElements.playerHpText = scene.add.text(
-    cfg.playerX + cfg.width / 2, cfg.y + cfg.height / 2, "100%", {
-      fontSize: "18px",
-      color: "#ffffff",
-      fontFamily: "Arial",
-      fontStyle: "bold"
-    }
-  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
+  arenaUIElements.playerNameText = scene.add.text(centerX - gap - barW/2, barY - 30, "ВЫ", {
+    fontSize: "24px", color: "#44ff44", fontFamily: "Arial", fontStyle: "bold"
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
 
-  // === ENEMY HP BAR ===
-  arenaUIElements.enemyHpBg = scene.add.rectangle(
-    cfg.enemyX + cfg.width / 2, cfg.y + cfg.height / 2,
-    cfg.width, cfg.height, 0x000000
-  ).setScrollFactor(0).setDepth(500).setStrokeStyle(3, 0xffffff);
+  arenaUIElements.playerHpText = scene.add.text(centerX - gap - barW/2, barY, "100%", {
+    fontSize: "20px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-  arenaUIElements.enemyHpBar = scene.add.rectangle(
-    cfg.enemyX + cfg.width / 2, cfg.y + cfg.height / 2,
-    cfg.width - 6, cfg.height - 6, cfg.enemyFillColor
-  ).setScrollFactor(0).setDepth(501);
+  // ENEMY HP — right of center
+  arenaUIElements.enemyHpBg = scene.add.rectangle(centerX + gap + barW/2, barY, barW, barH, 0x111111)
+    .setScrollFactor(0).setDepth(999).setStrokeStyle(3, 0xff4444);
 
-  arenaUIElements.enemyNameText = scene.add.text(
-    cfg.enemyX + cfg.width / 2, cfg.y - 15, "ENEMY", {
-      fontSize: "22px",
-      color: "#ff4444",
-      fontFamily: "Arial",
-      fontStyle: "bold"
-    }
-  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
+  arenaUIElements.enemyHpBar = scene.add.rectangle(centerX + gap + barW/2, barY, barW - 8, barH - 8, 0xdd2222)
+    .setScrollFactor(0).setDepth(1000);
 
-  arenaUIElements.enemyHpText = scene.add.text(
-    cfg.enemyX + cfg.width / 2, cfg.y + cfg.height / 2, "100%", {
-      fontSize: "18px",
-      color: "#ffffff",
-      fontFamily: "Arial",
-      fontStyle: "bold"
-    }
-  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
+  arenaUIElements.enemyNameText = scene.add.text(centerX + gap + barW/2, barY - 30, "ВРАГ", {
+    fontSize: "24px", color: "#ff4444", fontFamily: "Arial", fontStyle: "bold"
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
 
-  // === TIMER ===
-  arenaUIElements.timerBg = scene.add.rectangle(
-    w / 2, 50, 120, 60, 0x000000, 0.8
-  ).setScrollFactor(0).setDepth(500).setStrokeStyle(3, 0xffaa00);
+  arenaUIElements.enemyHpText = scene.add.text(centerX + gap + barW/2, barY, "100%", {
+    fontSize: "20px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-  arenaUIElements.timerText = scene.add.text(
-    w / 2, 50, "30", {
-      fontSize: "42px",
-      color: "#ffffff",
-      fontFamily: "Arial",
-      fontStyle: "bold"
-    }
-  ).setOrigin(0.5).setScrollFactor(0).setDepth(501);
-
-  console.log("[ArenaUI] All elements created");
-  console.log("[ArenaUI] playerHpBar pos:", arenaUIElements.playerHpBar?.x, arenaUIElements.playerHpBar?.y);
-  console.log("[ArenaUI] timerText pos:", arenaUIElements.timerText?.x, arenaUIElements.timerText?.y);
+  console.log("[ArenaUI] UI created at center:", centerX, barY);
 }
 
 function updateArenaUI(state) {
-  if (!arenaUIElements.playerHpBar) return;
+  if (!arenaUIElements.playerHpBar || !arenaUIElements.enemyHpBar) {
+    console.warn("[ArenaUI] HP bars not created yet");
+    return;
+  }
 
-  const cfg = ARENA_UI_CONFIG.hpBar;
-  const barWidth = cfg.width - 6;  // Account for padding
+  const barW = 280 - 8;
 
-  // Player HP - scale width from left
-  const playerPct = Math.max(0, state.playerHealth / state.playerMaxHealth);
-  const playerBarW = barWidth * playerPct;
-  arenaUIElements.playerHpBar.setSize(playerBarW, cfg.height - 6);
-  // Keep bar left-aligned within the bg
-  arenaUIElements.playerHpBar.x = cfg.playerX + 3 + playerBarW / 2;
+  // Player HP
+  const playerPct = Math.max(0, Math.min(1, state.playerHealth / state.playerMaxHealth));
+  arenaUIElements.playerHpBar.setSize(barW * playerPct, 28);
   arenaUIElements.playerHpText.setText(Math.round(playerPct * 100) + "%");
 
-  // Enemy HP - scale width from right
-  const enemyPct = Math.max(0, state.enemyHealth / state.enemyMaxHealth);
-  const enemyBarW = barWidth * enemyPct;
-  arenaUIElements.enemyHpBar.setSize(enemyBarW, cfg.height - 6);
-  // Keep bar right-aligned within the bg
-  arenaUIElements.enemyHpBar.x = cfg.enemyX + cfg.width - 3 - enemyBarW / 2;
+  // Enemy HP
+  const enemyPct = Math.max(0, Math.min(1, state.enemyHealth / state.enemyMaxHealth));
+  arenaUIElements.enemyHpBar.setSize(barW * enemyPct, 28);
   arenaUIElements.enemyHpText.setText(Math.round(enemyPct * 100) + "%");
 
   // Timer
-  const seconds = Math.ceil(state.timeLeft / 1000);
-  arenaUIElements.timerText.setText(seconds.toString());
+  if (arenaUIElements.timerText) {
+    const seconds = Math.max(0, Math.ceil(state.timeLeft / 1000));
+    arenaUIElements.timerText.setText(seconds.toString());
 
-  // Timer color warning
-  if (seconds <= 10) {
-    arenaUIElements.timerText.setColor("#ff4444");
-  } else if (seconds <= 20) {
-    arenaUIElements.timerText.setColor("#ffaa00");
-  } else {
-    arenaUIElements.timerText.setColor("#ffffff");
+    if (seconds <= 10) {
+      arenaUIElements.timerText.setColor("#ff4444");
+    } else if (seconds <= 20) {
+      arenaUIElements.timerText.setColor("#ffaa00");
+    } else {
+      arenaUIElements.timerText.setColor("#ffffff");
+    }
   }
 }
 
