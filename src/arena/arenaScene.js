@@ -15,7 +15,10 @@ let arenaBgLeft = null;
 let arenaBgRight = null;
 let arenaPlayerSprite = null;
 let arenaEnemySprite = null;
-let arenaExitBtnSprite = null;
+
+// Attack state tracking
+let playerAttacking = false;
+let enemyAttacking = false;
 
 // Current match data for history
 let currentMatchData = null;
@@ -34,7 +37,7 @@ const ARENA_CONFIG = {
   bgScale: 0.96,
 
   // Combat
-  fightOffset: 150,
+  fightOffset: 250,
   engageDistance: 300,
   runSpeed: 2500,
 
@@ -91,7 +94,7 @@ function getArenaTuneSettings() {
     bgScale: 0.96,
     groundY: 0.88,         // 88%
     fighterScale: 1.38,
-    fightOffset: 150,
+    fightOffset: 250,
     cameraStartX: 0,
     playerStartX: 0.26,    // 26%
     enemyStartX: 0.73,     // 73%
@@ -738,23 +741,6 @@ function setupArenaWorld(scene) {
   console.log("[ARENA] BG RIGHT pos:", arenaBgRight.x, ",", arenaBgRight.y, "size:", arenaBgRight.width, "x", arenaBgRight.height);
   console.log("[ARENA] WORLD_W:", WORLD_W, "BASE_H:", BASE_H);
 
-  // Exit button (fixed to screen, high depth) - HIDDEN until battle ends
-  arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 120, '[ ВЫХОД ]', {
-    fontSize: '32px',
-    fontFamily: 'Arial',
-    color: '#ffffff',
-    backgroundColor: '#333333',
-    padding: { x: 30, y: 15 }
-  });
-  arenaExitBtnSprite.setOrigin(0.5);
-  arenaExitBtnSprite.setDepth(700);        // Higher than everything
-  arenaExitBtnSprite.setScrollFactor(0);   // Fixed to screen!
-  arenaExitBtnSprite.setInteractive({ useHandCursor: true });
-  arenaExitBtnSprite.on('pointerdown', () => exitArena(scene));
-  arenaExitBtnSprite.on('pointerover', () => arenaExitBtnSprite.setStyle({ backgroundColor: '#555555' }));
-  arenaExitBtnSprite.on('pointerout', () => arenaExitBtnSprite.setStyle({ backgroundColor: '#333333' }));
-  arenaExitBtnSprite.setVisible(false);  // Hidden until battle ends
-
   // Initialize tune mode
   if (ARENA_TUNE_ENABLED) {
     createArenaTuneUI(scene);
@@ -1176,43 +1162,22 @@ function updateArena(scene) {
     // Process events
     events.forEach(event => {
       if (event.type === "attack") {
-        // Camera shake on crit
-        if (event.isCrit) {
-          scene.cameras.main.shake(200, 0.01);
-        }
-
         if (event.attacker === "player") {
-          // Player attacks
-          if (arenaPlayerSprite?.play) {
-            arenaPlayerSprite.play("attack", false);
-            scene.time.delayedCall(400, () => {
-              if (arenaPlayerSprite?.play && arenaState === "FIGHT") {
-                arenaPlayerSprite.play("idle", true);
-              }
-            });
-          }
-          // Enemy takes hit with knockback
+          // Player attacks enemy
+          playAttackAnimation(arenaPlayerSprite, true, scene);
           scene.time.delayedCall(200, () => {
             playHitAnimation(scene, arenaEnemySprite, false);
           });
+          playHitEffects(scene, arenaEnemySprite, event.isCrit, false);
           spawnArenaDamageText(scene, arenaEnemySprite, event.damage, event.isCrit);
-          spawnHitParticles(scene, arenaEnemySprite.x, arenaEnemySprite.y - 50, event.isCrit);
         } else {
-          // Enemy attacks
-          if (arenaEnemySprite?.play) {
-            arenaEnemySprite.play("attack", false);
-            scene.time.delayedCall(400, () => {
-              if (arenaEnemySprite?.play && arenaState === "FIGHT") {
-                arenaEnemySprite.play("idle", true);
-              }
-            });
-          }
-          // Player takes hit with knockback
+          // Enemy attacks player
+          playAttackAnimation(arenaEnemySprite, false, scene);
           scene.time.delayedCall(200, () => {
             playHitAnimation(scene, arenaPlayerSprite, true);
           });
+          playHitEffects(scene, arenaPlayerSprite, event.isCrit, true);
           spawnArenaDamageText(scene, arenaPlayerSprite, event.damage, event.isCrit);
-          spawnHitParticles(scene, arenaPlayerSprite.x, arenaPlayerSprite.y - 50, event.isCrit);
         }
 
         // Update HP bars
@@ -1351,24 +1316,66 @@ function startArenaFight(scene) {
 }
 
 // ============================================================
-//  ARENA COMBAT HELPERS (Damage Text, End Handler)
+//  ARENA COMBAT HELPERS (Animations, Effects, End Handler)
 // ============================================================
 
 // ============================================================
-//  HIT ANIMATION WITH KNOCKBACK
+//  DEATH ANIMATION (fall → crouch)
+// ============================================================
+
+function playDeathAnimation(scene, sprite) {
+  if (!sprite || !sprite.play) return;
+
+  // Fall first (hit reaction)
+  sprite.play("fall", false);
+
+  // Then crouch (stay down)
+  scene.time.delayedCall(400, () => {
+    if (sprite && sprite.play) {
+      sprite.play("crouch", true);  // Loop crouch = stay down
+    }
+  });
+}
+
+// ============================================================
+//  ATTACK ANIMATION (with state tracking)
+// ============================================================
+
+function playAttackAnimation(sprite, isPlayer, scene) {
+  if (!sprite || !sprite.play) return;
+
+  if (isPlayer) playerAttacking = true;
+  else enemyAttacking = true;
+
+  sprite.play("attack", false);
+
+  // Return to idle after attack animation
+  scene.time.delayedCall(500, () => {
+    if (isPlayer) playerAttacking = false;
+    else enemyAttacking = false;
+
+    if (sprite && sprite.play && arenaState === "FIGHT") {
+      sprite.play("idle", true);
+    }
+  });
+}
+
+// ============================================================
+//  HIT ANIMATION (only when not attacking)
 // ============================================================
 
 function playHitAnimation(scene, sprite, isPlayer) {
-  if (!sprite) return;
+  if (!sprite || !sprite.play) return;
+
+  // Only play hit if NOT attacking
+  const isAttacking = isPlayer ? playerAttacking : enemyAttacking;
+  if (isAttacking) return;  // Don't interrupt attack
 
   // Knockback direction (away from attacker)
   const knockbackX = isPlayer ? -30 : 30;
   const originalX = sprite.x;
 
-  // Play hit/fall animation
-  if (sprite.play) {
-    sprite.play("fall", false);
-  }
+  sprite.play("fall", false);
 
   // Knockback tween
   scene.tweens.add({
@@ -1378,7 +1385,6 @@ function playHitAnimation(scene, sprite, isPlayer) {
     ease: "Power2",
     yoyo: true,
     onComplete: () => {
-      // Return to idle after knockback
       scene.time.delayedCall(150, () => {
         if (sprite?.play && arenaState === "FIGHT") {
           sprite.play("idle", true);
@@ -1395,12 +1401,77 @@ function playHitAnimation(scene, sprite, isPlayer) {
 function setAnimationSpeed(sprite, attackSpeed) {
   if (!sprite || !sprite.state) return;
 
-  // Base attack speed is 300, scale animation accordingly
-  const baseSpeed = 300;
-  const timeScale = attackSpeed / baseSpeed;
+  // Base 500 = 1.0x speed (300 = 0.6x, 600 = 1.2x)
+  const timeScale = Math.max(0.4, Math.min(1.5, attackSpeed / 500));
+  sprite.state.timeScale = timeScale;
 
-  // Clamp between 0.5x and 2.0x
-  sprite.state.timeScale = Math.max(0.5, Math.min(2.0, timeScale));
+  console.log("[ARENA] Animation speed:", timeScale.toFixed(2) + "x for attackSpeed:", attackSpeed);
+}
+
+// ============================================================
+//  HIT VISUAL EFFECTS
+// ============================================================
+
+// Flash effect — target turns white briefly
+function flashSprite(scene, sprite) {
+  if (!sprite || typeof sprite.setTint !== "function") return;
+
+  sprite.setTint(0xffffff);
+  scene.time.delayedCall(80, () => {
+    if (sprite && typeof sprite.clearTint === "function") sprite.clearTint();
+  });
+}
+
+// Slash effect — arc from weapon swing
+function spawnSlashEffect(scene, x, y, facingRight, isCrit) {
+  const slashColor = isCrit ? 0xffdd00 : 0xffffff;
+  const slashAlpha = isCrit ? 0.9 : 0.6;
+
+  // Create arc using graphics
+  const graphics = scene.add.graphics();
+  graphics.setDepth(240);
+
+  const startAngle = facingRight ? -0.5 : 2.6;
+  const endAngle = facingRight ? 0.8 : 3.9;
+
+  graphics.lineStyle(isCrit ? 6 : 4, slashColor, slashAlpha);
+  graphics.beginPath();
+  graphics.arc(x, y - 50, isCrit ? 80 : 60, startAngle, endAngle);
+  graphics.strokePath();
+
+  // Fade out
+  scene.tweens.add({
+    targets: graphics,
+    alpha: 0,
+    scaleX: 1.3,
+    scaleY: 1.3,
+    duration: 200,
+    ease: "Power2",
+    onComplete: () => graphics.destroy()
+  });
+}
+
+// Combined hit effects
+function playHitEffects(scene, target, isCrit, isPlayer) {
+  if (!target) return;
+
+  const x = target.x;
+  const y = target.y - 80;
+
+  // Flash
+  flashSprite(scene, target);
+
+  // Particles
+  spawnHitParticles(scene, x, y, isCrit);
+
+  // Slash (from attacker direction)
+  const facingRight = !isPlayer;  // If player attacks, slash goes right
+  spawnSlashEffect(scene, x, y, facingRight, isCrit);
+
+  // Camera shake on crit
+  if (isCrit) {
+    scene.cameras.main.shake(150, 0.008);
+  }
 }
 
 function spawnArenaDamageText(scene, target, damage, isCrit) {
@@ -1454,26 +1525,29 @@ function spawnArenaDamageText(scene, target, damage, isCrit) {
 }
 
 function spawnHitParticles(scene, x, y, isCrit) {
-  const count = isCrit ? 12 : 6;
-  const colors = isCrit ? [0xffdd00, 0xffaa00, 0xff6600] : [0xffffff, 0xcccccc];
+  const count = isCrit ? 15 : 8;
+  const colors = isCrit ? [0xffdd00, 0xffaa00, 0xff6600] : [0xffffff, 0xcccccc, 0xaaaaaa];
 
   for (let i = 0; i < count; i++) {
     const color = colors[Math.floor(Math.random() * colors.length)];
-    const particle = scene.add.circle(x, y, isCrit ? 6 : 4, color)
-      .setDepth(240);
+    const size = isCrit ? Phaser.Math.Between(4, 8) : Phaser.Math.Between(3, 6);
+
+    const particle = scene.add.circle(x, y, size, color)
+      .setDepth(250)
+      .setAlpha(1);
 
     const angle = Math.random() * Math.PI * 2;
-    const speed = 100 + Math.random() * 150;
+    const speed = Phaser.Math.Between(80, 180);
     const vx = Math.cos(angle) * speed;
-    const vy = Math.sin(angle) * speed - 100;
+    const vy = Math.sin(angle) * speed - 80;  // Bias upward
 
     scene.tweens.add({
       targets: particle,
-      x: particle.x + vx * 0.5,
-      y: particle.y + vy * 0.5,
+      x: particle.x + vx * 0.4,
+      y: particle.y + vy * 0.4,
       alpha: 0,
-      scale: 0,
-      duration: 400 + Math.random() * 200,
+      scale: 0.3,
+      duration: Phaser.Math.Between(300, 500),
       ease: "Power2",
       onComplete: () => particle.destroy()
     });
@@ -1484,21 +1558,25 @@ function handleArenaEnd(scene, result) {
   arenaState = "RESULT";
   console.log("[ARENA] Battle ended:", result);
 
+  // Reset attack states
+  playerAttacking = false;
+  enemyAttacking = false;
+
   const isWin = result.winner === "player";
   const isDraw = result.winner === "draw";
 
-  // Play death/victory animations (use "fall" animation for death)
+  // Play death/victory animations
   if (isWin) {
-    // Player wins - play victory idle, enemy falls
+    // Player wins - victory idle, enemy dies (fall → crouch)
     if (arenaPlayerSprite?.play) arenaPlayerSprite.play("idle", true);
-    if (arenaEnemySprite?.play) arenaEnemySprite.play("fall", false);  // Stay fallen
+    playDeathAnimation(scene, arenaEnemySprite);
   } else if (isDraw) {
     // Draw - both idle
     if (arenaPlayerSprite?.play) arenaPlayerSprite.play("idle", true);
     if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
   } else {
-    // Player loses - player falls, enemy idle
-    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("fall", false);  // Stay fallen
+    // Player loses - player dies (fall → crouch), enemy victory
+    playDeathAnimation(scene, arenaPlayerSprite);
     if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
   }
 
@@ -1532,10 +1610,6 @@ function handleArenaEnd(scene, result) {
   // Show result screen after brief delay
   scene.time.delayedCall(1000, () => {
     showArenaResult(scene, isWin, rewards, result);
-    // Show exit button after battle ends
-    if (arenaExitBtnSprite) {
-      arenaExitBtnSprite.setVisible(true);
-    }
   });
 }
 
@@ -1564,7 +1638,6 @@ function exitArena(scene) {
   if (arenaBgRight) { arenaBgRight.destroy(); arenaBgRight = null; }
   if (arenaPlayerSprite) { arenaPlayerSprite.destroy(); arenaPlayerSprite = null; }
   if (arenaEnemySprite) { arenaEnemySprite.destroy(); arenaEnemySprite = null; }
-  if (arenaExitBtnSprite) { arenaExitBtnSprite.destroy(); arenaExitBtnSprite = null; }
 
   scene.cameras.main.setBounds(0, 0, BASE_W, BASE_H);
   scene.cameras.main.scrollX = 0;
