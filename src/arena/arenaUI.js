@@ -50,99 +50,115 @@ const ARENA_UI_CONFIG = {
 };
 
 function createArenaUI(scene) {
-  console.log("[ArenaUI] Creating UI for scene:", scene ? "exists" : "null");
+  console.log("[ArenaUI] === CREATING UI ===");
 
   const w = scene.scale.width;
   const h = scene.scale.height;
+  const cam = scene.cameras.main;
   const cfg = ARENA_UI_CONFIG.hpBar;
 
-  console.log("[ArenaUI] Screen size:", w, "x", h);
+  console.log("[ArenaUI] Screen:", w, "x", h);
+  console.log("[ArenaUI] Camera scroll:", cam.scrollX, cam.scrollY, "zoom:", cam.zoom);
 
-  cfg.enemyX = w - cfg.width - 40;
+  cfg.enemyX = w - cfg.width - cfg.playerX;
 
   // === PLAYER HP BAR ===
   arenaUIElements.playerHpBg = scene.add.rectangle(
-    cfg.playerX, cfg.y, cfg.width, cfg.height, cfg.bgColor
-  ).setOrigin(0, 0).setDepth(500).setScrollFactor(0);
+    cfg.playerX + cfg.width / 2, cfg.y + cfg.height / 2,
+    cfg.width, cfg.height, 0x000000
+  ).setScrollFactor(0).setDepth(500).setStrokeStyle(3, 0xffffff);
 
   arenaUIElements.playerHpBar = scene.add.rectangle(
-    cfg.playerX, cfg.y, cfg.width, cfg.height, cfg.fillColor
-  ).setOrigin(0, 0).setDepth(501).setScrollFactor(0);
+    cfg.playerX + cfg.width / 2, cfg.y + cfg.height / 2,
+    cfg.width - 6, cfg.height - 6, cfg.fillColor
+  ).setScrollFactor(0).setDepth(501);
 
   arenaUIElements.playerNameText = scene.add.text(
-    cfg.playerX, cfg.y - 22, "YOU", {
-      fontSize: "18px",
+    cfg.playerX + cfg.width / 2, cfg.y - 15, "YOU", {
+      fontSize: "22px",
       color: "#44ff44",
-      fontFamily: "Arial"
+      fontFamily: "Arial",
+      fontStyle: "bold"
     }
-  ).setDepth(502).setScrollFactor(0);
+  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
 
   arenaUIElements.playerHpText = scene.add.text(
     cfg.playerX + cfg.width / 2, cfg.y + cfg.height / 2, "100%", {
-      fontSize: "14px",
+      fontSize: "18px",
       color: "#ffffff",
-      fontFamily: "Arial"
+      fontFamily: "Arial",
+      fontStyle: "bold"
     }
-  ).setOrigin(0.5).setDepth(502).setScrollFactor(0);
+  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
 
   // === ENEMY HP BAR ===
   arenaUIElements.enemyHpBg = scene.add.rectangle(
-    cfg.enemyX, cfg.y, cfg.width, cfg.height, cfg.bgColor
-  ).setOrigin(0, 0).setDepth(500).setScrollFactor(0);
+    cfg.enemyX + cfg.width / 2, cfg.y + cfg.height / 2,
+    cfg.width, cfg.height, 0x000000
+  ).setScrollFactor(0).setDepth(500).setStrokeStyle(3, 0xffffff);
 
   arenaUIElements.enemyHpBar = scene.add.rectangle(
-    cfg.enemyX, cfg.y, cfg.width, cfg.height, cfg.enemyFillColor
-  ).setOrigin(0, 0).setDepth(501).setScrollFactor(0);
+    cfg.enemyX + cfg.width / 2, cfg.y + cfg.height / 2,
+    cfg.width - 6, cfg.height - 6, cfg.enemyFillColor
+  ).setScrollFactor(0).setDepth(501);
 
   arenaUIElements.enemyNameText = scene.add.text(
-    cfg.enemyX + cfg.width, cfg.y - 22, "ENEMY", {
-      fontSize: "18px",
+    cfg.enemyX + cfg.width / 2, cfg.y - 15, "ENEMY", {
+      fontSize: "22px",
       color: "#ff4444",
-      fontFamily: "Arial"
+      fontFamily: "Arial",
+      fontStyle: "bold"
     }
-  ).setOrigin(1, 0).setDepth(502).setScrollFactor(0);
+  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
 
   arenaUIElements.enemyHpText = scene.add.text(
     cfg.enemyX + cfg.width / 2, cfg.y + cfg.height / 2, "100%", {
-      fontSize: "14px",
+      fontSize: "18px",
       color: "#ffffff",
-      fontFamily: "Arial"
+      fontFamily: "Arial",
+      fontStyle: "bold"
     }
-  ).setOrigin(0.5).setDepth(502).setScrollFactor(0);
+  ).setOrigin(0.5).setScrollFactor(0).setDepth(502);
 
   // === TIMER ===
   arenaUIElements.timerBg = scene.add.rectangle(
-    w / 2, ARENA_UI_CONFIG.timer.y, 80, 40, 0x000000, 0.7
-  ).setDepth(500).setScrollFactor(0);
+    w / 2, 50, 120, 60, 0x000000, 0.8
+  ).setScrollFactor(0).setDepth(500).setStrokeStyle(3, 0xffaa00);
 
   arenaUIElements.timerText = scene.add.text(
-    w / 2, ARENA_UI_CONFIG.timer.y, "30", {
-      fontSize: ARENA_UI_CONFIG.timer.fontSize,
+    w / 2, 50, "30", {
+      fontSize: "42px",
       color: "#ffffff",
-      fontFamily: "Arial"
+      fontFamily: "Arial",
+      fontStyle: "bold"
     }
-  ).setOrigin(0.5).setDepth(501).setScrollFactor(0);
+  ).setOrigin(0.5).setScrollFactor(0).setDepth(501);
 
-  console.log("[ArenaUI] Created elements:", {
-    playerHpBar: !!arenaUIElements.playerHpBar,
-    enemyHpBar: !!arenaUIElements.enemyHpBar,
-    timerText: !!arenaUIElements.timerText
-  });
+  console.log("[ArenaUI] All elements created");
+  console.log("[ArenaUI] playerHpBar pos:", arenaUIElements.playerHpBar?.x, arenaUIElements.playerHpBar?.y);
+  console.log("[ArenaUI] timerText pos:", arenaUIElements.timerText?.x, arenaUIElements.timerText?.y);
 }
 
 function updateArenaUI(state) {
   if (!arenaUIElements.playerHpBar) return;
 
   const cfg = ARENA_UI_CONFIG.hpBar;
+  const barWidth = cfg.width - 6;  // Account for padding
 
-  // Player HP
+  // Player HP - scale width from left
   const playerPct = Math.max(0, state.playerHealth / state.playerMaxHealth);
-  arenaUIElements.playerHpBar.setSize(cfg.width * playerPct, cfg.height);
+  const playerBarW = barWidth * playerPct;
+  arenaUIElements.playerHpBar.setSize(playerBarW, cfg.height - 6);
+  // Keep bar left-aligned within the bg
+  arenaUIElements.playerHpBar.x = cfg.playerX + 3 + playerBarW / 2;
   arenaUIElements.playerHpText.setText(Math.round(playerPct * 100) + "%");
 
-  // Enemy HP
+  // Enemy HP - scale width from right
   const enemyPct = Math.max(0, state.enemyHealth / state.enemyMaxHealth);
-  arenaUIElements.enemyHpBar.setSize(cfg.width * enemyPct, cfg.height);
+  const enemyBarW = barWidth * enemyPct;
+  arenaUIElements.enemyHpBar.setSize(enemyBarW, cfg.height - 6);
+  // Keep bar right-aligned within the bg
+  arenaUIElements.enemyHpBar.x = cfg.enemyX + cfg.width - 3 - enemyBarW / 2;
   arenaUIElements.enemyHpText.setText(Math.round(enemyPct * 100) + "%");
 
   // Timer
@@ -287,4 +303,9 @@ function destroyArenaUI() {
   console.log("[ArenaUI] Destroyed");
 }
 
-console.log("[ArenaUI] Module loaded");
+// Expose globally for debugging
+window.createArenaUI = createArenaUI;
+window.updateArenaUI = updateArenaUI;
+window.arenaUIElements = arenaUIElements;
+
+console.log("[ArenaUI] Module loaded and exposed globally");

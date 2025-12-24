@@ -3,49 +3,94 @@
 <head>
   <title>Spine Viewer</title>
   <style>
-    body { margin: 0; background: #222; font-family: Arial; }
-    #game-container { display: inline-block; }
+    body { margin: 0; background: #222; font-family: Arial; color: white; }
+    #game-container { display: inline-block; vertical-align: top; }
     #controls {
-      position: fixed; right: 20px; top: 20px;
-      background: #333; padding: 20px; border-radius: 8px;
-      color: white; width: 250px;
+      display: inline-block;
+      vertical-align: top;
+      background: #333;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 8px;
+      width: 280px;
       max-height: 90vh;
       overflow-y: auto;
     }
     button {
-      display: block; width: 100%; margin: 5px 0; padding: 10px;
+      display: block; width: 100%; margin: 5px 0; padding: 12px;
       background: #555; color: white; border: none; border-radius: 4px;
       cursor: pointer; font-size: 14px;
     }
-    button:hover { background: #666; }
-    h3 { margin: 0 0 10px 0; color: #aaa; }
-    .section { margin-bottom: 20px; }
-    #current-anim { color: #44ff44; font-size: 18px; margin-bottom: 10px; }
+    button:hover { background: #777; }
+    h3 { margin: 15px 0 10px 0; color: #aaa; border-bottom: 1px solid #444; padding-bottom: 5px; }
+    .section { margin-bottom: 15px; }
+    #current-anim { color: #44ff44; font-size: 20px; margin-bottom: 15px; }
     #skins-list button { background: #446; }
-    #skins-list button:hover { background: #558; }
+    #skins-list button:hover { background: #668; }
+    .slider-container { margin: 10px 0; }
+    .slider-container label { display: block; margin-bottom: 5px; }
+    input[type="range"] { width: 100%; }
+    #speed-value, #scale-value { color: #44ff44; }
+    #error-msg {
+      color: #ff4444;
+      background: #400;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      display: none;
+    }
+    #help {
+      background: #1a1a2e;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 15px;
+    }
+    code { background: #000; padding: 2px 6px; border-radius: 3px; }
   </style>
 </head>
 <body>
   <div id="game-container"></div>
 
   <div id="controls">
-    <div id="current-anim">Animation: idle</div>
+    <div id="help">
+      <strong>Как запустить:</strong><br>
+      1. Открой терминал в папке src/<br>
+      2. Запусти: <code>npx serve .</code><br>
+      3. Открой http://localhost:3000/spine-viewer.html
+    </div>
+
+    <div id="error-msg"></div>
+
+    <div id="current-anim">Animation: -</div>
 
     <div class="section">
-      <h3>Animations</h3>
+      <h3>⚡ Speed</h3>
+      <div class="slider-container">
+        <label>Animation Speed: <span id="speed-value">1.0x</span></label>
+        <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
+      </div>
+      <div class="slider-container">
+        <label>Scale: <span id="scale-value">1.5x</span></label>
+        <input type="range" id="scale-slider" min="0.5" max="3" step="0.1" value="1.5">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>🎬 Animations</h3>
       <div id="anim-list"></div>
     </div>
 
     <div class="section">
-      <h3>Skins</h3>
+      <h3>👕 Skins</h3>
       <div id="skins-list"></div>
     </div>
 
     <div class="section">
-      <h3>Controls</h3>
-      <button onclick="toggleLoop()">Toggle Loop: ON</button>
-      <button onclick="resetPose()">Reset Pose</button>
-      <button onclick="flipX()">Flip X</button>
+      <h3>🎮 Controls</h3>
+      <button id="btn-loop">Loop: ON</button>
+      <button id="btn-reset">Reset Pose</button>
+      <button id="btn-flip">Flip X</button>
     </div>
   </div>
 
@@ -56,54 +101,128 @@
     let spineObject = null;
     let isLooping = true;
     let currentAnim = "idle";
+    let gameScene = null;
+
+    function showError(msg) {
+      const el = document.getElementById("error-msg");
+      el.textContent = msg;
+      el.style.display = "block";
+    }
 
     const config = {
       type: Phaser.WEBGL,
-      width: 500,
-      height: 700,
+      width: 600,
+      height: 800,
       parent: "game-container",
-      backgroundColor: 0x333333,
+      backgroundColor: 0x2a2a3a,
       scene: { preload, create },
       plugins: {
         scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
       }
     };
 
-    new Phaser.Game(config);
+    const game = new Phaser.Game(config);
 
     function preload() {
+      gameScene = this;
+
+      this.load.on("loaderror", (file) => {
+        showError("Failed to load: " + file.key + ". Make sure you run via HTTP server (npx serve .)");
+      });
+
+      // Path relative to spine-viewer.html location
       this.load.spine("hero", "assets/spine/hero.json", "assets/spine/hero.atlas");
     }
 
     function create() {
-      // Create spine object
-      spineObject = this.add.spine(250, 550, "hero", "idle", true);
-      spineObject.setScale(1.5);
+      try {
+        // Create spine object
+        spineObject = this.add.spine(300, 650, "hero", "idle", true);
+        spineObject.setScale(1.5);
 
-      // Get available animations
-      const anims = spineObject.skeleton.data.animations;
-      const animList = document.getElementById("anim-list");
+        // Get animations
+        const anims = spineObject.skeleton.data.animations;
+        const animList = document.getElementById("anim-list");
 
-      anims.forEach(anim => {
-        const btn = document.createElement("button");
-        btn.textContent = anim.name;
-        btn.onclick = () => playAnim(anim.name);
-        animList.appendChild(btn);
+        if (anims.length === 0) {
+          showError("No animations found!");
+        }
+
+        anims.forEach(anim => {
+          const btn = document.createElement("button");
+          btn.textContent = anim.name + " (" + anim.duration.toFixed(2) + "s)";
+          btn.addEventListener("click", () => playAnim(anim.name));
+          animList.appendChild(btn);
+        });
+
+        // Get skins
+        const skins = spineObject.skeleton.data.skins;
+        const skinsList = document.getElementById("skins-list");
+
+        skins.forEach(skin => {
+          const btn = document.createElement("button");
+          btn.textContent = skin.name;
+          btn.addEventListener("click", () => setSkin(skin.name));
+          skinsList.appendChild(btn);
+        });
+
+        // Log info
+        console.log("=== SPINE INFO ===");
+        console.log("Animations:", anims.map(a => a.name));
+        console.log("Skins:", skins.map(s => s.name));
+        console.log("Slots:", spineObject.skeleton.slots.map(s => s.data.name));
+
+        // Update current anim display
+        document.getElementById("current-anim").textContent = "Animation: idle";
+
+        // Setup controls
+        setupControls();
+
+      } catch(e) {
+        showError("Error creating spine: " + e.message);
+        console.error(e);
+      }
+    }
+
+    function setupControls() {
+      // Speed slider
+      document.getElementById("speed-slider").addEventListener("input", (e) => {
+        const speed = parseFloat(e.target.value);
+        if (spineObject && spineObject.state) {
+          spineObject.state.timeScale = speed;
+        }
+        document.getElementById("speed-value").textContent = speed.toFixed(1) + "x";
       });
 
-      // Get available skins
-      const skins = spineObject.skeleton.data.skins;
-      const skinsList = document.getElementById("skins-list");
-
-      skins.forEach(skin => {
-        const btn = document.createElement("button");
-        btn.textContent = skin.name;
-        btn.onclick = () => setSkin(skin.name);
-        skinsList.appendChild(btn);
+      // Scale slider
+      document.getElementById("scale-slider").addEventListener("input", (e) => {
+        const scale = parseFloat(e.target.value);
+        if (spineObject) {
+          spineObject.setScale(scale);
+        }
+        document.getElementById("scale-value").textContent = scale.toFixed(1) + "x";
       });
 
-      console.log("Animations:", anims.map(a => a.name));
-      console.log("Skins:", skins.map(s => s.name));
+      // Loop button
+      document.getElementById("btn-loop").addEventListener("click", () => {
+        isLooping = !isLooping;
+        document.getElementById("btn-loop").textContent = "Loop: " + (isLooping ? "ON" : "OFF");
+        playAnim(currentAnim);
+      });
+
+      // Reset button
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        if (spineObject) {
+          spineObject.skeleton.setToSetupPose();
+        }
+      });
+
+      // Flip button
+      document.getElementById("btn-flip").addEventListener("click", () => {
+        if (spineObject) {
+          spineObject.scaleX *= -1;
+        }
+      });
     }
 
     function playAnim(name) {
@@ -116,27 +235,13 @@
 
     function setSkin(name) {
       if (spineObject) {
-        spineObject.skeleton.setSkinByName(name);
-        spineObject.skeleton.setSlotsToSetupPose();
-        console.log("Skin set to:", name);
-      }
-    }
-
-    function toggleLoop() {
-      isLooping = !isLooping;
-      event.target.textContent = "Toggle Loop: " + (isLooping ? "ON" : "OFF");
-      playAnim(currentAnim);
-    }
-
-    function resetPose() {
-      if (spineObject) {
-        spineObject.skeleton.setToSetupPose();
-      }
-    }
-
-    function flipX() {
-      if (spineObject) {
-        spineObject.scaleX *= -1;
+        try {
+          spineObject.skeleton.setSkinByName(name);
+          spineObject.skeleton.setSlotsToSetupPose();
+          console.log("Skin set to:", name);
+        } catch(e) {
+          showError("Error setting skin: " + e.message);
+        }
       }
     }
   </script>

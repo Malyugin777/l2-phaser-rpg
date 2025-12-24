@@ -738,7 +738,7 @@ function setupArenaWorld(scene) {
   console.log("[ARENA] BG RIGHT pos:", arenaBgRight.x, ",", arenaBgRight.y, "size:", arenaBgRight.width, "x", arenaBgRight.height);
   console.log("[ARENA] WORLD_W:", WORLD_W, "BASE_H:", BASE_H);
 
-  // Exit button (fixed to screen, high depth)
+  // Exit button (fixed to screen, high depth) - HIDDEN until battle ends
   arenaExitBtnSprite = scene.add.text(BASE_W / 2, BASE_H - 120, '[ ВЫХОД ]', {
     fontSize: '32px',
     fontFamily: 'Arial',
@@ -747,12 +747,13 @@ function setupArenaWorld(scene) {
     padding: { x: 30, y: 15 }
   });
   arenaExitBtnSprite.setOrigin(0.5);
-  arenaExitBtnSprite.setDepth(500);        // Higher than everything
+  arenaExitBtnSprite.setDepth(700);        // Higher than everything
   arenaExitBtnSprite.setScrollFactor(0);   // Fixed to screen!
   arenaExitBtnSprite.setInteractive({ useHandCursor: true });
   arenaExitBtnSprite.on('pointerdown', () => exitArena(scene));
   arenaExitBtnSprite.on('pointerover', () => arenaExitBtnSprite.setStyle({ backgroundColor: '#555555' }));
   arenaExitBtnSprite.on('pointerout', () => arenaExitBtnSprite.setStyle({ backgroundColor: '#333333' }));
+  arenaExitBtnSprite.setVisible(false);  // Hidden until battle ends
 
   // Initialize tune mode
   if (ARENA_TUNE_ENABLED) {
@@ -1467,6 +1468,10 @@ function handleArenaEnd(scene, result) {
   // Show result screen after brief delay
   scene.time.delayedCall(1000, () => {
     showArenaResult(scene, isWin, rewards, result);
+    // Show exit button after battle ends
+    if (arenaExitBtnSprite) {
+      arenaExitBtnSprite.setVisible(true);
+    }
   });
 }
 
