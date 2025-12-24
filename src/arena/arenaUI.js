@@ -50,26 +50,19 @@ const ARENA_UI_CONFIG = {
 };
 
 function createArenaUI(scene) {
-  console.log("[ArenaUI] Creating UI - HP bars at Y=250");
+  console.log("[ArenaUI] Creating UI");
 
   const w = scene.scale.width;
+  const h = scene.scale.height;
   const centerX = w / 2;
 
-  // === TIMER — center top ===
-  arenaUIElements.timerBg = scene.add.rectangle(centerX, 80, 140, 70, 0x000000, 0.9)
-    .setScrollFactor(0).setDepth(999).setStrokeStyle(4, 0xffaa00);
-
-  arenaUIElements.timerText = scene.add.text(centerX, 80, "30", {
-    fontSize: "48px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
-
-  // === HP BARS — fixed Y position ===
+  // === HP BARS ===
   const barW = 280;
   const barH = 36;
-  const barY = 250;  // Fixed position
-  const gap = 50;
+  const barY = h * 0.38;  // ~38% from top
+  const gap = 60;
 
-  // PLAYER HP — left of center
+  // PLAYER HP — left
   arenaUIElements.playerHpBg = scene.add.rectangle(centerX - gap - barW/2, barY, barW, barH, 0x111111)
     .setScrollFactor(0).setDepth(999).setStrokeStyle(3, 0x44ff44);
 
@@ -84,7 +77,7 @@ function createArenaUI(scene) {
     fontSize: "20px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
   }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-  // ENEMY HP — right of center
+  // ENEMY HP — right
   arenaUIElements.enemyHpBg = scene.add.rectangle(centerX + gap + barW/2, barY, barW, barH, 0x111111)
     .setScrollFactor(0).setDepth(999).setStrokeStyle(3, 0xff4444);
 
@@ -99,7 +92,15 @@ function createArenaUI(scene) {
     fontSize: "20px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
   }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-  console.log("[ArenaUI] UI created at center:", centerX, barY);
+  // === TIMER — center between HP bars ===
+  arenaUIElements.timerBg = scene.add.rectangle(centerX, barY, 100, 50, 0x000000, 0.9)
+    .setScrollFactor(0).setDepth(999).setStrokeStyle(3, 0xffaa00);
+
+  arenaUIElements.timerText = scene.add.text(centerX, barY, "30", {
+    fontSize: "36px", color: "#ffffff", fontFamily: "Arial", fontStyle: "bold"
+  }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
+
+  console.log("[ArenaUI] UI created, barY:", barY);
 }
 
 function updateArenaUI(state) {

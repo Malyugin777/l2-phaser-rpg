@@ -805,56 +805,25 @@ function activateWeaponSkin(sprite, name) {
   const skeleton = sprite.skeleton;
   const skeletonData = skeleton.data;
 
-  // Log all available skins
+  // Log all skins
   const skinNames = skeletonData.skins.map(s => s.name);
-  console.log("[ARENA]", name, "available skins:", skinNames);
+  console.log("[ARENA]", name, "skins:", skinNames);
 
-  // Try to create combined skin (default + weapon)
-  try {
-    const newSkin = new spine.Skin("combined");
+  // Try weapon/sword skin first, then fallback
+  const tryNames = ["weapon/sword", "sword", "default"];
 
-    // Add default skin
-    const defaultSkin = skeletonData.findSkin("default");
-    if (defaultSkin) {
-      newSkin.addSkin(defaultSkin);
-    }
-
-    // Try different weapon skin names
-    const weaponSkinNames = ["weapon/sword", "sword", "weapon-sword"];
-    let weaponFound = false;
-
-    for (const skinName of weaponSkinNames) {
-      const weaponSkin = skeletonData.findSkin(skinName);
-      if (weaponSkin) {
-        newSkin.addSkin(weaponSkin);
-        console.log("[ARENA]", name, "weapon skin found:", skinName);
-        weaponFound = true;
-        break;
-      }
-    }
-
-    if (!weaponFound) {
-      console.log("[ARENA]", name, "no weapon skin found, using default only");
-    }
-
-    // Apply combined skin
-    skeleton.setSkin(newSkin);
-    skeleton.setSlotsToSetupPose();
-
-    console.log("[ARENA]", name, "combined skin applied!");
-
-  } catch(e) {
-    console.error("[ARENA] Weapon skin error for", name, ":", e);
-
-    // Fallback: just use default skin
+  for (const skinName of tryNames) {
     try {
-      skeleton.setSkinByName("default");
+      skeleton.setSkinByName(skinName);
       skeleton.setSlotsToSetupPose();
-      console.log("[ARENA]", name, "fallback to default skin");
-    } catch(e2) {
-      console.error("[ARENA] Fallback also failed:", e2);
+      console.log("[ARENA]", name, "skin set to:", skinName);
+      return;
+    } catch(e) {
+      // Try next
     }
   }
+
+  console.warn("[ARENA]", name, "no valid skin found!");
 }
 
 // ============================================================
