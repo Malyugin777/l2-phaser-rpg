@@ -815,12 +815,31 @@ function spawnFighters(scene, enemyData) {
       arenaPlayerSprite = scene.add.spine(playerStartX, GROUND_Y, 'hero', 'idle', true);
       arenaPlayerSprite.setScale(arenaTuneSettings.fighterScale);
 
-      // Activate skin to show weapon
-      if (arenaPlayerSprite.setSkinByName) {
-        arenaPlayerSprite.setSkinByName("default");
-      }
-      if (arenaPlayerSprite.setSlotsToSetupPose) {
-        arenaPlayerSprite.setSlotsToSetupPose();
+      // Activate skin and weapon
+      if (arenaPlayerSprite.skeleton) {
+        try {
+          arenaPlayerSprite.skeleton.setSkinByName("default");
+          arenaPlayerSprite.skeleton.setSlotsToSetupPose();
+
+          // Debug: show available slots
+          console.log("[ARENA] Player slots:", arenaPlayerSprite.skeleton.slots.map(s => s.data.name));
+
+          // Try to attach weapon
+          const weaponSlot = arenaPlayerSprite.skeleton.findSlot("weapon-sword");
+          if (weaponSlot) {
+            const attachment = arenaPlayerSprite.skeleton.getAttachmentByName("weapon-sword", "sword");
+            if (attachment) {
+              weaponSlot.setAttachment(attachment);
+              console.log("[ARENA] Player weapon attached!");
+            } else {
+              console.log("[ARENA] Player weapon attachment not found");
+            }
+          } else {
+            console.log("[ARENA] Player weapon-sword slot not found");
+          }
+        } catch(e) {
+          console.warn("[ARENA] Player weapon error:", e);
+        }
       }
     } catch(e) {
       arenaPlayerSprite = scene.add.rectangle(playerStartX, GROUND_Y, 60, 120, 0x3366cc);
@@ -836,12 +855,24 @@ function spawnFighters(scene, enemyData) {
       arenaEnemySprite = scene.add.spine(enemyStartX, GROUND_Y, 'hero', 'idle', true);
       arenaEnemySprite.setScale(-arenaTuneSettings.fighterScale, arenaTuneSettings.fighterScale);
 
-      // Activate skin to show weapon
-      if (arenaEnemySprite.setSkinByName) {
-        arenaEnemySprite.setSkinByName("default");
-      }
-      if (arenaEnemySprite.setSlotsToSetupPose) {
-        arenaEnemySprite.setSlotsToSetupPose();
+      // Activate skin and weapon
+      if (arenaEnemySprite.skeleton) {
+        try {
+          arenaEnemySprite.skeleton.setSkinByName("default");
+          arenaEnemySprite.skeleton.setSlotsToSetupPose();
+
+          // Try to attach weapon
+          const weaponSlot = arenaEnemySprite.skeleton.findSlot("weapon-sword");
+          if (weaponSlot) {
+            const attachment = arenaEnemySprite.skeleton.getAttachmentByName("weapon-sword", "sword");
+            if (attachment) {
+              weaponSlot.setAttachment(attachment);
+              console.log("[ARENA] Enemy weapon attached!");
+            }
+          }
+        } catch(e) {
+          console.warn("[ARENA] Enemy weapon error:", e);
+        }
       }
     } catch(e) {
       arenaEnemySprite = scene.add.rectangle(enemyStartX, GROUND_Y, 60, 120, 0xcc3333);
