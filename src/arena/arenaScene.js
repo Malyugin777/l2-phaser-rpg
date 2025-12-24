@@ -38,7 +38,7 @@ const ARENA_CONFIG = {
 
   // Combat
   fightOffset: 250,
-  engageDistance: 300,
+  engageDistance: 550,  // Must be > fightOffset * 2 to trigger before tweens end
   runSpeed: 2500,
 
   // Transitions
@@ -1071,12 +1071,17 @@ function startReadyPhase(scene) {
 //  RUN-IN SEQUENCE
 // ============================================================
 
+let runInTimeout = null;
+
 function startRunIn(scene) {
   arenaState = "RUN_IN";
   console.log("[ARENA] State: RUN_IN");
 
   const targetPlayerX = WORLD_W / 2 - ARENA_CONFIG.fightOffset;
   const targetEnemyX = WORLD_W / 2 + ARENA_CONFIG.fightOffset;
+  const targetDistance = ARENA_CONFIG.fightOffset * 2;
+
+  console.log("[ARENA] RUN_IN targets - Player:", targetPlayerX.toFixed(0), "Enemy:", targetEnemyX.toFixed(0), "Final distance:", targetDistance);
 
   // Start run animations
   if (arenaPlayerSprite.play) arenaPlayerSprite.play('run', true);
@@ -1087,7 +1092,15 @@ function startRunIn(scene) {
     targets: arenaPlayerSprite,
     x: targetPlayerX,
     duration: ARENA_CONFIG.runSpeed,
-    ease: 'Sine.easeInOut'
+    ease: 'Sine.easeInOut',
+    onComplete: () => {
+      console.log("[ARENA] Player tween complete, x:", arenaPlayerSprite?.x?.toFixed(0));
+      // If still in RUN_IN after tween completes, force engage
+      if (arenaState === "RUN_IN") {
+        console.log("[ARENA] Forcing ENGAGE after player tween complete");
+        onEngageDistance(scene);
+      }
+    }
   });
 
   scene.tweens.add({
@@ -1095,6 +1108,17 @@ function startRunIn(scene) {
     x: targetEnemyX,
     duration: ARENA_CONFIG.runSpeed,
     ease: 'Sine.easeInOut'
+  });
+
+  // Safety timeout - force ENGAGE if stuck
+  if (runInTimeout) {
+    runInTimeout.destroy();
+  }
+  runInTimeout = scene.time.delayedCall(6000, () => {
+    if (arenaState === "RUN_IN") {
+      console.warn("[ARENA] RUN_IN timeout! Forcing ENGAGE");
+      onEngageDistance(scene);
+    }
   });
 }
 
@@ -1149,7 +1173,11 @@ function updateArena(scene) {
 
     // Check engage distance
     const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
-    if (distance <= ARENA_CONFIG.engageDistance) {
+    const targetDistance = ARENA_CONFIG.fightOffset * 2;
+
+    // Trigger engage when close enough OR when reaching target
+    if (distance <= ARENA_CONFIG.engageDistance || distance <= targetDistance + 50) {
+      console.log("[ARENA] Engage triggered - distance:", distance.toFixed(0), "engageDistance:", ARENA_CONFIG.engageDistance, "target:", targetDistance);
       onEngageDistance(scene);
     }
   }
@@ -1203,6 +1231,12 @@ function onEngageDistance(scene) {
   if (arenaState !== "RUN_IN") return;
   arenaState = "ENGAGE";
   console.log("[ARENA] State: ENGAGE");
+
+  // Clear safety timeout
+  if (runInTimeout) {
+    runInTimeout.destroy();
+    runInTimeout = null;
+  }
 
   // Stop fighter tweens
   scene.tweens.killTweensOf(arenaPlayerSprite);
