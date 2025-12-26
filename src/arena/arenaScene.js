@@ -1424,80 +1424,87 @@ function setAnimationSpeed(sprite, attackSpeed) {
 //  HIT VISUAL EFFECTS
 // ============================================================
 
-// Flash effect — white overlay that fades out
-function flashSprite(scene, sprite) {
-  if (!sprite) return;
+// Flash effect — white overlay on target only
+function flashSprite(scene, x, y) {
+  // Create white flash at hit position
+  const flash = scene.add.rectangle(x, y, 120, 180, 0xffffff, 0.7)
+    .setDepth(500);
 
-  // Create white overlay flash at sprite position
-  const flash = scene.add.rectangle(sprite.x, sprite.y - 60, 100, 150, 0xffffff, 0.7)
-    .setDepth(245);
-
-  // Fade out quickly
   scene.tweens.add({
     targets: flash,
     alpha: 0,
-    scaleX: 1.5,
-    scaleY: 1.5,
-    duration: 100,
+    scaleX: 1.3,
+    scaleY: 1.3,
+    duration: 120,
     ease: "Power2",
     onComplete: () => flash.destroy()
   });
 }
 
-// Slash effect — arc from weapon swing
+// Slash effect — arc from weapon swing (bigger, brighter)
 function spawnSlashEffect(scene, x, y, facingRight, isCrit) {
-  const slashColor = isCrit ? 0xffdd00 : 0xffffff;
-  const slashAlpha = isCrit ? 0.9 : 0.6;
-
-  // Create arc using graphics
   const graphics = scene.add.graphics();
-  graphics.setDepth(240);
+  graphics.setDepth(480);
 
-  const startAngle = facingRight ? -0.5 : 2.6;
-  const endAngle = facingRight ? 0.8 : 3.9;
+  // Bigger, brighter slash
+  const slashColor = isCrit ? 0xffdd00 : 0xffffff;
+  const lineWidth = isCrit ? 8 : 5;
+  const radius = isCrit ? 100 : 70;
+  const alpha = isCrit ? 1.0 : 0.8;
 
-  graphics.lineStyle(isCrit ? 6 : 4, slashColor, slashAlpha);
+  // Arc direction based on attacker side
+  const startAngle = facingRight ? -0.7 : 2.4;
+  const endAngle = facingRight ? 1.0 : 4.1;
+
+  graphics.lineStyle(lineWidth, slashColor, alpha);
   graphics.beginPath();
-  graphics.arc(x, y - 50, isCrit ? 80 : 60, startAngle, endAngle);
+  graphics.arc(x, y, radius, startAngle, endAngle);
   graphics.strokePath();
 
-  // Fade out
+  // Add inner glow line on crit
+  if (isCrit) {
+    graphics.lineStyle(3, 0xffffff, 0.9);
+    graphics.beginPath();
+    graphics.arc(x, y, radius - 10, startAngle, endAngle);
+    graphics.strokePath();
+  }
+
   scene.tweens.add({
     targets: graphics,
     alpha: 0,
-    scaleX: 1.3,
-    scaleY: 1.3,
-    duration: 200,
+    scaleX: 1.4,
+    scaleY: 1.4,
+    duration: 180,
     ease: "Power2",
     onComplete: () => graphics.destroy()
   });
 }
 
-// Combined hit effects
+// Combined hit effects - only on TARGET, higher position
 function playHitEffects(scene, target, isCrit, isPlayer) {
-  console.log("[ARENA] Hit effects - isCrit:", isCrit, "isPlayer:", isPlayer);
-
   if (!target) {
     console.warn("[ARENA] No target for hit effects!");
     return;
   }
 
   const x = target.x;
-  const y = target.y - 80;
+  const y = target.y - 150;  // HIGHER - chest level
 
-  // Flash (creates white overlay since Spine doesn't support tint)
-  flashSprite(scene, target);
+  console.log("[EFFECTS] Hit on", isPlayer ? "PLAYER" : "ENEMY", "at", x.toFixed(0), y.toFixed(0), "crit:", isCrit);
 
-  // Particles
+  // Flash - white rectangle on TARGET only
+  flashSprite(scene, x, y);
+
+  // Particles - at chest level
   spawnHitParticles(scene, x, y, isCrit);
 
-  // Slash (from attacker direction)
+  // Slash arc - at chest level
   const facingRight = !isPlayer;  // If player attacks, slash goes right
   spawnSlashEffect(scene, x, y, facingRight, isCrit);
 
-  // Camera shake on crit
+  // Camera shake on crit only
   if (isCrit) {
-    scene.cameras.main.shake(150, 0.008);
+    scene.cameras.main.shake(150, 0.01);
   }
 }
 
@@ -1552,29 +1559,30 @@ function spawnArenaDamageText(scene, target, damage, isCrit) {
 }
 
 function spawnHitParticles(scene, x, y, isCrit) {
-  const count = isCrit ? 15 : 8;
-  const colors = isCrit ? [0xffdd00, 0xffaa00, 0xff6600] : [0xffffff, 0xcccccc, 0xaaaaaa];
+  const count = isCrit ? 18 : 10;
+  const colors = isCrit ? [0xffdd00, 0xffaa00, 0xff6600, 0xffffff] : [0xffffff, 0xcccccc, 0xffffaa];
 
   for (let i = 0; i < count; i++) {
     const color = colors[Math.floor(Math.random() * colors.length)];
-    const size = isCrit ? Phaser.Math.Between(4, 8) : Phaser.Math.Between(3, 6);
+    const size = isCrit ? Phaser.Math.Between(5, 10) : Phaser.Math.Between(4, 7);
 
     const particle = scene.add.circle(x, y, size, color)
-      .setDepth(250)
-      .setAlpha(1);
+      .setDepth(500)
+      .setAlpha(0.9);
 
+    // Spread outward and upward
     const angle = Math.random() * Math.PI * 2;
-    const speed = Phaser.Math.Between(80, 180);
+    const speed = Phaser.Math.Between(100, 200);
     const vx = Math.cos(angle) * speed;
-    const vy = Math.sin(angle) * speed - 80;  // Bias upward
+    const vy = Math.sin(angle) * speed - 120;  // Strong upward bias
 
     scene.tweens.add({
       targets: particle,
-      x: particle.x + vx * 0.4,
-      y: particle.y + vy * 0.4,
+      x: x + vx * 0.5,
+      y: y + vy * 0.5,
       alpha: 0,
-      scale: 0.3,
-      duration: Phaser.Math.Between(300, 500),
+      scale: 0.2,
+      duration: Phaser.Math.Between(350, 550),
       ease: "Power2",
       onComplete: () => particle.destroy()
     });
