@@ -1,0 +1,59 @@
+Boy_1.png
+size:2018,1880
+filter:Linear,Linear
+pma:true
+arm 1
+bounds:1666,525,100,226
+rotate:90
+arm 2
+bounds:1725,13,123,191
+offsets:81,0,204,267
+back
+bounds:2,378,1500,1500
+offsets:1,1,1502,1502
+fist 1
+bounds:1850,98,106,122
+rotate:90
+fist 2
+bounds:1349,2,94,119
+offsets:0,0,94,128
+rotate:90
+foot 1
+bounds:1733,293,109,128
+rotate:90
+foot 2
+bounds:1613,209,170,118
+rotate:90
+groin
+bounds:1504,381,244,160
+rotate:90
+hair
+bounds:313,38,338,269
+rotate:90
+head
+bounds:2,4,309,372
+hip 1
+bounds:584,61,177,315
+offsets:4,0,181,315
+hip 2
+bounds:1156,72,191,304
+knee 1
+bounds:1666,404,119,214
+rotate:90
+knee 2
+bounds:1613,6,110,198
+original
+bounds:1504,627,506,1251
+offsets:1,1,508,1253
+shoulder 1
+bounds:1882,206,132,212
+shoulder 2
+bounds:1894,420,122,205
+offsets:41,0,163,205
+sword
+bounds:1349,98,278,262
+offsets:24,9,360,288
+rotate:90
+torso
+bounds:763,68,308,391
+rotate:90

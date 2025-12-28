@@ -12,7 +12,9 @@
       "Bash(cat:*)",
       "Bash(file:*)",
       "Bash(npx serve . -p 3000)",
-      "Bash(npx serve .)"
+      "Bash(npx serve .)",
+      "Bash(git push:*)",
+      "Bash(git mv:*)"
     ]
   }
 }

@@ -1,36 +1,159 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Spine Viewer</title>
+  <title>Spine Viewer Pro</title>
   <style>
-    body { margin: 0; background: #222; font-family: Arial; color: white; }
-    #game-container { display: inline-block; vertical-align: top; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #1a1a2e; font-family: Arial; color: white; display: flex; }
+
+    #game-container {
+      flex: 1;
+      position: relative;
+      cursor: grab;
+    }
+    #game-container:active { cursor: grabbing; }
+
     #controls {
-      display: inline-block;
-      vertical-align: top;
+      width: 320px;
+      background: #252540;
+      padding: 15px;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    h3 {
+      margin: 20px 0 10px 0;
+      color: #888;
+      font-size: 14px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 4px 0;
       background: #333;
-      padding: 20px;
-      margin: 20px;
-      border-radius: 8px;
-      width: 280px;
-      max-height: 90vh;
+      color: white;
+      border: 1px solid #444;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    select:hover, button:hover { background: #444; }
+    button.active { background: #4a6; border-color: #5b7; }
+
+    .slider-row { margin: 10px 0; }
+    .slider-row label { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .slider-row input[type="range"] { width: 100%; }
+    .value { color: #4f8; font-weight: bold; }
+
+    #current-anim {
+      color: #4f8;
+      font-size: 18px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #1a1a2e;
+      border-radius: 4px;
+    }
+
+    #position-info {
+      color: #888;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    /* Timeline Editor */
+    #timeline-container {
+      background: #1a1a2e;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    #timeline {
+      position: relative;
+      height: 60px;
+      background: #333;
+      border-radius: 4px;
+      margin: 10px 0;
+      cursor: crosshair;
+    }
+
+    .timeline-segment {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      background: #4a6;
+      border-right: 2px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      min-width: 30px;
+    }
+
+    .timeline-segment:nth-child(odd) { background: #46a; }
+
+    #playhead {
+      position: absolute;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: #f44;
+      pointer-events: none;
+    }
+
+    .segment-list {
+      max-height: 150px;
       overflow-y: auto;
     }
-    button {
-      display: block; width: 100%; margin: 5px 0; padding: 12px;
-      background: #555; color: white; border: none; border-radius: 4px;
-      cursor: pointer; font-size: 14px;
+
+    .segment-item {
+      display: flex;
+      gap: 5px;
+      margin: 5px 0;
+      align-items: center;
     }
-    button:hover { background: #777; }
-    h3 { margin: 15px 0 10px 0; color: #aaa; border-bottom: 1px solid #444; padding-bottom: 5px; }
-    .section { margin-bottom: 15px; }
-    #current-anim { color: #44ff44; font-size: 20px; margin-bottom: 15px; }
-    #skins-list button { background: #446; }
-    #skins-list button:hover { background: #668; }
-    .slider-container { margin: 10px 0; }
-    .slider-container label { display: block; margin-bottom: 5px; }
-    input[type="range"] { width: 100%; }
-    #speed-value, #scale-value { color: #44ff44; }
+
+    .segment-item input {
+      width: 60px;
+      padding: 5px;
+      background: #333;
+      border: 1px solid #444;
+      color: white;
+      border-radius: 3px;
+    }
+
+    .segment-item button {
+      width: 30px;
+      padding: 5px;
+      background: #633;
+    }
+
+    #export-box {
+      background: #111;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 150px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+
+    #help-info {
+      background: #1a1a2e;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 15px;
+      color: #888;
+    }
+
     #error-msg {
       color: #ff4444;
       background: #400;
@@ -39,89 +162,123 @@
       margin-bottom: 10px;
       display: none;
     }
-    #help {
-      background: #1a1a2e;
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      margin-bottom: 15px;
-    }
-    code { background: #000; padding: 2px 6px; border-radius: 3px; }
   </style>
 </head>
 <body>
   <div id="game-container"></div>
 
   <div id="controls">
-    <div id="help">
-      <strong>Как запустить:</strong><br>
-      1. Открой терминал в папке src/<br>
-      2. Запусти: <code>npx serve .</code><br>
-      3. Открой http://localhost:3000/spine-viewer.html
+    <div id="help-info">
+      <strong>Spine Viewer Pro</strong><br>
+      Drag spine with mouse to reposition
     </div>
 
     <div id="error-msg"></div>
 
+    <h3>📁 Spine File</h3>
+    <select id="spine-select">
+      <option value="hero">Hero (hero.json)</option>
+      <option value="hand">Hand (Hand.json)</option>
+    </select>
+    <button id="btn-load">Load Spine</button>
+
     <div id="current-anim">Animation: -</div>
 
-    <div class="section">
-      <h3>⚡ Speed</h3>
-      <div class="slider-container">
-        <label>Animation Speed: <span id="speed-value">1.0x</span></label>
-        <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1">
+    <h3>🎬 Animations</h3>
+    <div id="anim-list"></div>
+
+    <h3>👕 Skins</h3>
+    <div id="skins-list"></div>
+
+    <h3>⚡ Speed & Scale</h3>
+    <div class="slider-row">
+      <label>Global Speed: <span id="speed-value" class="value">1.0x</span></label>
+      <input type="range" id="speed-slider" min="0.1" max="3" step="0.05" value="1">
+    </div>
+    <div class="slider-row">
+      <label>Scale: <span id="scale-value" class="value">1.0x</span></label>
+      <input type="range" id="scale-slider" min="0.1" max="3" step="0.05" value="1">
+    </div>
+
+    <div id="position-info">Position: X: 0, Y: 0</div>
+
+    <h3>⏱️ Timeline Speed Editor</h3>
+    <div id="timeline-container">
+      <p style="font-size:12px;color:#888;margin:0 0 10px 0;">
+        Set different speeds for animation segments
+      </p>
+
+      <div id="timeline">
+        <div id="playhead"></div>
       </div>
-      <div class="slider-container">
-        <label>Scale: <span id="scale-value">1.5x</span></label>
-        <input type="range" id="scale-slider" min="0.5" max="3" step="0.1" value="1.5">
-      </div>
+
+      <div class="segment-list" id="segment-list"></div>
+
+      <button id="btn-add-segment">+ Add Segment</button>
     </div>
 
-    <div class="section">
-      <h3>🎬 Animations</h3>
-      <div id="anim-list"></div>
-    </div>
+    <h3>💾 Export</h3>
+    <button id="btn-export">Export Settings</button>
+    <div id="export-box">Click Export to generate config</div>
 
-    <div class="section">
-      <h3>👕 Skins</h3>
-      <div id="skins-list"></div>
-    </div>
-
-    <div class="section">
-      <h3>🎮 Controls</h3>
-      <button id="btn-loop">Loop: ON</button>
-      <button id="btn-reset">Reset Pose</button>
-      <button id="btn-flip">Flip X</button>
-    </div>
+    <h3>🎮 Controls</h3>
+    <button id="btn-loop">Loop: ON</button>
+    <button id="btn-flip">Flip X</button>
+    <button id="btn-reset">Reset Position</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/plugins/spine4.1/dist/SpinePlugin.js"></script>
 
   <script>
-    let spineObject = null;
-    let isLooping = true;
-    let currentAnim = "idle";
+    // Spine file configs
+    const SPINE_FILES = {
+      hero: { path: "assets/spine/hero", name: "hero" },
+      hand: { path: "assets/spine hand/Hand", name: "hand" }
+    };
+
+    let game = null;
     let gameScene = null;
+    let spineObject = null;
+    let currentSpine = "hero";
+    let isLooping = true;
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+    let spinePos = { x: 400, y: 500 };
+
+    // Timeline segments: [{start: 0, end: 0.5, speed: 0.5}, {start: 0.5, end: 1, speed: 2}]
+    let segments = [
+      { start: 0, end: 1, speed: 1.0 }
+    ];
+    let currentAnimDuration = 1;
 
     function showError(msg) {
       const el = document.getElementById("error-msg");
       el.textContent = msg;
       el.style.display = "block";
+      console.error(msg);
     }
 
-    const config = {
-      type: Phaser.WEBGL,
-      width: 600,
-      height: 800,
-      parent: "game-container",
-      backgroundColor: 0x2a2a3a,
-      scene: { preload, create },
-      plugins: {
-        scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
-      }
-    };
+    // Initialize Phaser
+    function initGame() {
+      if (game) game.destroy(true);
 
-    const game = new Phaser.Game(config);
+      document.getElementById("error-msg").style.display = "none";
+
+      const config = {
+        type: Phaser.WEBGL,
+        width: 800,
+        height: 800,
+        parent: "game-container",
+        backgroundColor: 0x1a1a2e,
+        scene: { preload, create, update },
+        plugins: {
+          scene: [{ key: "SpinePlugin", plugin: window.SpinePlugin, mapping: "spine" }]
+        }
+      };
+
+      game = new Phaser.Game(config);
+    }
 
     function preload() {
       gameScene = this;
@@ -130,23 +287,21 @@
         showError("Failed to load: " + file.key + ". Make sure you run via HTTP server (npx serve .)");
       });
 
-      // Path relative to spine-viewer.html location
-      // Note: folder has space in name which may cause issues
-      this.load.spine("hand", "assets/spine hand/Hand.json", "assets/spine hand/Hand.atlas");
+      const cfg = SPINE_FILES[currentSpine];
+      this.load.spine(cfg.name, cfg.path + ".json", cfg.path + ".atlas");
     }
 
     function create() {
-      try {
-        // Create Hand spine - centered with dynamic positioning
-        const centerX = this.scale.width / 2;
-        const centerY = this.scale.height / 2;
+      const cfg = SPINE_FILES[currentSpine];
 
-        spineObject = this.add.spine(centerX, centerY + 100, "hand", "hand", true);
-        spineObject.setScale(0.8);
+      try {
+        spineObject = this.add.spine(spinePos.x, spinePos.y, cfg.name, "idle", isLooping);
+        spineObject.setScale(1.0);
 
         // Get animations
         const anims = spineObject.skeleton.data.animations;
         const animList = document.getElementById("anim-list");
+        animList.innerHTML = "";
 
         if (anims.length === 0) {
           showError("No animations found!");
@@ -155,13 +310,14 @@
         anims.forEach(anim => {
           const btn = document.createElement("button");
           btn.textContent = anim.name + " (" + anim.duration.toFixed(2) + "s)";
-          btn.addEventListener("click", () => playAnim(anim.name));
+          btn.addEventListener("click", () => playAnim(anim.name, anim.duration));
           animList.appendChild(btn);
         });
 
         // Get skins
         const skins = spineObject.skeleton.data.skins;
         const skinsList = document.getElementById("skins-list");
+        skinsList.innerHTML = "";
 
         skins.forEach(skin => {
           const btn = document.createElement("button");
@@ -174,14 +330,36 @@
         console.log("=== SPINE INFO ===");
         console.log("Animations:", anims.map(a => a.name));
         console.log("Skins:", skins.map(s => s.name));
-        console.log("Slots:", spineObject.skeleton.slots.map(s => s.data.name));
 
-        // Update current anim display
-        currentAnim = "hand";
-        document.getElementById("current-anim").textContent = "Animation: hand";
+        // Auto-play first animation
+        if (anims.length > 0) {
+          playAnim(anims[0].name, anims[0].duration);
+        }
 
-        // Setup controls
-        setupControls();
+        updatePositionInfo();
+
+        // Setup drag
+        this.input.on("pointerdown", (pointer) => {
+          if (spineObject && pointer.x < 800) {
+            isDragging = true;
+            dragOffset.x = pointer.x - spineObject.x;
+            dragOffset.y = pointer.y - spineObject.y;
+          }
+        });
+
+        this.input.on("pointermove", (pointer) => {
+          if (isDragging && spineObject) {
+            spineObject.x = pointer.x - dragOffset.x;
+            spineObject.y = pointer.y - dragOffset.y;
+            spinePos.x = spineObject.x;
+            spinePos.y = spineObject.y;
+            updatePositionInfo();
+          }
+        });
+
+        this.input.on("pointerup", () => {
+          isDragging = false;
+        });
 
       } catch(e) {
         showError("Error creating spine: " + e.message);
@@ -189,66 +367,177 @@
       }
     }
 
-    function setupControls() {
-      // Speed slider
-      document.getElementById("speed-slider").addEventListener("input", (e) => {
-        const speed = parseFloat(e.target.value);
-        if (spineObject && spineObject.state) {
-          spineObject.state.timeScale = speed;
-        }
-        document.getElementById("speed-value").textContent = speed.toFixed(1) + "x";
-      });
+    // Animation time tracking for timeline
+    let animTime = 0;
 
-      // Scale slider
-      document.getElementById("scale-slider").addEventListener("input", (e) => {
-        const scale = parseFloat(e.target.value);
-        if (spineObject) {
-          spineObject.setScale(scale);
-        }
-        document.getElementById("scale-value").textContent = scale.toFixed(1) + "x";
-      });
+    function update(time, delta) {
+      if (!spineObject || !spineObject.state) return;
 
-      // Loop button
-      document.getElementById("btn-loop").addEventListener("click", () => {
-        isLooping = !isLooping;
-        document.getElementById("btn-loop").textContent = "Loop: " + (isLooping ? "ON" : "OFF");
-        playAnim(currentAnim);
-      });
+      // Track animation progress
+      const track = spineObject.state.getCurrent(0);
+      if (track) {
+        animTime = track.trackTime % currentAnimDuration;
+        const progress = animTime / currentAnimDuration;
 
-      // Reset button
-      document.getElementById("btn-reset").addEventListener("click", () => {
-        if (spineObject) {
-          spineObject.skeleton.setToSetupPose();
-        }
-      });
+        // Update playhead
+        document.getElementById("playhead").style.left = (progress * 100) + "%";
 
-      // Flip button
-      document.getElementById("btn-flip").addEventListener("click", () => {
-        if (spineObject) {
-          spineObject.scaleX *= -1;
+        // Apply segment speed
+        const segment = segments.find(s => progress >= s.start && progress < s.end);
+        if (segment) {
+          spineObject.state.timeScale = segment.speed * parseFloat(document.getElementById("speed-slider").value);
         }
-      });
+      }
     }
 
-    function playAnim(name) {
+    function playAnim(name, duration) {
       if (spineObject) {
         spineObject.play(name, isLooping);
-        currentAnim = name;
         document.getElementById("current-anim").textContent = "Animation: " + name;
+        currentAnimDuration = duration || 1;
+        animTime = 0;
+        renderTimeline();
       }
     }
 
     function setSkin(name) {
       if (spineObject) {
-        try {
-          spineObject.skeleton.setSkinByName(name);
-          spineObject.skeleton.setSlotsToSetupPose();
-          console.log("Skin set to:", name);
-        } catch(e) {
-          showError("Error setting skin: " + e.message);
-        }
+        spineObject.skeleton.setSkinByName(name);
+        spineObject.skeleton.setSlotsToSetupPose();
       }
     }
+
+    function updatePositionInfo() {
+      document.getElementById("position-info").textContent =
+        `Position: X: ${Math.round(spinePos.x)}, Y: ${Math.round(spinePos.y)}`;
+    }
+
+    // Timeline functions
+    function renderTimeline() {
+      const timeline = document.getElementById("timeline");
+      const segmentList = document.getElementById("segment-list");
+
+      // Clear (keep playhead)
+      timeline.querySelectorAll(".timeline-segment").forEach(el => el.remove());
+      segmentList.innerHTML = "";
+
+      segments.forEach((seg, i) => {
+        // Visual segment
+        const div = document.createElement("div");
+        div.className = "timeline-segment";
+        div.style.left = (seg.start * 100) + "%";
+        div.style.width = ((seg.end - seg.start) * 100) + "%";
+        div.textContent = seg.speed + "x";
+        timeline.insertBefore(div, document.getElementById("playhead"));
+
+        // List item
+        const item = document.createElement("div");
+        item.className = "segment-item";
+        item.innerHTML = `
+          <span>${i + 1}.</span>
+          <input type="number" value="${seg.start}" step="0.1" min="0" max="1" data-idx="${i}" data-field="start">
+          <span>→</span>
+          <input type="number" value="${seg.end}" step="0.1" min="0" max="1" data-idx="${i}" data-field="end">
+          <span>@</span>
+          <input type="number" value="${seg.speed}" step="0.1" min="0.1" max="5" data-idx="${i}" data-field="speed">
+          <span>x</span>
+          <button data-idx="${i}" class="del-seg">✕</button>
+        `;
+        segmentList.appendChild(item);
+      });
+
+      // Event listeners
+      segmentList.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("change", (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          const field = e.target.dataset.field;
+          segments[idx][field] = parseFloat(e.target.value);
+          renderTimeline();
+        });
+      });
+
+      segmentList.querySelectorAll(".del-seg").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          if (segments.length > 1) {
+            segments.splice(idx, 1);
+            renderTimeline();
+          }
+        });
+      });
+    }
+
+    function addSegment() {
+      const last = segments[segments.length - 1];
+      if (last.end < 1) {
+        segments.push({ start: last.end, end: 1, speed: 1.0 });
+      } else {
+        // Split last segment
+        const mid = (last.start + last.end) / 2;
+        last.end = mid;
+        segments.push({ start: mid, end: 1, speed: 1.0 });
+      }
+      renderTimeline();
+    }
+
+    function exportSettings() {
+      const config = {
+        spine: currentSpine,
+        position: spinePos,
+        scale: parseFloat(document.getElementById("scale-slider").value),
+        globalSpeed: parseFloat(document.getElementById("speed-slider").value),
+        segments: segments,
+        animation: document.getElementById("current-anim").textContent.replace("Animation: ", "")
+      };
+
+      document.getElementById("export-box").textContent = JSON.stringify(config, null, 2);
+    }
+
+    // Setup UI
+    document.getElementById("btn-load").addEventListener("click", () => {
+      currentSpine = document.getElementById("spine-select").value;
+      initGame();
+    });
+
+    document.getElementById("speed-slider").addEventListener("input", (e) => {
+      document.getElementById("speed-value").textContent = e.target.value + "x";
+    });
+
+    document.getElementById("scale-slider").addEventListener("input", (e) => {
+      document.getElementById("scale-value").textContent = e.target.value + "x";
+      if (spineObject) spineObject.setScale(parseFloat(e.target.value));
+    });
+
+    document.getElementById("btn-loop").addEventListener("click", (e) => {
+      isLooping = !isLooping;
+      e.target.textContent = "Loop: " + (isLooping ? "ON" : "OFF");
+      if (spineObject) {
+        const track = spineObject.state.getCurrent(0);
+        if (track) track.loop = isLooping;
+      }
+    });
+
+    document.getElementById("btn-flip").addEventListener("click", () => {
+      if (spineObject) spineObject.scaleX *= -1;
+    });
+
+    document.getElementById("btn-reset").addEventListener("click", () => {
+      if (spineObject) {
+        spineObject.x = 400;
+        spineObject.y = 500;
+        spinePos = { x: 400, y: 500 };
+        updatePositionInfo();
+      }
+    });
+
+    document.getElementById("btn-add-segment").addEventListener("click", addSegment);
+    document.getElementById("btn-export").addEventListener("click", exportSettings);
+
+    // Initial render
+    renderTimeline();
+
+    // Start
+    initGame();
   </script>
 </body>
 </html>
