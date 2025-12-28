@@ -131,14 +131,18 @@
       });
 
       // Path relative to spine-viewer.html location
-      this.load.spine("hero", "assets/spine/hero.json", "assets/spine/hero.atlas");
+      // Note: folder has space in name which may cause issues
+      this.load.spine("hand", "assets/spine hand/Hand.json", "assets/spine hand/Hand.atlas");
     }
 
     function create() {
       try {
-        // Create spine object
-        spineObject = this.add.spine(300, 650, "hero", "idle", true);
-        spineObject.setScale(1.5);
+        // Create Hand spine - centered with dynamic positioning
+        const centerX = this.scale.width / 2;
+        const centerY = this.scale.height / 2;
+
+        spineObject = this.add.spine(centerX, centerY + 100, "hand", "hand", true);
+        spineObject.setScale(0.8);
 
         // Get animations
         const anims = spineObject.skeleton.data.animations;
@@ -173,7 +177,8 @@
         console.log("Slots:", spineObject.skeleton.slots.map(s => s.data.name));
 
         // Update current anim display
-        document.getElementById("current-anim").textContent = "Animation: idle";
+        currentAnim = "hand";
+        document.getElementById("current-anim").textContent = "Animation: hand";
 
         // Setup controls
         setupControls();

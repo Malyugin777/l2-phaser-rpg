@@ -9,7 +9,10 @@
       "Bash(dir \"C:\\Users\\maliu\\OneDrive\\Desktop\\Projects\\L2 Phaser RPG\\src\\assets\\ui\\icon_\"*.png)",
       "Bash(git rm:*)",
       "Bash(git revert:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(file:*)",
+      "Bash(npx serve . -p 3000)",
+      "Bash(npx serve .)"
     ]
   }
 }
