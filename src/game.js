@@ -368,8 +368,8 @@ function setupCleanMode(scene) {
   // Hide all panels initially
   if (typeof hideAllPanels === "function") hideAllPanels();
 
-  // Apply final hardcoded positions
-  applyFinalPositions(scene);
+  // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
+  setTimeout(() => applyFinalPositions(scene), 200);
 
   console.log("[CLEAN MODE] Initialized");
 }
