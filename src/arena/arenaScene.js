@@ -1410,10 +1410,6 @@ function startArenaFight(scene) {
 
   arenaCombat.init(playerStats, enemyStats);
 
-  // Set animation speed based on attack speed
-  setAnimationSpeed(arenaPlayerSprite, playerStats.attackSpeed);
-  setAnimationSpeed(arenaEnemySprite, enemyStats.attackSpeed);
-
   // Create arena UI for the fight
   createArenaUI(scene);
 
