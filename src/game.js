@@ -5,7 +5,8 @@ const UI_MODE = "CLEAN";  // CLEAN = new UI only, LEGACY = old UI, CITY_CLEAN = 
 window.UI_MODE = UI_MODE;
 
 // Hero offset (adaptive positioning)
-const HERO_OFFSET = { x: -54, y: -196, scale: 1.23 };
+// Hero final position (hardcoded from tune mode)
+const HERO_OFFSET = { x: -62, y: -235, scale: 0.37 };  // 328, 1453 on 780x1688
 
 // ============================================================
 //  SCENE OBJECTS
@@ -278,7 +279,7 @@ function setupHero(scene) {
       console.log("[HERO] Spine created:", spineHero);
       spineHero.setScale(HERO_OFFSET.scale);
       spineHero.setDepth(100);
-      spineHero.setVisible(true);
+      spineHero.setVisible(false);  // Hidden until final positioning
       spineHero.setScrollFactor(0);
       window.spineHero = spineHero;
       hero = spineHero;
@@ -391,6 +392,7 @@ function applyFinalPositions(scene) {
     window.spineHero.x = 328;
     window.spineHero.y = 1453;
     window.spineHero.setScale(0.37);
+    window.spineHero.setVisible(true);  // Now show hero
   }
 }
 
