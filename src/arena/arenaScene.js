@@ -323,16 +323,24 @@ function setupArenaTuneKeys(scene) {
     applyArenaTuneSettings(scene);
   });
 
-  // Space = start/restart run (DISABLED - use F to start fight if needed)
-  // scene.input.keyboard.on('keydown-SPACE', () => { ... });
-
-  // F = start fight (optional, only if you want to test)
+  // F = pause/resume fight toggle
+  let fightPaused = false;
   scene.input.keyboard.on('keydown-F', () => {
     if (arenaState === 'TUNING') {
+      // Start fight
+      fightPaused = false;
       startRunIn(scene);
-    } else if (arenaState === 'FIGHT' || arenaState === 'ENGAGE') {
-      resetFighterPositions(scene);
-      scene.time.delayedCall(100, () => startRunIn(scene));
+      console.log("[ARENA] Fight started");
+    } else if (fightPaused) {
+      // Resume
+      fightPaused = false;
+      scene.scene.resume();
+      console.log("[ARENA] Resumed");
+    } else {
+      // Pause
+      fightPaused = true;
+      scene.scene.pause();
+      console.log("[ARENA] Paused");
     }
   });
 
