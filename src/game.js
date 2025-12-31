@@ -390,7 +390,7 @@ function applyFinalPositions(scene) {
   if (window.spineHero) {
     window.spineHero.x = 328;
     window.spineHero.y = 1453;
-    window.spineHero.setScale(0.41);
+    window.spineHero.setScale(0.37);
   }
 }
 

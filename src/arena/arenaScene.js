@@ -323,26 +323,7 @@ function setupArenaTuneKeys(scene) {
     applyArenaTuneSettings(scene);
   });
 
-  // F = pause/resume fight toggle
-  let fightPaused = false;
-  scene.input.keyboard.on('keydown-F', () => {
-    if (arenaState === 'TUNING') {
-      // Start fight
-      fightPaused = false;
-      startRunIn(scene);
-      console.log("[ARENA] Fight started");
-    } else if (fightPaused) {
-      // Resume
-      fightPaused = false;
-      scene.scene.resume();
-      console.log("[ARENA] Resumed");
-    } else {
-      // Pause
-      fightPaused = true;
-      scene.scene.pause();
-      console.log("[ARENA] Paused");
-    }
-  });
+  // F key is now handled globally in startArena()
 
   // R = reset to start positions (TUNING state, no run)
   scene.input.keyboard.on('keydown-R', () => {
@@ -583,10 +564,30 @@ function startArena(scene, enemyData) {
       setupArenaWorld(scene);
       spawnFighters(scene, enemyData);
 
-      // === TUNE MODE: Don't auto-run, wait for SPACE ===
+      // === F KEY: Pause/Resume (works in all modes) ===
+      let fightPaused = false;
+      scene.input.keyboard.on('keydown-F', () => {
+        if (arenaState === 'TUNING') {
+          fightPaused = false;
+          startRunIn(scene);
+          console.log("[ARENA] Fight started (F)");
+        } else if (fightPaused) {
+          fightPaused = false;
+          scene.tweens.resumeAll();
+          scene.time.paused = false;
+          console.log("[ARENA] Resumed (F)");
+        } else {
+          fightPaused = true;
+          scene.tweens.pauseAll();
+          scene.time.paused = true;
+          console.log("[ARENA] Paused (F)");
+        }
+      });
+
+      // === TUNE MODE: Don't auto-run, wait for F ===
       if (ARENA_TUNE_ENABLED) {
         arenaState = "TUNING";
-        console.log("[ARENA] Tune mode - press SPACE to start run");
+        console.log("[ARENA] Tune mode - press F to start run");
         if (arenaPlayerSprite.play) playSpineAnim(arenaPlayerSprite, 'idle', true);
         if (arenaEnemySprite.play) playSpineAnim(arenaEnemySprite, 'idle', true);
       } else {
