@@ -1428,8 +1428,8 @@ function playAttackAnimation(sprite, isPlayer, scene) {
   if (isPlayer) playerAttacking = true;
   else enemyAttacking = true;
 
-  // attack_sword = two-handed attack animation
-  playSpineAnim(sprite, "attack_sword", false);
+  // attack = fist attack animation
+  playSpineAnim(sprite, "attack", false);
 
   // Return to idle after attack animation
   scene.time.delayedCall(500, () => {
@@ -1459,8 +1459,9 @@ function playHitAnimation(scene, sprite, isPlayer) {
 function setAnimationSpeed(sprite, attackSpeed) {
   if (!sprite || !sprite.state) return;
 
-  // Base 500 = 1.0x speed (300 = 0.6x, 600 = 1.2x)
-  const timeScale = Math.max(0.4, Math.min(1.5, attackSpeed / 500));
+  // Play at normal speed (1.0x) for natural look
+  // Only slight variation based on attackSpeed
+  const timeScale = Math.max(0.8, Math.min(1.2, 0.9 + (attackSpeed / 1000)));
   sprite.state.timeScale = timeScale;
 
   console.log("[ARENA] Animation speed:", timeScale.toFixed(2) + "x for attackSpeed:", attackSpeed);
