@@ -49,7 +49,7 @@ const ARENA_CONFIG = {
 
   // FINAL HARDCODED VALUES
   groundY: 0.88,             // 88%
-  fighterScale: 1.38,
+  fighterScale: 0.38,
   playerSpawnX: 0.26,        // 26%
   enemySpawnX: 0.73,         // 73%
   bgOffsetX: 0,
@@ -1428,7 +1428,8 @@ function playAttackAnimation(sprite, isPlayer, scene) {
   if (isPlayer) playerAttacking = true;
   else enemyAttacking = true;
 
-  playSpineAnim(sprite, "attack", false);
+  // attack_sword = two-handed attack animation
+  playSpineAnim(sprite, "attack_sword", false);
 
   // Return to idle after attack animation
   scene.time.delayedCall(500, () => {
