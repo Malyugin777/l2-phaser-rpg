@@ -1519,17 +1519,43 @@ function playAttackAnimation(sprite, isPlayer, scene) {
 //  HIT VISUAL EFFECTS
 // ============================================================
 
-// Flash effect — white overlay covering the character
+// Flash effect — try Spine skeleton color, fallback to overlay
 function flashSpineSprite(scene, sprite) {
   if (!sprite) return;
 
-  // Create white flash overlay at sprite position (full body coverage)
+  // Try Spine skeleton color (makes entire character brighter)
+  if (sprite.skeleton && sprite.skeleton.color) {
+    const originalColor = {
+      r: sprite.skeleton.color.r,
+      g: sprite.skeleton.color.g,
+      b: sprite.skeleton.color.b
+    };
+
+    // Set to bright white (additive-like effect)
+    sprite.skeleton.color.r = 10;
+    sprite.skeleton.color.g = 10;
+    sprite.skeleton.color.b = 10;
+
+    // Restore after flash
+    scene.time.delayedCall(80, () => {
+      if (sprite && sprite.skeleton && sprite.skeleton.color) {
+        sprite.skeleton.color.r = originalColor.r;
+        sprite.skeleton.color.g = originalColor.g;
+        sprite.skeleton.color.b = originalColor.b;
+      }
+    });
+
+    console.log("[FLASH] Using Spine skeleton color");
+    return;
+  }
+
+  // Fallback: white rectangle overlay
+  console.log("[FLASH] Fallback to rectangle overlay");
   const flashWidth = 200;
   const flashHeight = 400;
   const flash = scene.add.rectangle(sprite.x, sprite.y - flashHeight / 2, flashWidth, flashHeight, 0xffffff, 0.6)
     .setDepth(sprite.depth + 1);
 
-  // Fade out and destroy
   scene.tweens.add({
     targets: flash,
     alpha: 0,
