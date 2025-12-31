@@ -1519,18 +1519,23 @@ function playAttackAnimation(sprite, isPlayer, scene) {
 //  HIT VISUAL EFFECTS
 // ============================================================
 
-// Flash effect — tint entire Spine sprite white
+// Flash effect — white overlay covering the character
 function flashSpineSprite(scene, sprite) {
   if (!sprite) return;
 
-  // Apply white tint to entire character
-  sprite.setTint(0xffffff);
+  // Create white flash overlay at sprite position (full body coverage)
+  const flashWidth = 200;
+  const flashHeight = 400;
+  const flash = scene.add.rectangle(sprite.x, sprite.y - flashHeight / 2, flashWidth, flashHeight, 0xffffff, 0.6)
+    .setDepth(sprite.depth + 1);
 
-  // Clear tint after short duration
-  scene.time.delayedCall(80, () => {
-    if (sprite) {
-      sprite.clearTint();
-    }
+  // Fade out and destroy
+  scene.tweens.add({
+    targets: flash,
+    alpha: 0,
+    duration: 100,
+    ease: "Power2",
+    onComplete: () => flash.destroy()
   });
 }
 
