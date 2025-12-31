@@ -10,6 +10,7 @@
 
 let arenaActive = false;
 let arenaState = "NONE"; // NONE, INTRO, TUNING, INTRO_PLAYER, INTRO_ENEMY, READY, RUN_IN, ENGAGE, COUNTDOWN, FIGHT, RESULT
+let arenaPaused = false;  // Global pause flag for F key
 
 let arenaBgLeft = null;
 let arenaBgRight = null;
@@ -565,22 +566,36 @@ function startArena(scene, enemyData) {
       spawnFighters(scene, enemyData);
 
       // === F KEY: Pause/Resume (works in all modes) ===
-      let fightPaused = false;
       scene.input.keyboard.on('keydown-F', () => {
         if (arenaState === 'TUNING') {
-          fightPaused = false;
+          arenaPaused = false;
           startRunIn(scene);
           console.log("[ARENA] Fight started (F)");
-        } else if (fightPaused) {
-          fightPaused = false;
+        } else if (arenaPaused) {
+          arenaPaused = false;
           scene.tweens.resumeAll();
           scene.time.paused = false;
           console.log("[ARENA] Resumed (F)");
         } else {
-          fightPaused = true;
+          arenaPaused = true;
           scene.tweens.pauseAll();
           scene.time.paused = true;
-          console.log("[ARENA] Paused (F)");
+          console.log("[ARENA] Paused (F) - use A/D to pan camera");
+        }
+      });
+
+      // === A/D: Pan camera (works when paused) ===
+      const CAM_PAN_STEP = 100;
+      scene.input.keyboard.on('keydown-A', () => {
+        if (arenaPaused || arenaState === 'TUNING') {
+          scene.cameras.main.scrollX -= CAM_PAN_STEP;
+          console.log("[ARENA] Camera X:", scene.cameras.main.scrollX);
+        }
+      });
+      scene.input.keyboard.on('keydown-D', () => {
+        if (arenaPaused || arenaState === 'TUNING') {
+          scene.cameras.main.scrollX += CAM_PAN_STEP;
+          console.log("[ARENA] Camera X:", scene.cameras.main.scrollX);
         }
       });
 
@@ -1157,6 +1172,7 @@ function startRunIn(scene) {
 
 function updateArena(scene) {
   if (!arenaActive) return;
+  if (arenaPaused) return;  // Skip all camera updates when paused
 
   const cam = scene.cameras.main;
   const lerpSpeed = ARENA_CONFIG.camera?.lerpSpeed || 0.06;
