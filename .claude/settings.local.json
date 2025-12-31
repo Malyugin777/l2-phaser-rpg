@@ -14,7 +14,13 @@
       "Bash(npx serve . -p 3000)",
       "Bash(npx serve .)",
       "Bash(git push:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(npx vercel --prod --yes)",
+      "Bash(npx vercel:*)",
+      "WebFetch(domain:l2-phaser-rpg.vercel.app)",
+      "Bash(npx serve src)",
+      "Bash(python3:*)",
+      "Bash(powershell -Command \"Get-Content ''C:\\Users\\maliu\\OneDrive\\Desktop\\Projects\\L2 Phaser RPG\\src\\assets\\Spine main\\Boy_1.json'' | Select-String ''\"\"[a-z-]+\"\":\\s*\\{'' | ForEach-Object { $_Line }\")"
     ]
   }
 }

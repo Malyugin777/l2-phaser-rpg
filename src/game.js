@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-20-ARENA-PHASE1");
+console.log("GAMEJS BUILD: 2025-12-31-BOY1");
 
 const UI_MODE = "CLEAN";  // CLEAN = new UI only, LEGACY = old UI, CITY_CLEAN = minimal
 window.UI_MODE = UI_MODE;
@@ -150,8 +150,8 @@ function preload() {
   this.load.image('icon_helmet', 'assets/ui/icon_helmet.png');
   this.load.image('icon_map', 'assets/ui/icon_map.png');
 
-  // Spine hero
-  this.load.spine('hero', 'assets/spine/hero.json', 'assets/spine/hero.atlas');
+  // Spine hero (Boy_1)
+  this.load.spine('hero', 'assets/spine-main/Boy_1.json', 'assets/spine-main/Boy_1.atlas');
 
   // === LAZY LOADED (on demand): ===
   // - arena_village (8 MB) - loads when Fight clicked
@@ -266,9 +266,13 @@ function setupHero(scene) {
   heroStartY = heroY;
 
   // Spine hero
+  console.log("[HERO] scene.spine exists:", !!scene.spine);
+  console.log("[HERO] scene.add.spine exists:", !!scene.add?.spine);
   if (scene.spine) {
     try {
+      console.log("[HERO] Creating spine at", heroX, heroY);
       spineHero = scene.add.spine(heroX, heroY, 'hero', 'idle', true);
+      console.log("[HERO] Spine created:", spineHero);
       spineHero.setScale(HERO_OFFSET.scale);
       spineHero.setDepth(100);
       spineHero.setVisible(true);
@@ -276,10 +280,12 @@ function setupHero(scene) {
       window.spineHero = spineHero;
       hero = spineHero;
     } catch (e) {
+      console.error("[HERO] Spine error:", e);
       hero = createHeroSprite(scene, heroX, heroY, 0x3366cc);
       hero.setDepth(50);
     }
   } else {
+    console.warn("[HERO] No spine plugin, using fallback");
     hero = createHeroSprite(scene, heroX, heroY, 0x3366cc);
     hero.setDepth(50);
   }

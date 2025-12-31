@@ -24,6 +24,25 @@ let enemyAttacking = false;
 let currentMatchData = null;
 let matchStartTime = 0;
 
+// Animation mapping for Boy_1 (missing: run, fall, crouch)
+const ANIM_MAP = {
+  'run': 'idle',      // Boy_1 doesn't have run
+  'fall': 'attack',   // Use attack as fall substitute
+  'crouch': 'idle',   // Use idle as crouch (staying down)
+  'walk': 'idle'      // Walk fallback
+};
+
+function playSpineAnim(sprite, animName, loop) {
+  if (!sprite || !sprite.play) return;
+  const mapped = ANIM_MAP[animName] || animName;
+  try {
+    sprite.play(mapped, loop);
+  } catch(e) {
+    console.warn("[ARENA] Animation error:", animName, "→", mapped, e);
+    sprite.play('idle', true);
+  }
+}
+
 const ARENA_CONFIG = {
   worldMultiplier: 5.25,
 
@@ -502,12 +521,12 @@ function resetFighterPositions(scene) {
   if (arenaPlayerSprite) {
     arenaPlayerSprite.setPosition(playerStartX, GROUND_Y);
     arenaPlayerSprite.setScale(s.fighterScale);
-    if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
+    if (arenaPlayerSprite.play) playSpineAnim(arenaPlayerSprite, 'idle', true);
   }
   if (arenaEnemySprite) {
     arenaEnemySprite.setPosition(enemyStartX, GROUND_Y);
     arenaEnemySprite.setScale(-s.fighterScale, s.fighterScale);
-    if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+    if (arenaEnemySprite.play) playSpineAnim(arenaEnemySprite, 'idle', true);
   }
 
   // Reset camera (zoom 1.0, center on player)
@@ -559,8 +578,8 @@ function startArena(scene, enemyData) {
       if (ARENA_TUNE_ENABLED) {
         arenaState = "TUNING";
         console.log("[ARENA] Tune mode - press SPACE to start run");
-        if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
-        if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+        if (arenaPlayerSprite.play) playSpineAnim(arenaPlayerSprite, 'idle', true);
+        if (arenaEnemySprite.play) playSpineAnim(arenaEnemySprite, 'idle', true);
       } else {
         startCinematicIntro(scene);
       }
@@ -979,8 +998,8 @@ function startCinematicIntro(scene) {
   console.log("[ARENA] Starting cinematic intro (zoom:", startZoom, "→", ARENA_CONFIG.camera.endZoom, ")");
 
   // Fighters in idle during intro
-  if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
-  if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+  if (arenaPlayerSprite.play) playSpineAnim(arenaPlayerSprite, 'idle', true);
+  if (arenaEnemySprite.play) playSpineAnim(arenaEnemySprite, 'idle', true);
 
   // Camera: start zoom 1.2 (close up on player), no Y scrolling
   scene.cameras.main.setZoom(startZoom);
@@ -1084,8 +1103,8 @@ function startRunIn(scene) {
   console.log("[ARENA] RUN_IN targets - Player:", targetPlayerX.toFixed(0), "Enemy:", targetEnemyX.toFixed(0), "Final distance:", targetDistance);
 
   // Start run animations
-  if (arenaPlayerSprite.play) arenaPlayerSprite.play('run', true);
-  if (arenaEnemySprite.play) arenaEnemySprite.play('run', true);
+  if (arenaPlayerSprite.play) playSpineAnim(arenaPlayerSprite, 'run', true);
+  if (arenaEnemySprite.play) playSpineAnim(arenaEnemySprite, 'run', true);
 
   // Move fighters with smooth easing
   scene.tweens.add({
@@ -1245,8 +1264,8 @@ function onEngageDistance(scene) {
   scene.tweens.killTweensOf(arenaEnemySprite);
 
   // Switch to idle
-  if (arenaPlayerSprite.play) arenaPlayerSprite.play('idle', true);
-  if (arenaEnemySprite.play) arenaEnemySprite.play('idle', true);
+  if (arenaPlayerSprite.play) playSpineAnim(arenaPlayerSprite, 'idle', true);
+  if (arenaEnemySprite.play) playSpineAnim(arenaEnemySprite, 'idle', true);
 
   // Lock camera centered on fighters (no zoom change)
   const midX = (arenaPlayerSprite.x + arenaEnemySprite.x) / 2;
@@ -1363,12 +1382,12 @@ function playDeathAnimation(scene, sprite) {
   if (!sprite || !sprite.play) return;
 
   // Fall first (hit reaction)
-  sprite.play("fall", false);
+  playSpineAnim(sprite, "fall", false);
 
   // Then crouch (stay down)
   scene.time.delayedCall(400, () => {
     if (sprite && sprite.play) {
-      sprite.play("crouch", true);  // Loop crouch = stay down
+      playSpineAnim(sprite, "crouch", true);  // Loop crouch = stay down
     }
   });
 }
@@ -1383,7 +1402,7 @@ function playAttackAnimation(sprite, isPlayer, scene) {
   if (isPlayer) playerAttacking = true;
   else enemyAttacking = true;
 
-  sprite.play("attack", false);
+  playSpineAnim(sprite, "attack", false);
 
   // Return to idle after attack animation
   scene.time.delayedCall(500, () => {
@@ -1391,7 +1410,7 @@ function playAttackAnimation(sprite, isPlayer, scene) {
     else enemyAttacking = false;
 
     if (sprite && sprite.play && arenaState === "FIGHT") {
-      sprite.play("idle", true);
+      playSpineAnim(sprite, "idle", true);
     }
   });
 }
@@ -1603,16 +1622,16 @@ function handleArenaEnd(scene, result) {
   // Play death/victory animations
   if (isWin) {
     // Player wins - victory idle, enemy dies (fall → crouch)
-    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("idle", true);
+    if (arenaPlayerSprite?.play) playSpineAnim(arenaPlayerSprite, "idle", true);
     playDeathAnimation(scene, arenaEnemySprite);
   } else if (isDraw) {
     // Draw - both idle
-    if (arenaPlayerSprite?.play) arenaPlayerSprite.play("idle", true);
-    if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
+    if (arenaPlayerSprite?.play) playSpineAnim(arenaPlayerSprite, "idle", true);
+    if (arenaEnemySprite?.play) playSpineAnim(arenaEnemySprite, "idle", true);
   } else {
     // Player loses - player dies (fall → crouch), enemy victory
     playDeathAnimation(scene, arenaPlayerSprite);
-    if (arenaEnemySprite?.play) arenaEnemySprite.play("idle", true);
+    if (arenaEnemySprite?.play) playSpineAnim(arenaEnemySprite, "idle", true);
   }
 
   // Use enemy rating from currentMatchData (set at fight start)
