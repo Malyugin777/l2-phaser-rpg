@@ -1,5 +1,5 @@
 "use strict";
-console.log("GAMEJS BUILD: 2025-12-31-BOY1");
+console.log("GAMEJS BUILD: 2025-12-31-BOY2");
 
 const UI_MODE = "CLEAN";  // CLEAN = new UI only, LEGACY = old UI, CITY_CLEAN = minimal
 window.UI_MODE = UI_MODE;
@@ -267,8 +267,11 @@ function setupHero(scene) {
 
   // Spine hero
   console.log("[HERO] scene.spine exists:", !!scene.spine);
-  console.log("[HERO] scene.add.spine exists:", !!scene.add?.spine);
-  if (scene.spine) {
+  console.log("[HERO] scene.add?.spine exists:", !!scene.add?.spine);
+  console.log("[HERO] cache has 'hero':", scene.cache?.custom?.spine?.has('hero'));
+
+  let spineCreated = false;
+  if (scene.add?.spine) {
     try {
       console.log("[HERO] Creating spine at", heroX, heroY);
       spineHero = scene.add.spine(heroX, heroY, 'hero', 'idle', true);
@@ -279,15 +282,17 @@ function setupHero(scene) {
       spineHero.setScrollFactor(0);
       window.spineHero = spineHero;
       hero = spineHero;
+      spineCreated = true;
     } catch (e) {
-      console.error("[HERO] Spine error:", e);
-      hero = createHeroSprite(scene, heroX, heroY, 0x3366cc);
-      hero.setDepth(50);
+      console.error("[HERO] Spine error:", e.message, e);
     }
-  } else {
-    console.warn("[HERO] No spine plugin, using fallback");
+  }
+
+  if (!spineCreated) {
+    console.warn("[HERO] Using fallback sprite");
     hero = createHeroSprite(scene, heroX, heroY, 0x3366cc);
     hero.setDepth(50);
+    window.spineHero = null;
   }
 
   cityHero = window.spineHero || hero;
