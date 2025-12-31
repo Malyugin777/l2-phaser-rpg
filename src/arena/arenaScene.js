@@ -1519,20 +1519,18 @@ function playAttackAnimation(sprite, isPlayer, scene) {
 //  HIT VISUAL EFFECTS
 // ============================================================
 
-// Flash effect — white overlay on target only
-function flashSprite(scene, x, y) {
-  // Create white flash at hit position
-  const flash = scene.add.rectangle(x, y, 120, 180, 0xffffff, 0.7)
-    .setDepth(500);
+// Flash effect — tint entire Spine sprite white
+function flashSpineSprite(scene, sprite) {
+  if (!sprite) return;
 
-  scene.tweens.add({
-    targets: flash,
-    alpha: 0,
-    scaleX: 1.3,
-    scaleY: 1.3,
-    duration: 120,
-    ease: "Power2",
-    onComplete: () => flash.destroy()
+  // Apply white tint to entire character
+  sprite.setTint(0xffffff);
+
+  // Clear tint after short duration
+  scene.time.delayedCall(80, () => {
+    if (sprite) {
+      sprite.clearTint();
+    }
   });
 }
 
@@ -1575,7 +1573,7 @@ function spawnSlashEffect(scene, x, y, facingRight, isCrit) {
   });
 }
 
-// Combined hit effects - only on TARGET, at chest level
+// Combined hit effects - only on ENEMY (when player attacks)
 function playHitEffects(scene, target, isCrit, isPlayer) {
   if (!target) {
     console.warn("[ARENA] No target for hit effects!");
@@ -1583,19 +1581,25 @@ function playHitEffects(scene, target, isCrit, isPlayer) {
   }
 
   const x = target.x;
-  const y = target.y - 200;  // Chest level (was -150, now -200)
+  const y = target.y - 200;  // Chest level
 
-  console.log("[EFFECTS] Hit on", isPlayer ? "PLAYER" : "ENEMY", "at", x.toFixed(0), y.toFixed(0), "crit:", isCrit);
+  // Only show effects when ENEMY is hit (player attacks)
+  // Skip effects when player is hit (enemy attacks)
+  if (isPlayer) {
+    console.log("[EFFECTS] Player hit - no flash effects");
+    return;
+  }
 
-  // Flash - white rectangle on TARGET only
-  flashSprite(scene, x, y);
+  console.log("[EFFECTS] Enemy hit at", x.toFixed(0), y.toFixed(0), "crit:", isCrit);
+
+  // Flash - tint entire enemy sprite white
+  flashSpineSprite(scene, target);
 
   // Particles - at chest level
   spawnHitParticles(scene, x, y, isCrit);
 
   // Slash arc - at chest level
-  const facingRight = !isPlayer;  // If player attacks, slash goes right
-  spawnSlashEffect(scene, x, y, facingRight, isCrit);
+  spawnSlashEffect(scene, x, y, true, isCrit);  // Always facing right (towards enemy)
 
   // Camera shake on crit only
   if (isCrit) {
