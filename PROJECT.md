@@ -6,7 +6,7 @@
 **Платформа:** Telegram Mini App (TMA)
 **Движок:** Phaser 3.80.1 + SpinePlugin 4.1
 **Язык:** Vanilla JavaScript (ES6, strict mode, модульная архитектура)
-**Версия:** 1.8.0
+**Версия:** 1.9.0
 **GitHub:** https://github.com/Malyugin777/l2-phaser-rpg
 **GitHub Pages:** https://malyugin777.github.io/l2-phaser-rpg/src/
 **Telegram:** @Poketlineage_bot
@@ -207,6 +207,33 @@ function create() {
 | `setupFullUIMode(scene)` | Полный UI режим |
 | `setupEventHandlers(scene)` | Обработчики событий |
 | `setupCharacterCreation(scene)` | Создание персонажа |
+
+---
+
+## 🎭 Spine: Boy_1 (v1.9.0)
+
+### Файлы
+
+```
+src/assets/spine-main/
+├── Boy_1.json      # Skeleton data
+├── Boy_1.atlas     # Texture atlas
+└── Boy_1.png       # Texture
+```
+
+### Анимации Boy_1
+
+| Анимация | Loop | Описание |
+|----------|------|----------|
+| `idle` | Yes | Стоит |
+| `attack` | No | Удар кулаком (одной рукой) |
+| `attack_sword` | No | Удар мечом (двуручный) |
+
+### Загрузка (game.js)
+
+```javascript
+this.load.spine('hero', 'assets/spine-main/Boy_1.json', 'assets/spine-main/Boy_1.atlas');
+```
 
 ---
 
@@ -457,6 +484,17 @@ function setupCityCleanMode(scene) {
 | | | - Arena Tune Mode (?arena_tune=1) |
 | | | - State machine: INTRO → RUN_IN → FIGHT |
 | | | - Smooth lerp camera + clamp to BG |
+| 1.9.0 | 31.12.2024 | **Boy_1 Spine + Arena Combat** |
+| | | - Replaced hero spine with Boy_1 (spine-main/) |
+| | | - Boy_1 animations: idle, attack, attack_sword |
+| | | - Hero in city: x:328 y:1453 scale:0.37 |
+| | | - Hero hidden until positioned (no flash) |
+| | | - Arena fighters: scale 0.38 |
+| | | - Arena animation speed: 0.75x (natural) |
+| | | - Arena attack speed: 800ms (animation completes) |
+| | | - F key: pause/resume arena (works everywhere) |
+| | | - A/D keys: pan camera when paused |
+| | | - Enemy mirrored (facing player) |
 
 ---
 
@@ -502,17 +540,21 @@ PvP Арена — отдельная боевая сцена с кинемат�
 
 ```
 ═══════════════════════════════════════
-ARENA PHASE 1 - ФИНАЛЬНЫЕ ЗНАЧЕНИЯ
+ARENA v1.9.0 - ФИНАЛЬНЫЕ ЗНАЧЕНИЯ
 ═══════════════════════════════════════
 
 BG: x:0, y:5, scale:0.96
 Ground: 88% (1485px)
-Player: x:26%, scale:1.38
-Enemy: x:73%, scale:1.38
+Player: x:26%, scale:0.38 (Boy_1)
+Enemy: x:73%, scale:-0.38 (mirrored)
 
 Camera:
   startZoom: 1.2 (интро на игроке)
   endZoom: 0.86 (бой, без черных полос)
+
+Combat:
+  animationSpeed: 0.75x
+  attackSpeed: 800ms (default)
 
 World: 4095px (5.25 экранов)
 BG: 2 части по 2048×2048
@@ -526,9 +568,9 @@ BG: 2 части по 2048×2048
 const ARENA_CONFIG = {
   worldMultiplier: 5.25,
 
-  // Positions
+  // Positions (v1.9.0)
   groundY: 0.88,           // 88% от высоты экрана
-  fighterScale: 1.38,
+  fighterScale: 0.38,      // Boy_1 scale
   playerSpawnX: 0.26,      // 26% от ширины мира
   enemySpawnX: 0.73,       // 73% от ширины мира
   bgOffsetX: 0,
@@ -536,8 +578,8 @@ const ARENA_CONFIG = {
   bgScale: 0.96,
 
   // Combat
-  fightOffset: 150,        // Расстояние между бойцами
-  engageDistance: 300,     // Триггер для ENGAGE
+  fightOffset: 180,        // Расстояние между бойцами
+  engageDistance: 420,     // Триггер для ENGAGE
   runSpeed: 2500,          // Время пробежки (ms)
 
   // Camera
@@ -548,6 +590,10 @@ const ARENA_CONFIG = {
     zoomLerpSpeed: 0.02
   }
 };
+
+// Animation (v1.9.0)
+const BASE_ANIM_SPEED = 0.75;  // Natural fist animation
+const DEFAULT_ATTACK_SPEED = 800;  // ms between attacks
 ```
 
 ### Состояния арены (arenaState)
@@ -593,16 +639,20 @@ arenaBgRight = scene.add.image(bgX + 2048 * bgScale - 1, bgY, 'arena_village_rig
 ```
 URL: ?arena_tune=1
 
-Управление:
+Управление (tune mode):
 - 1-5: Выбор элемента (bg, ground, player, enemy, fight)
 - Drag: Перетаскивание бойцов
 - RMB: Панорама камеры
 - Q/E: Масштаб
 - A/D: Камера влево/вправо
 - Z/X: Zoom
-- SPACE: Запуск run-in
+- F: Запуск боя / пауза / продолжить
 - R: Сброс позиций
 - S: Сохранить
+
+Управление (обычный режим):
+- F: Пауза / продолжить бой
+- A/D: Камера влево/вправо (только на паузе)
 ```
 
 ### API
@@ -631,10 +681,12 @@ window.updateArena(scene)            // Вызывать в update()
 
 ## 📋 TODO
 
-- [ ] Arena Phase 2: боевая логика
-- [ ] Spine для врагов в арене
+- [x] ~~Arena Phase 2: боевая логика~~ (v1.9.0)
+- [x] ~~Spine для врагов в арене~~ (Boy_1)
+- [ ] Улучшить анимацию атаки (двуручная?)
 - [ ] Эффекты ударов (particles)
 - [ ] Звуки боя
+- [ ] Привязать attackSpeed к системе статов
 
 ---
 
