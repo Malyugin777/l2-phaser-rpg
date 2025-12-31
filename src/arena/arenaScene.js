@@ -113,7 +113,7 @@ function getArenaTuneSettings() {
     bgY: 5,
     bgScale: 0.96,
     groundY: 0.88,         // 88%
-    fighterScale: 1.38,
+    fighterScale: 0.38,    // Boy_1 scale
     fightOffset: 180,
     cameraStartX: 0,
     playerStartX: 0.26,    // 26%
