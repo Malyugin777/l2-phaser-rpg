@@ -323,13 +323,14 @@ function setupArenaTuneKeys(scene) {
     applyArenaTuneSettings(scene);
   });
 
-  // Space = start/restart run
-  scene.input.keyboard.on('keydown-SPACE', () => {
+  // Space = start/restart run (DISABLED - use F to start fight if needed)
+  // scene.input.keyboard.on('keydown-SPACE', () => { ... });
+
+  // F = start fight (optional, only if you want to test)
+  scene.input.keyboard.on('keydown-F', () => {
     if (arenaState === 'TUNING') {
-      // First run from tuning state
       startRunIn(scene);
     } else if (arenaState === 'FIGHT' || arenaState === 'ENGAGE') {
-      // Reset and run again
       resetFighterPositions(scene);
       scene.time.delayedCall(100, () => startRunIn(scene));
     }
