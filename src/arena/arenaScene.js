@@ -1131,9 +1131,10 @@ let runInTimeout = null;
 
 // Calculate fight distance based on weapon ranges
 function calculateFightDistance() {
-  const playerRange = arenaCombat.player?.attackRange || 60;
-  const enemyRange = arenaCombat.enemy?.attackRange || 60;
-  return playerRange + enemyRange + 40;  // +40 buffer for visuals
+  const playerRange = arenaCombat.player?.attackRange || 40;
+  const enemyRange = arenaCombat.enemy?.attackRange || 40;
+  return playerRange + enemyRange + 20;  // +20 buffer (tighter for fists)
+  // Result for fists: 40 + 40 + 20 = 100px
 }
 
 function startRunIn(scene) {
@@ -1578,7 +1579,7 @@ function spawnSlashEffect(scene, x, y, facingRight, isCrit) {
   });
 }
 
-// Combined hit effects - only on TARGET, higher position
+// Combined hit effects - only on TARGET, at chest level
 function playHitEffects(scene, target, isCrit, isPlayer) {
   if (!target) {
     console.warn("[ARENA] No target for hit effects!");
@@ -1586,7 +1587,7 @@ function playHitEffects(scene, target, isCrit, isPlayer) {
   }
 
   const x = target.x;
-  const y = target.y - 150;  // HIGHER - chest level
+  const y = target.y - 200;  // Chest level (was -150, now -200)
 
   console.log("[EFFECTS] Hit on", isPlayer ? "PLAYER" : "ENEMY", "at", x.toFixed(0), y.toFixed(0), "crit:", isCrit);
 
@@ -1612,7 +1613,7 @@ function spawnArenaDamageText(scene, target, damage, isCrit) {
   const color = isCrit ? "#ffdd00" : "#ffffff";
   const size = isCrit ? "72px" : "56px";  // MUCH BIGGER
 
-  const text = scene.add.text(target.x, target.y - 180, "-" + damage, {
+  const text = scene.add.text(target.x, target.y - 220, "-" + damage, {  // Higher than effects
     fontSize: size,
     color: color,
     fontFamily: "Arial Black, Arial",

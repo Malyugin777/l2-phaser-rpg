@@ -29,7 +29,7 @@ const arenaCombat = {
       physicalPower: playerStats.physicalPower,
       physicalDefense: playerStats.physicalDefense,
       attackSpeed: playerStats.attackSpeed,
-      attackRange: playerStats.attackRange || 60,  // Default 60px (fists)
+      attackRange: playerStats.attackRange || 40,  // Default 40px (fists)
       critChance: playerStats.critChance,
       critMultiplier: playerStats.critMultiplier
     };
@@ -40,7 +40,7 @@ const arenaCombat = {
       physicalPower: enemyStats.physicalPower,
       physicalDefense: enemyStats.physicalDefense,
       attackSpeed: enemyStats.attackSpeed,
-      attackRange: enemyStats.attackRange || 60,  // Default 60px (fists)
+      attackRange: enemyStats.attackRange || 40,  // Default 40px (fists)
       critChance: enemyStats.critChance,
       critMultiplier: enemyStats.critMultiplier
     };
@@ -181,7 +181,7 @@ const arenaCombat = {
 
   // Get combined attack range for fight distance
   getCombinedRange() {
-    return (this.player?.attackRange || 60) + (this.enemy?.attackRange || 60);
+    return (this.player?.attackRange || 40) + (this.enemy?.attackRange || 40);
   }
 };
 
