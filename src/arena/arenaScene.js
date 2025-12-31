@@ -1516,6 +1516,45 @@ function playAttackAnimation(sprite, isPlayer, scene) {
 }
 
 // ============================================================
+//  HIT STOP / FREEZE FRAME SYSTEM (L2 Style)
+// ============================================================
+
+// Hit stop config
+const HIT_STOP_CONFIG = {
+  normalDuration: 50,   // Normal hit freeze (ms)
+  critDuration: 100,    // Crit hit freeze (ms) - longer for impact
+  enabled: true
+};
+
+// Trigger hit stop - freezes both fighters briefly
+function triggerHitStop(scene, isCrit) {
+  if (!HIT_STOP_CONFIG.enabled) return;
+  if (!arenaPlayerSprite || !arenaEnemySprite) return;
+
+  const duration = isCrit ? HIT_STOP_CONFIG.critDuration : HIT_STOP_CONFIG.normalDuration;
+
+  // Freeze both sprites by setting timeScale to 0
+  if (arenaPlayerSprite.state) {
+    arenaPlayerSprite.state.timeScale = 0;
+  }
+  if (arenaEnemySprite.state) {
+    arenaEnemySprite.state.timeScale = 0;
+  }
+
+  console.log("[HIT STOP] Freeze for", duration, "ms, crit:", isCrit);
+
+  // Resume after duration
+  scene.time.delayedCall(duration, () => {
+    if (arenaPlayerSprite && arenaPlayerSprite.state) {
+      arenaPlayerSprite.state.timeScale = 1;
+    }
+    if (arenaEnemySprite && arenaEnemySprite.state) {
+      arenaEnemySprite.state.timeScale = 1;
+    }
+  });
+}
+
+// ============================================================
 //  HIT VISUAL EFFECTS
 // ============================================================
 
@@ -1622,6 +1661,9 @@ function playHitEffects(scene, target, isCrit, isPlayer) {
   }
 
   console.log("[EFFECTS] Enemy hit at", x.toFixed(0), y.toFixed(0), "crit:", isCrit);
+
+  // HIT STOP - freeze both fighters briefly (L2 style impact)
+  triggerHitStop(scene, isCrit);
 
   // Flash - tint entire enemy sprite white
   flashSpineSprite(scene, target);
