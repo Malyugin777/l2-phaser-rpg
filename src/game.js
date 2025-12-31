@@ -386,11 +386,11 @@ function applyFinalPositions(scene) {
     window.cityBg.setScale(0.412);
   }
 
-  // Hero position
+  // Hero position (from tune mode)
   if (window.spineHero) {
-    window.spineHero.x = w / 2 - 54;  // ~336 on 780w screen
-    window.spineHero.y = h - 196;     // ~1492 on 1688h screen
-    window.spineHero.setScale(1.23);
+    window.spineHero.x = 328;
+    window.spineHero.y = 1453;
+    window.spineHero.setScale(0.41);
   }
 }
 
