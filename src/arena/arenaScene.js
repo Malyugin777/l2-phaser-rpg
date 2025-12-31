@@ -1353,11 +1353,12 @@ function startArenaFight(scene) {
   matchStartTime = Date.now();
 
   // Initialize combat with player and enemy stats
+  // attackSpeed = time between attacks in ms (800ms = animation at 0.75x can finish)
   const playerStats = {
     maxHealth: stats.derived?.maxHealth || 100,
     physicalPower: stats.derived?.physicalPower || 10,
     physicalDefense: stats.derived?.physicalDefense || 40,
-    attackSpeed: stats.derived?.attackSpeed || 300,
+    attackSpeed: stats.derived?.attackSpeed || 800,
     critChance: stats.derived?.critChance || 0.05,
     critMultiplier: stats.derived?.critMultiplier || 2.0
   };
@@ -1459,12 +1460,12 @@ function playHitAnimation(scene, sprite, isPlayer) {
 function setAnimationSpeed(sprite, attackSpeed) {
   if (!sprite || !sprite.state) return;
 
-  // Play at normal speed (1.0x) for natural look
-  // Only slight variation based on attackSpeed
-  const timeScale = Math.max(0.8, Math.min(1.2, 0.9 + (attackSpeed / 1000)));
-  sprite.state.timeScale = timeScale;
+  // Base animation speed 0.75x for natural look
+  // Animation duration ~600ms at 0.75x, so attackSpeed should be >= 600ms for animation to complete
+  const BASE_ANIM_SPEED = 0.75;
+  sprite.state.timeScale = BASE_ANIM_SPEED;
 
-  console.log("[ARENA] Animation speed:", timeScale.toFixed(2) + "x for attackSpeed:", attackSpeed);
+  console.log("[ARENA] Animation speed:", BASE_ANIM_SPEED + "x, attackSpeed:", attackSpeed + "ms");
 }
 
 // ============================================================
