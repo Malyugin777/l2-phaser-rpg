@@ -44,6 +44,18 @@ function playSpineAnim(sprite, animName, loop) {
   }
 }
 
+// Animation durations (in ms) - at 1.0x speed
+const ANIM_DURATIONS = {
+  attack: 800,   // Base attack animation duration
+  idle: 1000,
+  fall: 400,
+  run: 600
+};
+
+// Animation state tracking
+let playerAnimState = { attacking: false, idleUntil: 0 };
+let enemyAnimState = { attacking: false, idleUntil: 0 };
+
 const ARENA_CONFIG = {
   worldMultiplier: 5.25,
 
@@ -1117,15 +1129,24 @@ function startReadyPhase(scene) {
 
 let runInTimeout = null;
 
+// Calculate fight distance based on weapon ranges
+function calculateFightDistance() {
+  const playerRange = arenaCombat.player?.attackRange || 60;
+  const enemyRange = arenaCombat.enemy?.attackRange || 60;
+  return playerRange + enemyRange + 40;  // +40 buffer for visuals
+}
+
 function startRunIn(scene) {
   arenaState = "RUN_IN";
   console.log("[ARENA] State: RUN_IN");
 
-  const targetPlayerX = WORLD_W / 2 - ARENA_CONFIG.fightOffset;
-  const targetEnemyX = WORLD_W / 2 + ARENA_CONFIG.fightOffset;
-  const targetDistance = ARENA_CONFIG.fightOffset * 2;
+  // Dynamic fight offset based on weapon ranges
+  const fightOffset = calculateFightDistance();
+  const targetPlayerX = WORLD_W / 2 - fightOffset;
+  const targetEnemyX = WORLD_W / 2 + fightOffset;
+  const targetDistance = fightOffset * 2;
 
-  console.log("[ARENA] RUN_IN targets - Player:", targetPlayerX.toFixed(0), "Enemy:", targetEnemyX.toFixed(0), "Final distance:", targetDistance);
+  console.log("[ARENA] RUN_IN targets - Player:", targetPlayerX.toFixed(0), "Enemy:", targetEnemyX.toFixed(0), "Final distance:", targetDistance, "fightOffset:", fightOffset);
 
   // Start run animations
   if (arenaPlayerSprite.play) playSpineAnim(arenaPlayerSprite, 'run', true);
@@ -1216,9 +1237,10 @@ function updateArena(scene) {
     const newX = currentX + (clampedScrollX - currentX) * lerpSpeed;
     cam.scrollX = newX;
 
-    // Check engage distance
+    // Check engage distance (use dynamic fight distance)
     const distance = Math.abs(arenaEnemySprite.x - arenaPlayerSprite.x);
-    const targetDistance = ARENA_CONFIG.fightOffset * 2;
+    const fightOffset = calculateFightDistance();
+    const targetDistance = fightOffset * 2;
 
     // Trigger engage when close enough OR when reaching target
     if (distance <= ARENA_CONFIG.engageDistance || distance <= targetDistance + 50) {
@@ -1420,52 +1442,80 @@ function playDeathAnimation(scene, sprite) {
 }
 
 // ============================================================
-//  ATTACK ANIMATION (with state tracking)
+//  L2-STYLE ANIMATION TIMING SYSTEM
 // ============================================================
 
-function playAttackAnimation(sprite, isPlayer, scene) {
+// Calculate animation parameters based on attackSpeed
+function getAttackAnimationParams(attackSpeed) {
+  // attackSpeed stat determines attack interval (from arenaCombat.getAttackInterval)
+  const attackInterval = Math.floor(300000 / Math.max(100, attackSpeed));
+  const baseAnimDuration = ANIM_DURATIONS.attack;
+
+  let timeScale = 1.0;
+  let idlePause = 0;
+
+  if (attackInterval > baseAnimDuration) {
+    // SLOW ATTACK: Normal speed animation + idle pause
+    // Example: interval=1500ms, anim=800ms -> idle=700ms
+    timeScale = 1.0;
+    idlePause = attackInterval - baseAnimDuration;
+  } else {
+    // FAST ATTACK: Speed up animation to fit interval
+    // Example: interval=400ms, anim=800ms -> timeScale=2.0
+    timeScale = baseAnimDuration / attackInterval;
+    idlePause = 0;
+  }
+
+  // Clamp timeScale to reasonable range
+  timeScale = Math.max(0.5, Math.min(3.0, timeScale));
+
+  return { timeScale, idlePause, attackInterval };
+}
+
+// Play attack with proper L2-style timing
+function playAttackWithTiming(scene, sprite, attackSpeed, isPlayer) {
   if (!sprite || !sprite.play) return;
 
-  if (isPlayer) playerAttacking = true;
-  else enemyAttacking = true;
+  const animState = isPlayer ? playerAnimState : enemyAnimState;
+  const params = getAttackAnimationParams(attackSpeed);
 
-  // attack = fist attack animation
+  console.log("[ANIM] Attack params:", params, "isPlayer:", isPlayer);
+
+  // Set animation speed
+  if (sprite.state) {
+    sprite.state.timeScale = params.timeScale;
+  }
+
+  // Play attack
+  animState.attacking = true;
   playSpineAnim(sprite, "attack", false);
 
-  // Return to idle after attack animation
-  scene.time.delayedCall(500, () => {
-    if (isPlayer) playerAttacking = false;
-    else enemyAttacking = false;
+  // After attack animation, go to idle (with pause if slow attack)
+  const animDuration = ANIM_DURATIONS.attack / params.timeScale;
+
+  scene.time.delayedCall(animDuration, () => {
+    animState.attacking = false;
 
     if (sprite && sprite.play && arenaState === "FIGHT") {
       playSpineAnim(sprite, "idle", true);
+
+      // Reset timeScale for idle
+      if (sprite.state) {
+        sprite.state.timeScale = 1.0;
+      }
     }
+
+    // Track when idle pause ends (for hit reaction check)
+    animState.idleUntil = Date.now() + params.idlePause;
   });
 }
 
-// ============================================================
-//  HIT ANIMATION (disabled - using visual effects only)
-// ============================================================
-
-function playHitAnimation(scene, sprite, isPlayer) {
-  // Disabled - we only use visual effects (flash, particles, slash)
-  // No fall animation = cleaner combat
-  return;
-}
-
-// ============================================================
-//  ANIMATION SPEED CONTROL
-// ============================================================
-
-function setAnimationSpeed(sprite, attackSpeed) {
-  if (!sprite || !sprite.state) return;
-
-  // Base animation speed 0.75x for natural look
-  // Animation duration ~600ms at 0.75x, so attackSpeed should be >= 600ms for animation to complete
-  const BASE_ANIM_SPEED = 0.75;
-  sprite.state.timeScale = BASE_ANIM_SPEED;
-
-  console.log("[ARENA] Animation speed:", BASE_ANIM_SPEED + "x, attackSpeed:", attackSpeed + "ms");
+// Legacy wrapper for compatibility
+function playAttackAnimation(sprite, isPlayer, scene) {
+  const attackSpeed = isPlayer ?
+    (arenaCombat.player?.attackSpeed || 800) :
+    (arenaCombat.enemy?.attackSpeed || 800);
+  playAttackWithTiming(scene, sprite, attackSpeed, isPlayer);
 }
 
 // ============================================================
