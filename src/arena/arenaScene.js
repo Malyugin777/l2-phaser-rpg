@@ -1243,9 +1243,9 @@ function updateArena(scene) {
     const fightOffset = calculateFightDistance();
     const targetDistance = fightOffset * 2;
 
-    // Trigger engage when close enough OR when reaching target
-    if (distance <= ARENA_CONFIG.engageDistance || distance <= targetDistance + 50) {
-      console.log("[ARENA] Engage triggered - distance:", distance.toFixed(0), "engageDistance:", ARENA_CONFIG.engageDistance, "target:", targetDistance);
+    // Trigger engage when reaching target distance (dynamic based on weapon range)
+    if (distance <= targetDistance + 30) {
+      console.log("[ARENA] Engage triggered - distance:", distance.toFixed(0), "target:", targetDistance);
       onEngageDistance(scene);
     }
   }
