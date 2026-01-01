@@ -151,6 +151,11 @@ function preload() {
   this.load.image('icon_helmet', 'assets/ui/icon_helmet.png');
   this.load.image('icon_map', 'assets/ui/icon_map.png');
 
+  // Player Header UI
+  this.load.image('ui_top_panel', 'assets/ui/top_ui.png');
+  this.load.image('ui_exp_ring_full', 'assets/ui/ui_exp_ring_full.png');
+  this.load.image('ui_avatar_placeholder', 'assets/ui/avatar_placeholder.png');
+
   // Spine hero (Boy_1)
   this.load.spine('hero', 'assets/spine-main/Boy_1.json', 'assets/spine-main/Boy_1.atlas');
 
@@ -318,7 +323,8 @@ function setupCityCleanMode(scene) {
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
-  ["talkingisland_main", "ui_bottom", "ui_btn_fight", "icon_store", "icon_anvil", "icon_helmet", "icon_map"]
+  ["talkingisland_main", "ui_bottom", "ui_btn_fight", "icon_store", "icon_anvil", "icon_helmet", "icon_map",
+   "ui_top_panel", "ui_exp_ring_full", "ui_avatar_placeholder"]
     .forEach(k => {
       const t = scene.textures.get(k);
       if (t?.setFilter) t.setFilter(LINEAR);
@@ -334,6 +340,18 @@ function setupCleanMode(scene) {
   if (typeof createBottomUI === "function") {
     const bottomUI = createBottomUI(scene);
     window.bottomUI = bottomUI;
+  }
+
+  // Player Header (Top UI)
+  if (typeof createPlayerHeader === "function") {
+    const playerHeader = createPlayerHeader(scene);
+    window.playerHeader = playerHeader;
+
+    // Initialize with example data
+    playerHeader.setLevel(1);
+    playerHeader.setNickname('Warrior');
+    playerHeader.setExp(0.75);  // 75% to next level
+    playerHeader.setResources(30, 150, 5000, 125000);  // Energy/Stars/Gems/Adena
   }
 
   // Create panels (needed for icon clicks to work)
@@ -354,7 +372,8 @@ function setupCleanMode(scene) {
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
-  ["talkingisland_main", "ui_bottom", "ui_btn_fight", "icon_store", "icon_anvil", "icon_helmet", "icon_map"]
+  ["talkingisland_main", "ui_bottom", "ui_btn_fight", "icon_store", "icon_anvil", "icon_helmet", "icon_map",
+   "ui_top_panel", "ui_exp_ring_full", "ui_avatar_placeholder"]
     .forEach(k => {
       const t = scene.textures.get(k);
       if (t?.setFilter) t.setFilter(LINEAR);
