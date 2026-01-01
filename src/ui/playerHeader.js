@@ -6,12 +6,12 @@
 // ============================================================
 
 const PLAYER_HEADER_CONFIG = {
-  // Container position (centered top)
+  // Container position (FIXED coordinates from tune mode)
   container: {
-    x: 0.5,        // 50% screen width (centered)
-    y: 0,          // Top of screen
-    offsetX: 0,    // Fine-tune X offset
-    offsetY: 150   // Fine-tune Y offset from top
+    x: 387,        // Fixed X position
+    y: 374,        // Fixed Y position
+    offsetX: 0,
+    offsetY: 0
   },
 
   // Panel settings
@@ -21,17 +21,17 @@ const PLAYER_HEADER_CONFIG = {
     offsetY: 0
   },
 
-  // Avatar settings (bottom layer)
+  // Avatar settings (bottom layer) - relative to container
   avatar: {
-    x: -220,       // Left side of panel (adjust manually)
-    y: 5,
+    x: -280,       // Left side of panel (relative to container center)
+    y: 0,
     scale: 0.8
   },
 
-  // EXP ring settings (middle layer)
+  // EXP ring settings (middle layer) - relative to container
   expRing: {
-    x: -220,       // Same as avatar (centered on avatar)
-    y: 5,
+    x: -280,       // Same as avatar (centered on avatar)
+    y: 0,
     scale: 1.5     // Bigger to be visible
   },
 
@@ -80,8 +80,8 @@ function createPlayerHeader(scene) {
 
   console.log("[PLAYER_HEADER] Creating UI, screen:", w, "x", h);
 
-  // === CONTAINER ===
-  const containerX = w * cfg.container.x + cfg.container.offsetX;
+  // === CONTAINER === (using fixed absolute coordinates)
+  const containerX = cfg.container.x + cfg.container.offsetX;
   const containerY = cfg.container.y + cfg.container.offsetY;
 
   const headerContainer = scene.add.container(containerX, containerY);
