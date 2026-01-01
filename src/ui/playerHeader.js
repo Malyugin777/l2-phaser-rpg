@@ -28,11 +28,11 @@ const PLAYER_HEADER_CONFIG = {
     scale: 0.82
   },
 
-  // EXP ring settings (middle layer) - SAME POSITION AS AVATAR FOR NOW
+  // EXP ring settings (middle layer) - FROM TUNE MODE
   expRing: {
-    x: 8,          // Same as avatar - adjust with key "-"
-    y: 229,        // Same as avatar - adjust with key "-"
-    scale: 3.0     // Big so you can see it
+    x: -317,       // From tune mode
+    y: 225,        // From tune mode
+    scale: 0.86    // From tune mode
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
@@ -109,18 +109,18 @@ function createPlayerHeader(scene) {
   // Create mask graphics for radial progress
   const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
   const expMask = new Phaser.Display.Masks.GeometryMask(scene, maskGraphics);
-  // TEMPORARILY DISABLE MASK FOR POSITIONING
-  // expRing.setMask(expMask);
+  expRing.setMask(expMask);
 
   headerContainer.add(expRing);
   console.log('[PLAYER_HEADER] Ring created at', cfg.expRing.x, cfg.expRing.y, 'scale', cfg.expRing.scale);
 
   // Store mask graphics for later updates
+  // Ring absolute position: container + ring offset
   const maskData = {
     graphics: maskGraphics,
-    centerX: containerX + cfg.expRing.x,
-    centerY: containerY + cfg.expRing.y,
-    radius: 80,  // Adjust based on ring size (will tune manually)
+    centerX: containerX + cfg.expRing.x,  // 387 + (-317) = 70
+    centerY: containerY + cfg.expRing.y,  // 374 + 225 = 599
+    radius: 50,  // Adjusted for scale 0.86
     currentPercent: 1.0  // Start at 100%
   };
 
