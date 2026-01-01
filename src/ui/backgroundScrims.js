@@ -14,30 +14,35 @@ function createBackgroundScrims(scene) {
 
   console.log('[SCRIMS] Creating background gradients for UI readability');
 
-  // --- TOP GRADIENT (Under top UI bar) ---
-  // Use Graphics directly instead of texture
-  const topScrim = scene.add.graphics();
-  topScrim.fillGradientStyle(
-    0x000000, 0x000000, 0x000000, 0x000000,  // All black corners
-    1, 1, 0, 0  // Top fully opaque (100%), bottom transparent (0%)
-  );
-  topScrim.fillRect(0, 0, width, 300);  // Full width, 300px height
-  topScrim.setDepth(150);  // Above game (100), BELOW UI panels (200)
-  topScrim.setScrollFactor(0);
+  // --- TOP GRADIENT (Under resources) ---
+  // Black on top, transparent on bottom. Height 150px.
+  const topGradient = scene.make.graphics()
+    .fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.8, 0.8, 0, 0)
+    .fillRect(0, 0, width, 150);
 
-  console.log('[SCRIMS] Top gradient created: depth 150, height 300px, alpha 100%→0%');
+  // Convert to texture to fix on screen
+  topGradient.generateTexture('top_scrim', width, 150);
+  const topScrim = scene.add.image(0, 0, 'top_scrim')
+    .setOrigin(0, 0)
+    .setScrollFactor(0)
+    .setDepth(90);  // Between game and UI
 
-  // --- BOTTOM GRADIENT (Under bottom UI buttons) ---
-  const botScrim = scene.add.graphics();
-  botScrim.fillGradientStyle(
-    0x000000, 0x000000, 0x000000, 0x000000,  // All black corners
-    0, 0, 1, 1  // Top transparent (0%), bottom fully opaque (100%)
-  );
-  botScrim.fillRect(0, height - 350, width, 350);  // Full width, 350px height from bottom
-  botScrim.setDepth(150);
-  botScrim.setScrollFactor(0);
+  console.log('[SCRIMS] Top gradient created: depth 90, height 150px');
 
-  console.log('[SCRIMS] Bottom gradient created: depth 150, height 350px, alpha 0%→100%');
+  // --- BOTTOM GRADIENT (Under buttons) ---
+  // Transparent on top, black on bottom. Height 200px.
+  // This removes "homeless" look from bottom, buttons will sit on "foundation".
+  const botGradient = scene.make.graphics()
+    .fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.9, 0.9)
+    .fillRect(0, 0, width, 200);
+
+  botGradient.generateTexture('bot_scrim', width, 200);
+  const botScrim = scene.add.image(0, height, 'bot_scrim')
+    .setOrigin(0, 1)
+    .setScrollFactor(0)
+    .setDepth(90);
+
+  console.log('[SCRIMS] Bottom gradient created: depth 90, height 200px');
 
   return {
     topScrim,

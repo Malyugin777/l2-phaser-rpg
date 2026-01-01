@@ -57,14 +57,21 @@ const PLAYER_HEADER_CONFIG = {
     fontSize: 18
   },
 
-  // Text style
+  // Text style (improved readability with stroke and shadow)
   textStyle: {
     fontFamily: 'Arial, sans-serif',
-    fontSize: 16,
+    fontSize: '18px',
     color: '#ffffff',
+    fontStyle: 'bold',
     stroke: '#000000',
-    strokeThickness: 3,
-    fontStyle: 'bold'
+    strokeThickness: 4,  // Thick stroke for readability
+    shadow: {
+      offsetX: 2,
+      offsetY: 2,
+      color: '#000000',
+      blur: 2,
+      fill: true
+    }
   }
 };
 
