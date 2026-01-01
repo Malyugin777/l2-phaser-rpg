@@ -105,7 +105,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
     icons.forEach((ic, i) => {
       html += `  ${i}: (${ic.x.toFixed(0)},${ic.y.toFixed(0)}) s:${ic.scaleX.toFixed(2)}<br>`;
     });
-    html += `<b style="color:#0af">9.Header:</b> ${headerCont?.x.toFixed(0)},${headerCont?.y.toFixed(0)}<br>`;
+    html += `<b style="color:#0af">9.Header:</b> ${headerCont?.x.toFixed(0)},${headerCont?.y.toFixed(0)} s:${headerCont?.scaleX.toFixed(2)}<br>`;
     document.getElementById('tune-values').innerHTML = html;
   };
 

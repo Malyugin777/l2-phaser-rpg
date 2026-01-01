@@ -16,23 +16,23 @@ const PLAYER_HEADER_CONFIG = {
 
   // Panel settings
   panel: {
-    scale: 1.0,
+    scale: 0.8,    // Scaled down to fit screen
     offsetX: 0,
     offsetY: 0
   },
 
   // Avatar settings (bottom layer)
   avatar: {
-    x: -280,       // Left side of panel (adjust manually)
-    y: 0,
-    scale: 1.0
+    x: -220,       // Left side of panel (adjust manually)
+    y: 5,
+    scale: 0.8
   },
 
   // EXP ring settings (middle layer)
   expRing: {
-    x: -280,       // Same as avatar (centered on avatar)
-    y: 0,
-    scale: 1.0
+    x: -220,       // Same as avatar (centered on avatar)
+    y: 5,
+    scale: 1.5     // Bigger to be visible
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
@@ -117,7 +117,7 @@ function createPlayerHeader(scene) {
     graphics: maskGraphics,
     centerX: containerX + cfg.expRing.x,
     centerY: containerY + cfg.expRing.y,
-    radius: 50,  // Adjust based on ring size (will tune manually)
+    radius: 80,  // Adjust based on ring size (will tune manually)
     currentPercent: 1.0  // Start at 100%
   };
 
