@@ -23,16 +23,18 @@ const PLAYER_HEADER_CONFIG = {
 
   // Avatar settings (bottom layer) - relative to container
   avatar: {
-    x: 0,          // Center of container (adjust from here)
-    y: 20,         // Slightly below center
-    scale: 1.0
+    x: 8,          // From tune mode
+    y: 229,        // From tune mode
+    scale: 0.82
   },
 
   // EXP ring settings (middle layer) - relative to container
+  // Персонаж на 328, 1453, контейнер на 387, 374
+  // Относительно контейнера: x: 328-387=-59, y: 1453-374=1079
   expRing: {
-    x: 0,          // Same as avatar (centered on avatar)
-    y: 20,         // Slightly below center
-    scale: 2.0     // Bigger to be visible
+    x: -59,        // На уровне персонажа по X
+    y: 1079,       // На уровне персонажа по Y
+    scale: 2.0
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
