@@ -208,9 +208,17 @@ function createPlayerHeader(scene) {
 
   console.log("[PLAYER_HEADER] Created successfully");
 
+  // Expose for tune mode
+  window.playerHeaderAvatar = avatar;
+  window.playerHeaderExpRing = expRing;
+  window.playerHeaderPanel = panel;
+
   // === PUBLIC API ===
   return {
     container: headerContainer,
+    avatar: avatar,
+    expRing: expRing,
+    panel: panel,
 
     /**
      * Set EXP percentage (0.0 to 1.0)

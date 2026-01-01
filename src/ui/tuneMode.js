@@ -66,7 +66,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
     btn: window.bottomUI?.fightBtn,
     icons: window.bottomUI?.icons || [],
     hero: window.spineHero,
-    headerCont: window.playerHeader?.container
+    headerCont: window.playerHeader?.container,
+    headerAvatar: window.playerHeaderAvatar,
+    headerRing: window.playerHeaderExpRing,
+    headerPanel: window.playerHeaderPanel
   });
 
   // Create overlay
@@ -79,7 +82,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
     <hr style="border-color:#333;margin:5px 0">
     <div id="tune-values" style="line-height:1.4"></div>
     <hr style="border-color:#333;margin:5px 0">
-    <small>1-8: select | Arrows: move | Q/E: scale</small><br>
+    <small>1-9,0,-,=: select | Arrows: move | Q/E: scale</small><br>
     <small>Drag: move | Click: select</small>
     <div style="margin-top:10px;display:flex;gap:5px;">
       <button id="tune-save" style="flex:1;padding:5px;cursor:pointer">💾 SAVE</button>
@@ -89,10 +92,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
   `;
   document.body.appendChild(overlay);
 
-  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af' };
+  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a' };
 
   const updateOverlay = () => {
-    const { cont, panel, btn, icons, hero, headerCont } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
     document.getElementById('tune-sel').style.color = selColors[selectedElement] || '#fff';
     document.getElementById('tune-sel').textContent = selectedElement;
 
@@ -105,13 +108,16 @@ function initTuneMode(scene, cityBg, heroOffset) {
     icons.forEach((ic, i) => {
       html += `  ${i}: (${ic.x.toFixed(0)},${ic.y.toFixed(0)}) s:${ic.scaleX.toFixed(2)}<br>`;
     });
-    html += `<b style="color:#0af">9.Header:</b> ${headerCont?.x.toFixed(0)},${headerCont?.y.toFixed(0)} s:${headerCont?.scaleX.toFixed(2)}<br>`;
+    html += `<b style="color:#0af">9.HeaderCont:</b> ${headerCont?.x.toFixed(0)},${headerCont?.y.toFixed(0)} s:${headerCont?.scaleX.toFixed(2)}<br>`;
+    html += `<b style="color:#fa0">0.Avatar:</b> ${headerAvatar?.x.toFixed(0)},${headerAvatar?.y.toFixed(0)} s:${headerAvatar?.scaleX.toFixed(2)}<br>`;
+    html += `<b style="color:#0fa">-.Ring:</b> ${headerRing?.x.toFixed(0)},${headerRing?.y.toFixed(0)} s:${headerRing?.scaleX.toFixed(2)}<br>`;
+    html += `<b style="color:#f0a">=.HPanel:</b> ${headerPanel?.x.toFixed(0)},${headerPanel?.y.toFixed(0)} s:${headerPanel?.scaleX.toFixed(2)}<br>`;
     document.getElementById('tune-values').innerHTML = html;
   };
 
   // SAVE button
   document.getElementById('tune-save').onclick = () => {
-    const { cont, panel, btn, icons, hero, headerCont } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
     const settings = {
       bgX: cityBg.x,
       bgY: cityBg.y,
@@ -132,7 +138,16 @@ function initTuneMode(scene, cityBg, heroOffset) {
       icon3: { x: icons[3]?.x, y: icons[3]?.y },
       headerX: headerCont?.x,
       headerY: headerCont?.y,
-      headerScale: headerCont?.scaleX
+      headerScale: headerCont?.scaleX,
+      avatarX: headerAvatar?.x,
+      avatarY: headerAvatar?.y,
+      avatarScale: headerAvatar?.scaleX,
+      ringX: headerRing?.x,
+      ringY: headerRing?.y,
+      ringScale: headerRing?.scaleX,
+      hpanelX: headerPanel?.x,
+      hpanelY: headerPanel?.y,
+      hpanelScale: headerPanel?.scaleX
     };
     const json = JSON.stringify(settings, null, 2);
     localStorage.setItem('TUNE_SETTINGS', json);
@@ -188,7 +203,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   scene.input.on('pointermove', (p) => {
     if (!dragging) return;
-    const { cont, btn, icons, hero, headerCont } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
     const dx = p.x - startX, dy = p.y - startY;
     startX = p.x; startY = p.y;
 
@@ -202,6 +217,12 @@ function initTuneMode(scene, cityBg, heroOffset) {
       btn.x += dx; btn.y += dy;
     } else if (selectedElement === 'header' && headerCont) {
       headerCont.x += dx; headerCont.y += dy;
+    } else if (selectedElement === 'avatar' && headerAvatar) {
+      headerAvatar.x += dx; headerAvatar.y += dy;
+    } else if (selectedElement === 'ring' && headerRing) {
+      headerRing.x += dx; headerRing.y += dy;
+    } else if (selectedElement === 'hpanel' && headerPanel) {
+      headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const i = parseInt(selectedElement[4]);
       if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
@@ -213,7 +234,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Arrow keys
   const moveSelected = (dx, dy) => {
-    const { cont, btn, icons, hero, headerCont } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
 
     if (selectedElement === 'bg') {
       cityBg.x += dx; cityBg.y += dy;
@@ -225,6 +246,12 @@ function initTuneMode(scene, cityBg, heroOffset) {
       btn.x += dx; btn.y += dy;
     } else if (selectedElement === 'header' && headerCont) {
       headerCont.x += dx; headerCont.y += dy;
+    } else if (selectedElement === 'avatar' && headerAvatar) {
+      headerAvatar.x += dx; headerAvatar.y += dy;
+    } else if (selectedElement === 'ring' && headerRing) {
+      headerRing.x += dx; headerRing.y += dy;
+    } else if (selectedElement === 'hpanel' && headerPanel) {
+      headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) {
@@ -242,7 +269,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Q/E for scale
   const scaleSelected = (delta) => {
-    const { panel, btn, icons, hero, headerCont } = getUI();
+    const { panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
     if (selectedElement === 'bg') {
       cityBg.setScale(cityBg.scaleX + delta);
     } else if (selectedElement === 'panel' && panel) {
@@ -254,6 +281,12 @@ function initTuneMode(scene, cityBg, heroOffset) {
       btn.setScale(btn.scaleX + delta);
     } else if (selectedElement === 'header' && headerCont) {
       headerCont.setScale(headerCont.scaleX + delta);
+    } else if (selectedElement === 'avatar' && headerAvatar) {
+      headerAvatar.setScale(headerAvatar.scaleX + delta);
+    } else if (selectedElement === 'ring' && headerRing) {
+      headerRing.setScale(headerRing.scaleX + delta);
+    } else if (selectedElement === 'hpanel' && headerPanel) {
+      headerPanel.setScale(headerPanel.scaleX + delta);
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) icons[idx].setScale(icons[idx].scaleX + delta);
@@ -264,7 +297,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-E', () => scaleSelected(SCALE_STEP));
   scene.input.keyboard.on('keydown-Q', () => scaleSelected(-SCALE_STEP));
 
-  // Number keys 1-9
+  // Number keys 1-9, 0, -, =
   scene.input.keyboard.on('keydown-ONE', () => { selectedElement = 'bg'; updateOverlay(); });
   scene.input.keyboard.on('keydown-TWO', () => { selectedElement = 'panel'; updateOverlay(); });
   scene.input.keyboard.on('keydown-THREE', () => { selectedElement = 'hero'; updateOverlay(); });
@@ -274,6 +307,9 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-SEVEN', () => { selectedElement = 'icon2'; updateOverlay(); });
   scene.input.keyboard.on('keydown-EIGHT', () => { selectedElement = 'icon3'; updateOverlay(); });
   scene.input.keyboard.on('keydown-NINE', () => { selectedElement = 'header'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-ZERO', () => { selectedElement = 'avatar'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-MINUS', () => { selectedElement = 'ring'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-PLUS', () => { selectedElement = 'hpanel'; updateOverlay(); });
 
   // Initial update
   setTimeout(updateOverlay, 500);
