@@ -28,13 +28,11 @@ const PLAYER_HEADER_CONFIG = {
     scale: 0.82
   },
 
-  // EXP ring settings (middle layer) - relative to container
-  // Персонаж на 328, 1453, контейнер на 387, 374
-  // Относительно контейнера: x: 328-387=-59, y: 1453-374=1079
+  // EXP ring settings (middle layer) - SAME POSITION AS AVATAR FOR NOW
   expRing: {
-    x: -59,        // На уровне персонажа по X
-    y: 1079,       // На уровне персонажа по Y
-    scale: 2.0
+    x: 8,          // Same as avatar - adjust with key "-"
+    y: 229,        // Same as avatar - adjust with key "-"
+    scale: 3.0     // Big so you can see it
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
