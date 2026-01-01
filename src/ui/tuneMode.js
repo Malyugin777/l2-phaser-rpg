@@ -173,13 +173,17 @@ function initTuneMode(scene, cityBg, heroOffset) {
   let dragging = false, startX = 0, startY = 0;
 
   scene.input.on('pointerdown', (p) => {
-    const { cont, panel, btn, icons, hero, headerCont } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
+
+    // TELEPORT MODE: If clicking on empty space, teleport selected element to click position
+    let clickedOnElement = false;
 
     // Detect click target
     for (let i = 0; i < icons.length; i++) {
       const bounds = icons[i]?.getBounds();
       if (bounds?.contains(p.x, p.y)) {
         selectedElement = 'icon' + i;
+        clickedOnElement = true;
         dragging = true; startX = p.x; startY = p.y;
         updateOverlay(); return;
       }
@@ -188,15 +192,58 @@ function initTuneMode(scene, cityBg, heroOffset) {
     // Check header container (approximate bounds check)
     if (headerCont && Math.abs(p.x - headerCont.x) < 350 && Math.abs(p.y - headerCont.y) < 100) {
       selectedElement = 'header';
+      clickedOnElement = true;
     } else if (btn?.getBounds()?.contains(p.x, p.y)) {
       selectedElement = 'btn';
+      clickedOnElement = true;
     } else if (panel?.getBounds()?.contains(p.x, p.y)) {
       selectedElement = 'panel';
+      clickedOnElement = true;
     } else if (hero && Math.abs(p.x - hero.x) < 100 && Math.abs(p.y - hero.y) < 200) {
       selectedElement = 'hero';
-    } else {
-      selectedElement = 'bg';
+      clickedOnElement = true;
     }
+
+    // If clicked on empty space, TELEPORT selected element
+    if (!clickedOnElement) {
+      // Teleport selected element to click position
+      if (selectedElement === 'header' && headerCont) {
+        headerCont.x = p.x;
+        headerCont.y = p.y;
+      } else if (selectedElement === 'avatar' && headerAvatar) {
+        // Avatar is relative to container, so calculate offset
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        headerAvatar.x = offsetX;
+        headerAvatar.y = offsetY;
+      } else if (selectedElement === 'ring' && headerRing) {
+        // Ring is relative to container
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        headerRing.x = offsetX;
+        headerRing.y = offsetY;
+      } else if (selectedElement === 'hpanel' && headerPanel) {
+        // Panel is relative to container
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        headerPanel.x = offsetX;
+        headerPanel.y = offsetY;
+      } else if (selectedElement === 'panel' && cont) {
+        cont.x = p.x;
+        cont.y = p.y;
+      } else if (selectedElement === 'hero' && hero) {
+        hero.x = p.x;
+        hero.y = p.y;
+      } else if (selectedElement === 'btn' && btn) {
+        btn.x = p.x - cont.x;
+        btn.y = p.y - cont.y;
+      } else if (selectedElement === 'bg') {
+        cityBg.x = p.x;
+        cityBg.y = p.y;
+      }
+      updateOverlay();
+    }
+
     dragging = true; startX = p.x; startY = p.y;
     updateOverlay();
   });
