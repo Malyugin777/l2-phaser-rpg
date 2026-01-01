@@ -109,7 +109,8 @@ function createPlayerHeader(scene) {
   // Create mask graphics for radial progress
   const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
   const expMask = new Phaser.Display.Masks.GeometryMask(scene, maskGraphics);
-  expRing.setMask(expMask);
+  // TEMPORARILY DISABLE MASK FOR POSITIONING
+  // expRing.setMask(expMask);
 
   headerContainer.add(expRing);
   console.log('[PLAYER_HEADER] Ring created at', cfg.expRing.x, cfg.expRing.y, 'scale', cfg.expRing.scale);
