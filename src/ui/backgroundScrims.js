@@ -29,9 +29,9 @@ function createBackgroundScrims(scene) {
     .setOrigin(0, 0)
     .setDisplaySize(width, 200)  // Stretch to full width, 200px height
     .setScrollFactor(0)
-    .setDepth(250);  // Above game (100), below UI (300)
+    .setDepth(150);  // Above game (100), BELOW UI panels (200)
 
-  console.log('[SCRIMS] Top gradient created: depth 250, height 200px');
+  console.log('[SCRIMS] Top gradient created: depth 150, height 200px');
 
   // --- BOTTOM GRADIENT (Under bottom UI buttons) ---
   // Same but reversed opacity (top 0, bottom 0.8)
@@ -47,9 +47,9 @@ function createBackgroundScrims(scene) {
     .setOrigin(0, 1)  // Anchor bottom-left
     .setDisplaySize(width, 250)
     .setScrollFactor(0)
-    .setDepth(250);  // Same depth as top
+    .setDepth(150);  // Same depth as top - between game and UI
 
-  console.log('[SCRIMS] Bottom gradient created: depth 250, height 250px');
+  console.log('[SCRIMS] Bottom gradient created: depth 150, height 250px');
 
   return {
     topScrim,
