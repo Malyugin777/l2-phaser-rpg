@@ -336,6 +336,11 @@ function setupCleanMode(scene) {
 
   safeRecalc(scene);  // Recalculate stats
 
+  // Background gradients for UI readability
+  if (typeof createBackgroundScrims === "function") {
+    createBackgroundScrims(scene);
+  }
+
   // Bottom UI
   if (typeof createBottomUI === "function") {
     const bottomUI = createBottomUI(scene);

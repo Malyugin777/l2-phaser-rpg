@@ -105,6 +105,7 @@ function createPlayerHeader(scene) {
     'ui_exp_ring_full'
   );
   expRing.setScale(cfg.expRing.scale);
+  expRing.setTint(0xFFD700);  // Gold color for better visibility (not blue on blue sky)
 
   // Create mask graphics for radial progress
   const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
