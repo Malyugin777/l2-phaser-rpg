@@ -11,7 +11,7 @@ const PLAYER_HEADER_CONFIG = {
     x: 0.5,        // 50% screen width (centered)
     y: 0,          // Top of screen
     offsetX: 0,    // Fine-tune X offset
-    offsetY: 300   // Fine-tune Y offset from top (moved down to be visible)
+    offsetY: 150   // Fine-tune Y offset from top
   },
 
   // Panel settings

@@ -65,7 +65,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
     panel: window.bottomUI?.bottomPanel,
     btn: window.bottomUI?.fightBtn,
     icons: window.bottomUI?.icons || [],
-    hero: window.spineHero
+    hero: window.spineHero,
+    headerCont: window.playerHeader?.container
   });
 
   // Create overlay
@@ -88,10 +89,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
   `;
   document.body.appendChild(overlay);
 
-  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80' };
+  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af' };
 
   const updateOverlay = () => {
-    const { cont, panel, btn, icons, hero } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont } = getUI();
     document.getElementById('tune-sel').style.color = selColors[selectedElement] || '#fff';
     document.getElementById('tune-sel').textContent = selectedElement;
 
@@ -104,12 +105,13 @@ function initTuneMode(scene, cityBg, heroOffset) {
     icons.forEach((ic, i) => {
       html += `  ${i}: (${ic.x.toFixed(0)},${ic.y.toFixed(0)}) s:${ic.scaleX.toFixed(2)}<br>`;
     });
+    html += `<b style="color:#0af">9.Header:</b> ${headerCont?.x.toFixed(0)},${headerCont?.y.toFixed(0)}<br>`;
     document.getElementById('tune-values').innerHTML = html;
   };
 
   // SAVE button
   document.getElementById('tune-save').onclick = () => {
-    const { cont, panel, btn, icons, hero } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont } = getUI();
     const settings = {
       bgX: cityBg.x,
       bgY: cityBg.y,
@@ -127,7 +129,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
       icon0: { x: icons[0]?.x, y: icons[0]?.y },
       icon1: { x: icons[1]?.x, y: icons[1]?.y },
       icon2: { x: icons[2]?.x, y: icons[2]?.y },
-      icon3: { x: icons[3]?.x, y: icons[3]?.y }
+      icon3: { x: icons[3]?.x, y: icons[3]?.y },
+      headerX: headerCont?.x,
+      headerY: headerCont?.y,
+      headerScale: headerCont?.scaleX
     };
     const json = JSON.stringify(settings, null, 2);
     localStorage.setItem('TUNE_SETTINGS', json);
@@ -153,7 +158,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   let dragging = false, startX = 0, startY = 0;
 
   scene.input.on('pointerdown', (p) => {
-    const { cont, panel, btn, icons, hero } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont } = getUI();
 
     // Detect click target
     for (let i = 0; i < icons.length; i++) {
@@ -164,7 +169,11 @@ function initTuneMode(scene, cityBg, heroOffset) {
         updateOverlay(); return;
       }
     }
-    if (btn?.getBounds()?.contains(p.x, p.y)) {
+
+    // Check header container (approximate bounds check)
+    if (headerCont && Math.abs(p.x - headerCont.x) < 350 && Math.abs(p.y - headerCont.y) < 100) {
+      selectedElement = 'header';
+    } else if (btn?.getBounds()?.contains(p.x, p.y)) {
       selectedElement = 'btn';
     } else if (panel?.getBounds()?.contains(p.x, p.y)) {
       selectedElement = 'panel';
@@ -179,7 +188,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   scene.input.on('pointermove', (p) => {
     if (!dragging) return;
-    const { cont, btn, icons, hero } = getUI();
+    const { cont, btn, icons, hero, headerCont } = getUI();
     const dx = p.x - startX, dy = p.y - startY;
     startX = p.x; startY = p.y;
 
@@ -191,6 +200,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
       hero.x += dx; hero.y += dy;
     } else if (selectedElement === 'btn' && btn) {
       btn.x += dx; btn.y += dy;
+    } else if (selectedElement === 'header' && headerCont) {
+      headerCont.x += dx; headerCont.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const i = parseInt(selectedElement[4]);
       if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
@@ -202,7 +213,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Arrow keys
   const moveSelected = (dx, dy) => {
-    const { cont, btn, icons, hero } = getUI();
+    const { cont, btn, icons, hero, headerCont } = getUI();
 
     if (selectedElement === 'bg') {
       cityBg.x += dx; cityBg.y += dy;
@@ -212,6 +223,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
       hero.x += dx; hero.y += dy;
     } else if (selectedElement === 'btn' && btn) {
       btn.x += dx; btn.y += dy;
+    } else if (selectedElement === 'header' && headerCont) {
+      headerCont.x += dx; headerCont.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) {
@@ -229,7 +242,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Q/E for scale
   const scaleSelected = (delta) => {
-    const { panel, btn, icons, hero } = getUI();
+    const { panel, btn, icons, hero, headerCont } = getUI();
     if (selectedElement === 'bg') {
       cityBg.setScale(cityBg.scaleX + delta);
     } else if (selectedElement === 'panel' && panel) {
@@ -239,6 +252,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
     } else if (selectedElement === 'btn' && btn) {
       window.fightBtnTween?.stop();
       btn.setScale(btn.scaleX + delta);
+    } else if (selectedElement === 'header' && headerCont) {
+      headerCont.setScale(headerCont.scaleX + delta);
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) icons[idx].setScale(icons[idx].scaleX + delta);
@@ -249,7 +264,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-E', () => scaleSelected(SCALE_STEP));
   scene.input.keyboard.on('keydown-Q', () => scaleSelected(-SCALE_STEP));
 
-  // Number keys 1-8
+  // Number keys 1-9
   scene.input.keyboard.on('keydown-ONE', () => { selectedElement = 'bg'; updateOverlay(); });
   scene.input.keyboard.on('keydown-TWO', () => { selectedElement = 'panel'; updateOverlay(); });
   scene.input.keyboard.on('keydown-THREE', () => { selectedElement = 'hero'; updateOverlay(); });
@@ -258,6 +273,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-SIX', () => { selectedElement = 'icon1'; updateOverlay(); });
   scene.input.keyboard.on('keydown-SEVEN', () => { selectedElement = 'icon2'; updateOverlay(); });
   scene.input.keyboard.on('keydown-EIGHT', () => { selectedElement = 'icon3'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-NINE', () => { selectedElement = 'header'; updateOverlay(); });
 
   // Initial update
   setTimeout(updateOverlay, 500);
