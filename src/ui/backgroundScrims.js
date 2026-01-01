@@ -14,35 +14,21 @@ function createBackgroundScrims(scene) {
 
   console.log('[SCRIMS] Creating background gradients for UI readability');
 
-  // --- TOP GRADIENT (Under resources) ---
-  // Black on top, transparent on bottom. Height 150px.
-  const topGradient = scene.make.graphics()
-    .fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.8, 0.8, 0, 0)
-    .fillRect(0, 0, width, 150);
+  // --- TOP SCRIM (Simple black rectangle) ---
+  // Single semi-transparent black rectangle at top
+  const topScrim = scene.add.rectangle(width / 2, 100, width, 200, 0x000000, 0.7);
+  topScrim.setScrollFactor(0);
+  topScrim.setDepth(150);  // Above hero (100), below UI (200)
 
-  // Convert to texture to fix on screen
-  topGradient.generateTexture('top_scrim', width, 150);
-  const topScrim = scene.add.image(0, 0, 'top_scrim')
-    .setOrigin(0, 0)
-    .setScrollFactor(0)
-    .setDepth(90);  // Between game and UI
+  console.log('[SCRIMS] Top scrim created: depth 150, height 200px, alpha 70%');
 
-  console.log('[SCRIMS] Top gradient created: depth 90, height 150px');
+  // --- BOTTOM SCRIM (Simple black rectangle) ---
+  // Single semi-transparent black rectangle at bottom
+  const botScrim = scene.add.rectangle(width / 2, height - 150, width, 300, 0x000000, 0.8);
+  botScrim.setScrollFactor(0);
+  botScrim.setDepth(150);  // Above hero (100), below UI (200)
 
-  // --- BOTTOM GRADIENT (Under buttons) ---
-  // Transparent on top, black on bottom. Height 200px.
-  // This removes "homeless" look from bottom, buttons will sit on "foundation".
-  const botGradient = scene.make.graphics()
-    .fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.9, 0.9)
-    .fillRect(0, 0, width, 200);
-
-  botGradient.generateTexture('bot_scrim', width, 200);
-  const botScrim = scene.add.image(0, height, 'bot_scrim')
-    .setOrigin(0, 1)
-    .setScrollFactor(0)
-    .setDepth(90);
-
-  console.log('[SCRIMS] Bottom gradient created: depth 90, height 200px');
+  console.log('[SCRIMS] Bottom scrim created: depth 150, height 300px, alpha 80%');
 
   return {
     topScrim,
