@@ -23,16 +23,16 @@ const PLAYER_HEADER_CONFIG = {
 
   // Avatar settings (bottom layer) - relative to container
   avatar: {
-    x: -280,       // Left side of panel (relative to container center)
-    y: 0,
-    scale: 0.8
+    x: 0,          // Center of container (adjust from here)
+    y: 20,         // Slightly below center
+    scale: 1.0
   },
 
   // EXP ring settings (middle layer) - relative to container
   expRing: {
-    x: -280,       // Same as avatar (centered on avatar)
-    y: 0,
-    scale: 1.5     // Bigger to be visible
+    x: 0,          // Same as avatar (centered on avatar)
+    y: 20,         // Slightly below center
+    scale: 2.0     // Bigger to be visible
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
