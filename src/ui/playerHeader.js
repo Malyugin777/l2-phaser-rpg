@@ -88,7 +88,7 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
-  // === LAYER 1: AVATAR (Bottom) ===
+  // === LAYER 1: AVATAR (Bottom - drawn first) ===
   const avatar = scene.add.image(
     cfg.avatar.x,
     cfg.avatar.y,
@@ -96,8 +96,9 @@ function createPlayerHeader(scene) {
   );
   avatar.setScale(cfg.avatar.scale);
   headerContainer.add(avatar);
+  console.log('[PLAYER_HEADER] Avatar created at', cfg.avatar.x, cfg.avatar.y, 'scale', cfg.avatar.scale);
 
-  // === LAYER 2: EXP RING with MASK (Middle) ===
+  // === LAYER 2: EXP RING with MASK (Middle - drawn second) ===
   const expRing = scene.add.image(
     cfg.expRing.x,
     cfg.expRing.y,
@@ -111,6 +112,7 @@ function createPlayerHeader(scene) {
   expRing.setMask(expMask);
 
   headerContainer.add(expRing);
+  console.log('[PLAYER_HEADER] Ring created at', cfg.expRing.x, cfg.expRing.y, 'scale', cfg.expRing.scale);
 
   // Store mask graphics for later updates
   const maskData = {
@@ -121,7 +123,7 @@ function createPlayerHeader(scene) {
     currentPercent: 1.0  // Start at 100%
   };
 
-  // === LAYER 3: PANEL (Top) ===
+  // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
   const panel = scene.add.image(
     cfg.panel.offsetX,
     cfg.panel.offsetY,
@@ -130,6 +132,7 @@ function createPlayerHeader(scene) {
   panel.setScale(cfg.panel.scale);
   panel.setOrigin(0.5, 0);  // Top-center origin
   headerContainer.add(panel);
+  console.log('[PLAYER_HEADER] Panel created at', cfg.panel.offsetX, cfg.panel.offsetY, 'scale', cfg.panel.scale);
 
   // === TEXTS ===
   const textStyle = cfg.textStyle;
