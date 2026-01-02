@@ -223,11 +223,18 @@ function initTuneMode(scene, cityBg, heroOffset) {
         headerAvatar.x = offsetX;
         headerAvatar.y = offsetY;
       } else if (selectedElement === 'ring' && headerRing) {
-        // Ring is relative to container
+        // Ring is relative to container - update ringConfig
         const offsetX = p.x - headerCont.x;
         const offsetY = p.y - headerCont.y;
-        headerRing.x = offsetX;
-        headerRing.y = offsetY;
+        if (headerRing.ringConfig) {
+          headerRing.ringConfig.x = offsetX;
+          headerRing.ringConfig.y = offsetY;
+          headerRing.ringX = offsetX;
+          headerRing.ringY = offsetY;
+          if (window.playerHeader?.setExp) {
+            window.playerHeader.setExp(0.75);
+          }
+        }
       } else if (selectedElement === 'hpanel' && headerPanel) {
         // Panel is relative to container
         const offsetX = p.x - headerCont.x;
@@ -273,7 +280,16 @@ function initTuneMode(scene, cityBg, heroOffset) {
     } else if (selectedElement === 'avatar' && headerAvatar) {
       headerAvatar.x += dx; headerAvatar.y += dy;
     } else if (selectedElement === 'ring' && headerRing) {
-      headerRing.x += dx; headerRing.y += dy;
+      // Graphics object - update ringConfig and redraw
+      if (headerRing.ringConfig) {
+        headerRing.ringConfig.x += dx;
+        headerRing.ringConfig.y += dy;
+        headerRing.ringX = headerRing.ringConfig.x;
+        headerRing.ringY = headerRing.ringConfig.y;
+        if (window.playerHeader?.setExp) {
+          window.playerHeader.setExp(0.75);
+        }
+      }
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement.startsWith('icon')) {
