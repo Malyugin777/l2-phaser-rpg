@@ -95,6 +95,11 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
+  // === LAYER 0: DARK BACKGROUND (Behind all elements) ===
+  const headerBg = scene.add.rectangle(0, 60, w + 100, 150, 0x1a1a2e, 0.95);
+  headerContainer.add(headerBg);
+  console.log('[PLAYER_HEADER] Dark background added');
+
   // === LAYER 1: AVATAR (Bottom - drawn first) ===
   const avatar = scene.add.image(
     cfg.avatar.x,

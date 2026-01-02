@@ -336,60 +336,6 @@ function setupCleanMode(scene) {
 
   safeRecalc(scene);  // Recalculate stats
 
-  // Background gradients for UI readability
-  // DISABLED FOR DEBUG - testing delayed creation
-  // if (typeof createBackgroundScrims === "function") {
-  //   createBackgroundScrims(scene);
-  // }
-
-  // DELAYED CREATION TEST
-  scene.time.delayedCall(100, () => {
-    console.log('[DELAYED] Creating scrims now...');
-
-    const width = scene.scale.width;
-    const height = scene.scale.height;
-
-    // Test 1: Simple rectangle (most basic)
-    const testRect = scene.add.rectangle(width/2, 100, width, 50, 0xff0000, 0.8);
-    testRect.setScrollFactor(0);
-    testRect.setDepth(500);
-    console.log('[DELAYED] Red bar at top, depth 500, visible:', testRect.visible);
-
-    // Test 2: Check what depth UI uses
-    console.log('[DELAYED] Checking other objects depths...');
-    scene.children.list.forEach((child, i) => {
-      if (child.depth > 100) {
-        console.log('[DELAYED] Child', i, ':', child.type, 'depth:', child.depth);
-      }
-    });
-  });
-
-  // Camera debug
-  scene.time.delayedCall(200, () => {
-    const cam = scene.cameras.main;
-    console.log('[CAM DEBUG] bounds:', cam.getBounds());
-    console.log('[CAM DEBUG] scroll:', cam.scrollX, cam.scrollY);
-    console.log('[CAM DEBUG] zoom:', cam.zoom);
-    console.log('[CAM DEBUG] width/height:', cam.width, cam.height);
-    console.log('[CAM DEBUG] worldView:', cam.worldView);
-  });
-
-  // Container test
-  scene.time.delayedCall(300, () => {
-    const width = scene.scale.width;
-
-    // Create container at screen top
-    const scrimContainer = scene.add.container(width/2, 0);
-    scrimContainer.setScrollFactor(0);
-    scrimContainer.setDepth(500);
-
-    // Add rectangle to container
-    const topBar = scene.add.rectangle(0, 50, width, 100, 0x000000, 0.7);
-    scrimContainer.add(topBar);
-
-    console.log('[CONTAINER] Scrim container created, depth 500');
-  });
-
   // Bottom UI
   if (typeof createBottomUI === "function") {
     const bottomUI = createBottomUI(scene);
@@ -441,36 +387,6 @@ function setupCleanMode(scene) {
 
   // Hide all panels initially
   if (typeof hideAllPanels === "function") hideAllPanels();
-
-  // =============================================
-  // ULTRA DEBUG TEST - test if rendering works
-  // =============================================
-  console.log("[DEBUG] Creating test shapes...");
-  console.log('[DEBUG] Camera scroll:', scene.cameras.main.scrollX, scene.cameras.main.scrollY);
-
-  // Test 1: Simple rectangle at screen center - WITH scrollFactor!
-  const testRect = scene.add.rectangle(390, 400, 300, 200, 0xff0000, 1);
-  testRect.setScrollFactor(0);  // ADD THIS!
-  testRect.setDepth(9999);
-  console.log("[DEBUG] Red rectangle created at 390,400 depth 9999");
-
-  // Test 2: Graphics object - WITH scrollFactor!
-  const testGfx = scene.add.graphics();
-  testGfx.setScrollFactor(0);  // ADD THIS!
-  testGfx.fillStyle(0x00ff00, 1);
-  testGfx.fillRect(100, 100, 200, 100);
-  testGfx.setDepth(9998);
-  console.log("[DEBUG] Green graphics rect at 100,100 depth 9998");
-
-  // Test 3: Text to confirm rendering works - WITH scrollFactor!
-  const testText = scene.add.text(390, 300, "DEBUG TEST", {
-    fontSize: "48px",
-    color: "#ffff00",
-    backgroundColor: "#000000"
-  }).setOrigin(0.5);
-  testText.setScrollFactor(0);  // ADD THIS!
-  testText.setDepth(9997);
-  console.log("[DEBUG] Yellow text created");
 
   // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
   setTimeout(() => applyFinalPositions(scene), 200);

@@ -45,6 +45,11 @@ function createBottomUI(scene) {
   panelContainer.setDepth(200);
   panelContainer.setScrollFactor(0);
 
+  // === DARK BACKGROUND (Behind all elements) ===
+  const bottomBg = scene.add.rectangle(0, 0, w + 100, 250, 0x1a1a2e, 0.95);
+  panelContainer.add(bottomBg);
+  console.log('[BOTTOMUI] Dark background added');
+
   // === PANEL ===
   const tex = scene.textures.get('ui_bottom');
   if (tex) tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
