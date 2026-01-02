@@ -179,7 +179,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   let dragging = false, startX = 0, startY = 0;
 
   scene.input.on('pointerdown', (p) => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
 
     // TELEPORT MODE: If clicking on empty space, teleport selected element to click position
     let clickedOnElement = false;
@@ -241,6 +241,12 @@ function initTuneMode(scene, cityBg, heroOffset) {
         const offsetY = p.y - headerCont.y;
         headerPanel.x = offsetX;
         headerPanel.y = offsetY;
+      } else if (selectedElement === 'darkbg' && headerDarkBg) {
+        // DarkBG is relative to container
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        headerDarkBg.x = offsetX;
+        headerDarkBg.y = offsetY;
       } else if (selectedElement === 'panel' && cont) {
         cont.x = p.x;
         cont.y = p.y;
@@ -263,7 +269,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   scene.input.on('pointermove', (p) => {
     if (!dragging) return;
-    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
     const dx = p.x - startX, dy = p.y - startY;
     startX = p.x; startY = p.y;
 
@@ -292,6 +298,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
       }
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.x += dx; headerPanel.y += dy;
+    } else if (selectedElement === 'darkbg' && headerDarkBg) {
+      headerDarkBg.x += dx; headerDarkBg.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const i = parseInt(selectedElement[4]);
       if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
