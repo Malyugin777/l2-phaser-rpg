@@ -52,6 +52,12 @@ function createBackgroundScrims(scene) {
 
   console.log('[SCRIMS] Bottom gradient:', (height - botHeight), '-', height, 'px, alpha 0→0.9');
 
+  // DEBUG - red box to verify rendering
+  const debug = scene.add.rectangle(width/2, 150, 200, 100, 0xff0000, 1);
+  debug.setScrollFactor(0);
+  debug.setDepth(1000);
+  console.log('[SCRIMS] DEBUG RED BOX at depth 1000');
+
   return { topGraph, botGraph };
 }
 
