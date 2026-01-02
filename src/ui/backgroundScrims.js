@@ -9,6 +9,11 @@
  * @param {Phaser.Scene} scene - Current Phaser scene
  */
 function createBackgroundScrims(scene) {
+  console.log('[SCRIMS] Scene type:', scene?.constructor?.name);
+  console.log('[SCRIMS] Scene add exists:', !!scene?.add);
+  console.log('[SCRIMS] Scene add.graphics exists:', !!scene?.add?.graphics);
+  console.log('[SCRIMS] Scene add.rectangle exists:', !!scene?.add?.rectangle);
+
   const width = scene.scale.width;
   const height = scene.scale.height;
   const DEPTH_SCRIM = 150; // Above hero (100), below UI (200+)

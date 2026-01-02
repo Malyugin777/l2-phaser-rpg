@@ -393,6 +393,31 @@ function setupCleanMode(scene) {
   // Hide all panels initially
   if (typeof hideAllPanels === "function") hideAllPanels();
 
+  // =============================================
+  // ULTRA DEBUG TEST - test if rendering works
+  // =============================================
+  console.log("[DEBUG] Creating test shapes...");
+
+  // Test 1: Simple rectangle at screen center (NO scrollFactor)
+  const testRect = scene.add.rectangle(390, 400, 300, 200, 0xff0000, 1);
+  testRect.setDepth(9999);
+  console.log("[DEBUG] Red rectangle created at 390,400 depth 9999");
+
+  // Test 2: Graphics object
+  const testGfx = scene.add.graphics();
+  testGfx.fillStyle(0x00ff00, 1);
+  testGfx.fillRect(100, 100, 200, 100);
+  testGfx.setDepth(9998);
+  console.log("[DEBUG] Green graphics rect at 100,100 depth 9998");
+
+  // Test 3: Text to confirm rendering works
+  const testText = scene.add.text(390, 300, "DEBUG TEST", {
+    fontSize: "48px",
+    color: "#ffff00",
+    backgroundColor: "#000000"
+  }).setOrigin(0.5).setDepth(9997);
+  console.log("[DEBUG] Yellow text created");
+
   // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
   setTimeout(() => applyFinalPositions(scene), 200);
 
