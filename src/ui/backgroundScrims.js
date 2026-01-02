@@ -5,35 +5,54 @@
 // ============================================================
 
 /**
- * Creates dark gradient overlays (top and bottom) to improve UI text readability
+ * Creates dark gradient overlays using Phaser Graphics directly
  * @param {Phaser.Scene} scene - Current Phaser scene
  */
 function createBackgroundScrims(scene) {
   const width = scene.scale.width;
   const height = scene.scale.height;
+  const DEPTH_SCRIM = 150; // Above hero (100), below UI (200+)
 
-  console.log('[SCRIMS] Creating background gradients for UI readability');
+  console.log('[SCRIMS] Creating GRADIENT scrims, screen:', width, 'x', height);
 
-  // --- TOP SCRIM (Simple black rectangle) ---
-  // Single semi-transparent black rectangle at top
-  const topScrim = scene.add.rectangle(width / 2, 100, width, 200, 0x000000, 0.7);
-  topScrim.setScrollFactor(0);
-  topScrim.setDepth(150);  // Above hero (100), below UI (200)
+  // =================================================================
+  // TOP GRADIENT (Under resources bar)
+  // =================================================================
+  const topGraph = scene.add.graphics();
 
-  console.log('[SCRIMS] Top scrim created: depth 150, height 200px, alpha 70%');
+  // fillGradientStyle(topLeftColor, topRightColor, bottomLeftColor, bottomRightColor,
+  //                   alphaTL, alphaTR, alphaBL, alphaBR)
+  // Top: Black with alpha 0.85 (almost opaque)
+  // Bottom: Black with alpha 0 (fully transparent)
+  topGraph.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.85, 0.85, 0, 0);
 
-  // --- BOTTOM SCRIM (Simple black rectangle) ---
-  // Single semi-transparent black rectangle at bottom
-  const botScrim = scene.add.rectangle(width / 2, height - 150, width, 300, 0x000000, 0.8);
-  botScrim.setScrollFactor(0);
-  botScrim.setDepth(150);  // Above hero (100), below UI (200)
+  // Draw from top-left corner (0,0)
+  topGraph.fillRect(0, 0, width, 280);
 
-  console.log('[SCRIMS] Bottom scrim created: depth 150, height 300px, alpha 80%');
+  topGraph.setScrollFactor(0);
+  topGraph.setDepth(DEPTH_SCRIM);
 
-  return {
-    topScrim,
-    botScrim
-  };
+  console.log('[SCRIMS] Top gradient: 0-280px, alpha 0.85→0');
+
+
+  // =================================================================
+  // BOTTOM GRADIENT (Under buttons)
+  // =================================================================
+  const botGraph = scene.add.graphics();
+
+  // Top: Transparent (alpha 0)
+  // Bottom: Black (alpha 0.9)
+  botGraph.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.9, 0.9);
+
+  const botHeight = 350;
+  botGraph.fillRect(0, height - botHeight, width, botHeight);
+
+  botGraph.setScrollFactor(0);
+  botGraph.setDepth(DEPTH_SCRIM);
+
+  console.log('[SCRIMS] Bottom gradient:', (height - botHeight), '-', height, 'px, alpha 0→0.9');
+
+  return { topGraph, botGraph };
 }
 
 // Export for global access
