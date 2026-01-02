@@ -111,7 +111,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
     });
     html += `<b style="color:#0af">9.HeaderCont:</b> ${headerCont?.x.toFixed(0)},${headerCont?.y.toFixed(0)} s:${headerCont?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#fa0">0.Avatar:</b> ${headerAvatar?.x.toFixed(0)},${headerAvatar?.y.toFixed(0)} s:${headerAvatar?.scaleX.toFixed(2)}<br>`;
-    html += `<b style="color:#0fa">-.Ring:</b> ${headerRing?.x.toFixed(0)},${headerRing?.y.toFixed(0)} s:${headerRing?.scaleX.toFixed(2)}<br>`;
+    html += `<b style="color:#0fa">-.Ring:</b> ${(headerRing?.ringX ?? headerRing?.x ?? 0).toFixed(0)},${(headerRing?.ringY ?? headerRing?.y ?? 0).toFixed(0)} r:${headerRing?.ringConfig?.radius ?? 0}<br>`;
     html += `<b style="color:#f0a">=.HPanel:</b> ${headerPanel?.x.toFixed(0)},${headerPanel?.y.toFixed(0)} s:${headerPanel?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#aaa">B.DarkBG:</b> ${headerDarkBg?.x.toFixed(0)},${headerDarkBg?.y.toFixed(0)} w:${headerDarkBg?.width.toFixed(0)} h:${headerDarkBg?.height.toFixed(0)}<br>`;
     document.getElementById('tune-values').innerHTML = html;
@@ -302,7 +302,17 @@ function initTuneMode(scene, cityBg, heroOffset) {
     } else if (selectedElement === 'avatar' && headerAvatar) {
       headerAvatar.x += dx; headerAvatar.y += dy;
     } else if (selectedElement === 'ring' && headerRing) {
-      headerRing.x += dx; headerRing.y += dy;
+      // Graphics object - update ringConfig and redraw
+      if (headerRing.ringConfig) {
+        headerRing.ringConfig.x += dx;
+        headerRing.ringConfig.y += dy;
+        headerRing.ringX = headerRing.ringConfig.x;
+        headerRing.ringY = headerRing.ringConfig.y;
+        // Redraw ring
+        if (window.playerHeader?.setExp) {
+          window.playerHeader.setExp(0.75); // Redraw at current percent
+        }
+      }
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement === 'darkbg' && headerDarkBg) {
