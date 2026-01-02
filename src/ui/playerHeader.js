@@ -30,8 +30,8 @@ const PLAYER_HEADER_CONFIG = {
 
   // EXP ring settings (middle layer) - FIXED FINAL VALUES
   expRing: {
-    x: -327,         // Center X - FIXED
-    y: 233,          // Center Y - FIXED
+    x: -333.2,       // Center X - FIXED (from user tune)
+    y: 237.67,       // Center Y - FIXED (from user tune)
     radius: 55,      // Ring radius - FIXED
     thickness: 8,    // Line thickness - FIXED
     color: 0xFFD700, // Gold color - FIXED
