@@ -337,9 +337,58 @@ function setupCleanMode(scene) {
   safeRecalc(scene);  // Recalculate stats
 
   // Background gradients for UI readability
-  if (typeof createBackgroundScrims === "function") {
-    createBackgroundScrims(scene);
-  }
+  // DISABLED FOR DEBUG - testing delayed creation
+  // if (typeof createBackgroundScrims === "function") {
+  //   createBackgroundScrims(scene);
+  // }
+
+  // DELAYED CREATION TEST
+  scene.time.delayedCall(100, () => {
+    console.log('[DELAYED] Creating scrims now...');
+
+    const width = scene.scale.width;
+    const height = scene.scale.height;
+
+    // Test 1: Simple rectangle (most basic)
+    const testRect = scene.add.rectangle(width/2, 100, width, 50, 0xff0000, 0.8);
+    testRect.setScrollFactor(0);
+    testRect.setDepth(500);
+    console.log('[DELAYED] Red bar at top, depth 500, visible:', testRect.visible);
+
+    // Test 2: Check what depth UI uses
+    console.log('[DELAYED] Checking other objects depths...');
+    scene.children.list.forEach((child, i) => {
+      if (child.depth > 100) {
+        console.log('[DELAYED] Child', i, ':', child.type, 'depth:', child.depth);
+      }
+    });
+  });
+
+  // Camera debug
+  scene.time.delayedCall(200, () => {
+    const cam = scene.cameras.main;
+    console.log('[CAM DEBUG] bounds:', cam.getBounds());
+    console.log('[CAM DEBUG] scroll:', cam.scrollX, cam.scrollY);
+    console.log('[CAM DEBUG] zoom:', cam.zoom);
+    console.log('[CAM DEBUG] width/height:', cam.width, cam.height);
+    console.log('[CAM DEBUG] worldView:', cam.worldView);
+  });
+
+  // Container test
+  scene.time.delayedCall(300, () => {
+    const width = scene.scale.width;
+
+    // Create container at screen top
+    const scrimContainer = scene.add.container(width/2, 0);
+    scrimContainer.setScrollFactor(0);
+    scrimContainer.setDepth(500);
+
+    // Add rectangle to container
+    const topBar = scene.add.rectangle(0, 50, width, 100, 0x000000, 0.7);
+    scrimContainer.add(topBar);
+
+    console.log('[CONTAINER] Scrim container created, depth 500');
+  });
 
   // Bottom UI
   if (typeof createBottomUI === "function") {
