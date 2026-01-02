@@ -135,32 +135,39 @@ function createPlayerHeader(scene) {
   headerContainer.add(avatar);
   console.log('[PLAYER_HEADER] Avatar created at', cfg.avatar.x, cfg.avatar.y, 'scale', cfg.avatar.scale);
 
-  // === LAYER 2: EXP RING (Middle - drawn second) ===
-  const expRing = scene.add.image(
-    cfg.expRing.x,
-    cfg.expRing.y,
-    'ui_exp_ring_full'
-  );
-  expRing.setScale(cfg.expRing.scale);
-  expRing.setTint(0xff0000);  // RED to see it clearly
-  expRing.setAlpha(1);
+  // === LAYER 2: EXP RING drawn with Graphics ===
+  const expRingGraphics = scene.add.graphics();
 
-  // TEMPORARILY DISABLE MASK for debugging
-  // const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
-  // const expMask = new Phaser.Display.Masks.GeometryMask(scene, maskGraphics);
-  // expRing.setMask(expMask);
+  // Ring parameters (tunable)
+  const ringConfig = {
+    x: cfg.expRing.x,      // Center X (relative to container)
+    y: cfg.expRing.y,      // Center Y
+    radius: 55,            // Radius of ring
+    thickness: 8,          // Line thickness
+    color: 0xFFD700,       // Gold color
+    bgColor: 0x333333,     // Background ring (dark gray)
+    bgAlpha: 0.3           // Background transparency
+  };
 
-  headerContainer.add(expRing);
-  console.log('[PLAYER_HEADER] Ring at SAME position as avatar:', cfg.expRing.x, cfg.expRing.y);
+  // Draw background ring (full circle, semi-transparent)
+  expRingGraphics.lineStyle(ringConfig.thickness, ringConfig.bgColor, ringConfig.bgAlpha);
+  expRingGraphics.strokeCircle(ringConfig.x, ringConfig.y, ringConfig.radius);
 
-  // DISABLED: Mask data (mask is disabled for debugging)
-  // const maskData = {
-  //   graphics: maskGraphics,
-  //   centerX: containerX + cfg.expRing.x,
-  //   centerY: containerY + cfg.expRing.y,
-  //   radius: 50,
-  //   currentPercent: 1.0
-  // };
+  // Draw foreground ring (XP progress - full for now)
+  expRingGraphics.lineStyle(ringConfig.thickness, ringConfig.color, 1);
+  expRingGraphics.strokeCircle(ringConfig.x, ringConfig.y, ringConfig.radius);
+
+  headerContainer.add(expRingGraphics);
+
+  // Store for updates and TuneMode
+  const expRing = expRingGraphics;
+  expRing.ringConfig = ringConfig;
+
+  // Store original position for TuneMode
+  expRing.ringX = ringConfig.x;
+  expRing.ringY = ringConfig.y;
+
+  console.log('[PLAYER_HEADER] Ring drawn with Graphics at', ringConfig.x, ringConfig.y);
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
   const panel = scene.add.image(
@@ -259,11 +266,33 @@ function createPlayerHeader(scene) {
 
     /**
      * Set EXP percentage (0.0 to 1.0)
-     * DISABLED: mask is disabled for debugging
      */
     setExp(percent) {
-      // updateExpMask(percent);
-      console.log('[PLAYER_HEADER] setExp called (mask disabled):', percent);
+      percent = Phaser.Math.Clamp(percent, 0, 1);
+
+      const ring = expRingGraphics;
+      const cfg = ring.ringConfig;
+
+      ring.clear();
+
+      // Background ring (full, dark)
+      ring.lineStyle(cfg.thickness, cfg.bgColor, cfg.bgAlpha);
+      ring.strokeCircle(cfg.x, cfg.y, cfg.radius);
+
+      // Foreground ring (partial, gold)
+      if (percent > 0) {
+        ring.lineStyle(cfg.thickness, cfg.color, 1);
+
+        // Arc from -90° (top) clockwise
+        const startAngle = Phaser.Math.DegToRad(-90);
+        const endAngle = startAngle + Phaser.Math.DegToRad(360 * percent);
+
+        ring.beginPath();
+        ring.arc(cfg.x, cfg.y, cfg.radius, startAngle, endAngle, false);
+        ring.strokePath();
+      }
+
+      console.log('[PLAYER_HEADER] XP ring updated:', Math.round(percent * 100) + '%');
     },
 
     /**
@@ -335,10 +364,10 @@ function createPlayerHeader(scene) {
   window.playerHeader = api;
   window.playerHeaderContainer = headerContainer;
   window.playerHeaderAvatar = avatar;
-  window.playerHeaderExpRing = expRing;  // tuneMode uses this name
-  window.playerHeaderRing = expRing;     // alternative name
+  window.playerHeaderExpRing = expRingGraphics;  // tuneMode uses this name
+  window.playerHeaderRing = expRingGraphics;     // alternative name
   window.playerHeaderPanel = panel;
-  window.playerHeaderDarkBg = headerBg;  // already exposed above, but ensure it's here
+  window.playerHeaderDarkBg = headerBg;
 
   return api;
 }
