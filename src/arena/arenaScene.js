@@ -669,12 +669,34 @@ function hideCity() {
   if (window.spineHero) window.spineHero.setVisible(false);
   if (window.panelContainer) window.panelContainer.setVisible(false);
   if (window.locationBg) window.locationBg.setVisible(false);
+
+  // Hide city UI when entering arena
+  if (window.playerHeader) {
+    window.playerHeader.setVisible(false);
+    console.log('[ARENA] Player header hidden');
+  }
+
+  if (window.bottomUI?.container) {
+    window.bottomUI.container.setVisible(false);
+    console.log('[ARENA] Bottom UI hidden');
+  }
 }
 
 function showCity() {
   if (window.cityBg) window.cityBg.setVisible(true);
   if (window.spineHero) window.spineHero.setVisible(true);
   if (window.panelContainer) window.panelContainer.setVisible(true);
+
+  // Show city UI when returning from arena
+  if (window.playerHeader) {
+    window.playerHeader.setVisible(true);
+    console.log('[ARENA] Player header restored');
+  }
+
+  if (window.bottomUI?.container) {
+    window.bottomUI.container.setVisible(true);
+    console.log('[ARENA] Bottom UI restored');
+  }
 }
 
 // ============================================================
