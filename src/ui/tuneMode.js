@@ -528,9 +528,9 @@ function initTuneMode(scene, cityBg, heroOffset) {
     } else if (selectedElement === 'avatar' && headerAvatar) {
       headerAvatar.setScale(headerAvatar.scaleX + delta);
     } else if (selectedElement === 'ring' && headerRing) {
-      // For ring, change radius (delta * 50 for bigger steps)
+      // For ring, change radius (delta * 250 = ±5px per press)
       if (headerRing.ringConfig) {
-        const newRadius = headerRing.ringConfig.radius + delta * 50;
+        const newRadius = headerRing.ringConfig.radius + delta * 250;
         if (newRadius > 10 && newRadius < 200) { // Min 10, max 200
           headerRing.ringConfig.radius = newRadius;
           // Redraw ring with new radius
@@ -542,28 +542,28 @@ function initTuneMode(scene, cityBg, heroOffset) {
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.setScale(headerPanel.scaleX + delta);
     } else if (selectedElement === 'darkbg' && headerDarkBg) {
-      // For rectangle, change width/height instead of scale
+      // For rectangle, change width/height (delta * 100)
       headerDarkBg.width += delta * 100;
       headerDarkBg.height += delta * 50;
     } else if (selectedElement === 'txtLevel' && txtLevel) {
-      // For text, change fontSize (delta * 20 for 2px steps)
+      // For text, change fontSize (delta * 100 = ±2px per press)
       const currentSize = parseInt(txtLevel.style.fontSize) || 20;
-      txtLevel.setFontSize(currentSize + delta * 20);
+      txtLevel.setFontSize(currentSize + delta * 100);
     } else if (selectedElement === 'txtNickname' && txtNickname) {
       const currentSize = parseInt(txtNickname.style.fontSize) || 18;
-      txtNickname.setFontSize(currentSize + delta * 20);
+      txtNickname.setFontSize(currentSize + delta * 100);
     } else if (selectedElement === 'txtEnergy' && txtEnergy) {
       const currentSize = parseInt(txtEnergy.style.fontSize) || 18;
-      txtEnergy.setFontSize(currentSize + delta * 20);
+      txtEnergy.setFontSize(currentSize + delta * 100);
     } else if (selectedElement === 'txtStars' && txtStars) {
       const currentSize = parseInt(txtStars.style.fontSize) || 18;
-      txtStars.setFontSize(currentSize + delta * 20);
+      txtStars.setFontSize(currentSize + delta * 100);
     } else if (selectedElement === 'txtGems' && txtGems) {
       const currentSize = parseInt(txtGems.style.fontSize) || 18;
-      txtGems.setFontSize(currentSize + delta * 20);
+      txtGems.setFontSize(currentSize + delta * 100);
     } else if (selectedElement === 'txtAdena' && txtAdena) {
       const currentSize = parseInt(txtAdena.style.fontSize) || 18;
-      txtAdena.setFontSize(currentSize + delta * 20);
+      txtAdena.setFontSize(currentSize + delta * 100);
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) icons[idx].setScale(icons[idx].scaleX + delta);
