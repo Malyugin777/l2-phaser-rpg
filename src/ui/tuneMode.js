@@ -528,9 +528,9 @@ function initTuneMode(scene, cityBg, heroOffset) {
     } else if (selectedElement === 'avatar' && headerAvatar) {
       headerAvatar.setScale(headerAvatar.scaleX + delta);
     } else if (selectedElement === 'ring' && headerRing) {
-      // For ring, change radius (delta * 250 = ±5px per press)
+      // For ring, change radius (delta * 50 = ±1px per press)
       if (headerRing.ringConfig) {
-        const newRadius = headerRing.ringConfig.radius + delta * 250;
+        const newRadius = headerRing.ringConfig.radius + delta * 50;
         if (newRadius > 10 && newRadius < 200) { // Min 10, max 200
           headerRing.ringConfig.radius = newRadius;
           // Redraw ring with new radius
