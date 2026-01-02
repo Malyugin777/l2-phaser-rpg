@@ -85,19 +85,41 @@ function initTuneMode(scene, cityBg, heroOffset) {
   overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:12px;font:11px monospace;z-index:99999;border-radius:5px;min-width:240px;';
   overlay.addEventListener('pointerdown', e => e.stopPropagation());
   overlay.innerHTML = `
-    <b>🎮 TUNE MODE</b> [<span id="tune-sel" style="color:#ff0">bg</span>]<br>
-    <hr style="border-color:#333;margin:5px 0">
-    <div id="tune-values" style="line-height:1.4"></div>
-    <hr style="border-color:#333;margin:5px 0">
-    <small>1-9,0,-,=: select | Arrows: move | Q/E: scale</small><br>
-    <small>Drag: move | Click: select</small>
-    <div style="margin-top:10px;display:flex;gap:5px;">
-      <button id="tune-save" style="flex:1;padding:5px;cursor:pointer">💾 SAVE</button>
-      <button id="tune-reset" style="padding:5px;cursor:pointer">🔄</button>
-      <button id="tune-copy" style="padding:5px;cursor:pointer">📋</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <b>🎮 TUNE MODE</b>
+      <button id="tune-toggle" style="padding:2px 6px;cursor:pointer;background:#333;color:#0f0;border:1px solid #0f0;border-radius:3px;">−</button>
+    </div>
+    <div id="tune-content">
+      <div>[<span id="tune-sel" style="color:#ff0">bg</span>]</div>
+      <hr style="border-color:#333;margin:5px 0">
+      <div id="tune-values" style="line-height:1.4"></div>
+      <hr style="border-color:#333;margin:5px 0">
+      <small>1-9,0,-,=: select | Arrows: move | Q/E: scale</small><br>
+      <small>Drag: move | Click: select</small>
+      <div style="margin-top:10px;display:flex;gap:5px;">
+        <button id="tune-save" style="flex:1;padding:5px;cursor:pointer">💾 SAVE</button>
+        <button id="tune-reset" style="padding:5px;cursor:pointer">🔄</button>
+        <button id="tune-copy" style="padding:5px;cursor:pointer">📋</button>
+      </div>
     </div>
   `;
   document.body.appendChild(overlay);
+
+  // Toggle collapse/expand
+  let isCollapsed = false;
+  const toggleBtn = document.getElementById('tune-toggle');
+  const content = document.getElementById('tune-content');
+
+  toggleBtn.onclick = () => {
+    isCollapsed = !isCollapsed;
+    if (isCollapsed) {
+      content.style.display = 'none';
+      toggleBtn.textContent = '+';
+    } else {
+      content.style.display = 'block';
+      toggleBtn.textContent = '−';
+    }
+  };
 
   const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', hpanel:'#f0a', darkbg:'#aaa', txtLevel:'#f88', txtNickname:'#8f8', txtEnergy:'#ff8', txtStars:'#8ff', txtGems:'#f8f', txtAdena:'#fa8' };
 
