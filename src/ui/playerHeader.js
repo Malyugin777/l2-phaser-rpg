@@ -28,11 +28,15 @@ const PLAYER_HEADER_CONFIG = {
     scale: 0.82    // FROM SAVED TUNE
   },
 
-  // EXP ring settings (middle layer) - SAME AS AVATAR (ring around it)
+  // EXP ring settings (middle layer) - FIXED FINAL VALUES
   expRing: {
-    x: -327,       // From saved
-    y: 233,        // From saved
-    scale: 0.98    // From saved
+    x: -327,         // Center X - FIXED
+    y: 233,          // Center Y - FIXED
+    radius: 55,      // Ring radius - FIXED
+    thickness: 8,    // Line thickness - FIXED
+    color: 0xFFD700, // Gold color - FIXED
+    bgColor: 0x333333,     // Background ring dark gray - FIXED
+    bgAlpha: 0.3           // Background transparency - FIXED
   },
 
   // Dark background behind header
@@ -132,15 +136,15 @@ function createPlayerHeader(scene) {
   // === LAYER 2: EXP RING drawn with Graphics ===
   const expRingGraphics = scene.add.graphics();
 
-  // Ring parameters (tunable)
+  // Ring parameters - ALL VALUES FROM CONFIG (FIXED)
   const ringConfig = {
-    x: cfg.expRing.x,      // Center X (relative to container)
-    y: cfg.expRing.y,      // Center Y
-    radius: 55,            // Radius of ring
-    thickness: 8,          // Line thickness
-    color: 0xFFD700,       // Gold color
-    bgColor: 0x333333,     // Background ring (dark gray)
-    bgAlpha: 0.3           // Background transparency
+    x: cfg.expRing.x,           // Center X (from config)
+    y: cfg.expRing.y,           // Center Y (from config)
+    radius: cfg.expRing.radius,       // Radius (from config)
+    thickness: cfg.expRing.thickness, // Line thickness (from config)
+    color: cfg.expRing.color,         // Gold color (from config)
+    bgColor: cfg.expRing.bgColor,     // Background ring (from config)
+    bgAlpha: cfg.expRing.bgAlpha      // Background transparency (from config)
   };
 
   // Draw background ring (full circle, semi-transparent)
