@@ -269,10 +269,41 @@ function initTuneMode(scene, cityBg, heroOffset) {
   };
 
   document.getElementById('tune-copy').onclick = () => {
-    const { cont, btn, icons } = getUI();
-    const txt = `Container: ${cont?.x},${cont?.y}\nBtn: ${btn?.x},${btn?.y} s:${btn?.scaleX}\nIcons: ${icons.map(i=>`(${i.x},${i.y})`).join(' ')} s:${icons[0]?.scaleX}`;
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
+
+    // Build comprehensive config output
+    const lines = [];
+
+    // BOTTOM UI
+    lines.push('=== BOTTOM UI ===');
+    lines.push(`Container: ${cont?.x},${cont?.y}`);
+    lines.push(`Panel: s:${panel?.scaleX?.toFixed(2)}`);
+    lines.push(`Button: ${btn?.x},${btn?.y} s:${btn?.scaleX?.toFixed(2)}`);
+    lines.push(`Icons: ${icons.map(i=>`(${i.x},${i.y})`).join(' ')} s:${icons[0]?.scaleX?.toFixed(2)}`);
+    lines.push('');
+
+    // PLAYER HEADER
+    lines.push('=== PLAYER HEADER ===');
+    lines.push(`Header Container: ${headerCont?.x},${headerCont?.y}`);
+    lines.push(`Avatar: ${headerAvatar?.x},${headerAvatar?.y} s:${headerAvatar?.scaleX?.toFixed(2)}`);
+    lines.push(`Ring: ${headerRing?.ringX ?? headerRing?.x},${headerRing?.ringY ?? headerRing?.y} r:${headerRing?.ringConfig?.radius?.toFixed(0)}`);
+    lines.push(`Header Panel: ${headerPanel?.x},${headerPanel?.y} s:${headerPanel?.scaleX?.toFixed(2)}`);
+    lines.push(`DarkBG: ${headerDarkBg?.x},${headerDarkBg?.y} w:${headerDarkBg?.width} h:${headerDarkBg?.height}`);
+    lines.push('');
+
+    // TEXTS
+    lines.push('=== TEXTS ===');
+    lines.push(`Level: ${txtLevel?.x},${txtLevel?.y} sz:${parseInt(txtLevel?.style.fontSize) || 20}`);
+    lines.push(`Nickname: ${txtNickname?.x},${txtNickname?.y} sz:${parseInt(txtNickname?.style.fontSize) || 18}`);
+    lines.push(`Energy: ${txtEnergy?.x},${txtEnergy?.y} sz:${parseInt(txtEnergy?.style.fontSize) || 18}`);
+    lines.push(`Stars: ${txtStars?.x},${txtStars?.y} sz:${parseInt(txtStars?.style.fontSize) || 18}`);
+    lines.push(`Gems: ${txtGems?.x},${txtGems?.y} sz:${parseInt(txtGems?.style.fontSize) || 18}`);
+    lines.push(`Adena: ${txtAdena?.x},${txtAdena?.y} sz:${parseInt(txtAdena?.style.fontSize) || 18}`);
+
+    const txt = lines.join('\n');
     navigator.clipboard?.writeText(txt);
-    alert('Copied!\n' + txt);
+    console.log('[TUNE] COPIED ALL CONFIG:\n' + txt);
+    alert('Copied ALL config!\n\n' + txt);
   };
 
   // Drag handling
