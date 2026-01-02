@@ -286,6 +286,7 @@ function setupHero(scene) {
       spineHero.setDepth(100);
       spineHero.setVisible(false);  // Hidden until final positioning
       spineHero.setScrollFactor(0);
+      spineHero.timeScale = 0.45;  // Замедляем анимации (убирает тряску)
       window.spineHero = spineHero;
       hero = spineHero;
       spineCreated = true;

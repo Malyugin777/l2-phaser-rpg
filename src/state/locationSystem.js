@@ -141,8 +141,6 @@ function enterCity(scene) {
     window.spineHero.setPosition(w * 0.25, h / 2 + 40);
     window.spineHero.setVisible(true);
     window.spineHero.setDepth(5);
-    // Замедляем idle в городе (0.45x) чтобы не было тряски
-    window.spineHero.timeScale = 0.45;
     if (typeof heroIdle === 'function') heroIdle();
   }
 
@@ -199,8 +197,6 @@ function enterLocation(scene) {
   if (window.spineHero) {
     window.spineHero.setPosition(heroStartX, heroStartY + 40);
     window.spineHero.setVisible(true);
-    // Возвращаем нормальную скорость в локации (1x)
-    window.spineHero.timeScale = 1;
     if (typeof heroEnterLocation === 'function') {
       heroEnterLocation();
     } else if (typeof heroIdle === 'function') {
