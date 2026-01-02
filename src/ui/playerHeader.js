@@ -28,46 +28,46 @@ const PLAYER_HEADER_CONFIG = {
     scale: 0.82    // FROM SAVED TUNE
   },
 
-  // EXP ring settings (middle layer) - FIXED FINAL VALUES
+  // EXP ring settings (middle layer) - FIXED FROM TUNEMODE
   expRing: {
-    x: -333.2,       // Center X - FIXED (from user tune)
-    y: 237.67,       // Center Y - FIXED (from user tune)
-    radius: 55,      // Ring radius - FIXED
+    x: -319,         // Center X - FIXED FROM TUNEMODE
+    y: 230,          // Center Y - FIXED FROM TUNEMODE
+    radius: 52,      // Ring radius - FIXED FROM TUNEMODE (r:52)
     thickness: 8,    // Line thickness - FIXED
     color: 0xFFD700, // Gold color - FIXED
     bgColor: 0x333333,     // Background ring dark gray - FIXED
     bgAlpha: 0.3           // Background transparency - FIXED
   },
 
-  // Dark background behind header
+  // Dark background behind header - FIXED FROM TUNEMODE
   darkBg: {
-    x: 0,
-    y: -100,       // Above container center
+    x: -10,          // FROM TUNEMODE
+    y: 149,          // FROM TUNEMODE
     width: 900,
     height: 250,
-    alpha: 0.85
+    alpha: 0.92
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
   resources: [
-    { x: -40, y: -5, icon: '⚡' },  // Slot 1: Energy (lightning)
-    { x: 90, y: -5, icon: '⭐' },   // Slot 2: Stars
-    { x: 220, y: -5, icon: '💎' },  // Slot 3: Gems (crystal)
-    { x: 350, y: -5, icon: '🪙' }   // Slot 4: Adena (coin)
+    { x: -40, y: -5, icon: '⚡', fontSize: 18 },  // Slot 1: Energy (lightning)
+    { x: 90, y: -5, icon: '⭐', fontSize: 18 },   // Slot 2: Stars
+    { x: 220, y: -5, icon: '💎', fontSize: 18 },  // Slot 3: Gems (crystal)
+    { x: 350, y: -5, icon: '🪙', fontSize: 18 }   // Slot 4: Adena (coin)
   ],
 
-  // Level text position
+  // Level text position - FIXED FROM TUNEMODE
   level: {
-    x: -330,       // Near avatar
-    y: 40,
-    fontSize: 20
+    x: -274,         // FROM TUNEMODE
+    y: 269,          // FROM TUNEMODE
+    fontSize: 12     // FROM TUNEMODE (sz:12)
   },
 
-  // Nickname text position
+  // Nickname text position - FIXED FROM TUNEMODE
   nickname: {
-    x: -200,       // Right of avatar
-    y: 40,
-    fontSize: 18
+    x: -249,         // FROM TUNEMODE
+    y: 226,          // FROM TUNEMODE
+    fontSize: 15     // FROM TUNEMODE (sz:15)
   },
 
   // Text style (Gemini recommended)
@@ -214,7 +214,10 @@ function createPlayerHeader(scene) {
       slot.x,
       slot.y,
       '0',
-      textStyle
+      {
+        ...textStyle,
+        fontSize: slot.fontSize
+      }
     );
     text.setOrigin(0.5);
     headerContainer.add(text);
@@ -290,8 +293,6 @@ function createPlayerHeader(scene) {
         ring.arc(cfg.x, cfg.y, cfg.radius, startAngle, endAngle, false);
         ring.strokePath();
       }
-
-      console.log('[PLAYER_HEADER] XP ring updated:', Math.round(percent * 100) + '%');
     },
 
     /**
