@@ -119,7 +119,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // SAVE button
   document.getElementById('tune-save').onclick = () => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
     const settings = {
       bgX: cityBg.x,
       bgY: cityBg.y,
@@ -144,12 +144,16 @@ function initTuneMode(scene, cityBg, heroOffset) {
       avatarX: headerAvatar?.x,
       avatarY: headerAvatar?.y,
       avatarScale: headerAvatar?.scaleX,
-      ringX: headerRing?.x,
-      ringY: headerRing?.y,
+      ringX: headerRing?.ringX ?? headerRing?.x,
+      ringY: headerRing?.ringY ?? headerRing?.y,
       ringScale: headerRing?.scaleX,
       hpanelX: headerPanel?.x,
       hpanelY: headerPanel?.y,
-      hpanelScale: headerPanel?.scaleX
+      hpanelScale: headerPanel?.scaleX,
+      darkBgX: headerDarkBg?.x,
+      darkBgY: headerDarkBg?.y,
+      darkBgWidth: headerDarkBg?.width,
+      darkBgHeight: headerDarkBg?.height
     };
     const json = JSON.stringify(settings, null, 2);
     localStorage.setItem('TUNE_SETTINGS', json);
@@ -375,34 +379,75 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
 // Apply saved tune settings
 function applyTuneSettings(scene, cityBg, heroOffset) {
-  const tune = getTuneSettings();
+  const settings = getTuneSettings();
   const w = scene.scale.width;
   const h = scene.scale.height;
 
-  console.log("[TUNE] Applying settings:", JSON.stringify(tune, null, 2));
+  console.log("[TUNE] Applying settings:", JSON.stringify(settings, null, 2));
 
   setTimeout(() => {
     // Background
-    if (window.cityBg) {
-      const baseScale = window.cityBg.scaleX / (tune.bgZoom || 1);
-      window.cityBg.setScale(baseScale * tune.bgZoom);
-      window.cityBg.y += tune.bgPanY;
-      window.cityBg.x += tune.bgPanX;
+    if (window.cityBg && settings.bgX !== undefined) {
+      window.cityBg.x = settings.bgX;
+      window.cityBg.y = settings.bgY;
+      if (settings.bgScale) window.cityBg.setScale(settings.bgScale);
     }
 
-    // Hero - only in tune mode
-    if (window.spineHero && TUNE_ENABLED) {
-      const baseX = w / 2 + heroOffset.x;
-      const baseY = h + heroOffset.y;
-      window.spineHero.x = baseX + tune.heroX;
-      window.spineHero.y = baseY + tune.heroY;
-      window.spineHero.setScale(heroOffset.scale * tune.heroScale);
+    // Hero
+    if (window.spineHero && settings.heroX !== undefined) {
+      window.spineHero.x = settings.heroX;
+      window.spineHero.y = settings.heroY;
+      if (settings.heroScale) window.spineHero.setScale(settings.heroScale);
     }
 
-    // Container
-    if (window.panelContainer) {
-      window.panelContainer.x += tune.panelX;
-      window.panelContainer.y -= tune.panelY;
+    // Bottom Container
+    if (window.panelContainer && settings.containerX !== undefined) {
+      window.panelContainer.x = settings.containerX;
+      window.panelContainer.y = settings.containerY;
+    }
+
+    // Header Container
+    if (window.playerHeader?.container && settings.headerX !== undefined) {
+      window.playerHeader.container.x = settings.headerX;
+      window.playerHeader.container.y = settings.headerY;
+      if (settings.headerScale) window.playerHeader.container.setScale(settings.headerScale);
+    }
+
+    // Header Avatar
+    if (window.playerHeaderAvatar && settings.avatarX !== undefined) {
+      window.playerHeaderAvatar.x = settings.avatarX;
+      window.playerHeaderAvatar.y = settings.avatarY;
+      if (settings.avatarScale) window.playerHeaderAvatar.setScale(settings.avatarScale);
+    }
+
+    // Header Ring (Graphics)
+    if (window.playerHeaderRing && settings.ringX !== undefined) {
+      // Graphics objects don't have x/y directly, need to update ringConfig
+      if (window.playerHeaderRing.ringConfig) {
+        window.playerHeaderRing.ringConfig.x = settings.ringX;
+        window.playerHeaderRing.ringConfig.y = settings.ringY;
+        window.playerHeaderRing.ringX = settings.ringX;
+        window.playerHeaderRing.ringY = settings.ringY;
+        // Redraw ring
+        if (window.playerHeader?.setExp) {
+          window.playerHeader.setExp(0.75); // Redraw at 75%
+        }
+      }
+    }
+
+    // Header Panel
+    if (window.playerHeaderPanel && settings.hpanelX !== undefined) {
+      window.playerHeaderPanel.x = settings.hpanelX;
+      window.playerHeaderPanel.y = settings.hpanelY;
+      if (settings.hpanelScale) window.playerHeaderPanel.setScale(settings.hpanelScale);
+    }
+
+    // Header Dark Background
+    if (window.playerHeaderDarkBg && settings.darkBgX !== undefined) {
+      window.playerHeaderDarkBg.x = settings.darkBgX;
+      window.playerHeaderDarkBg.y = settings.darkBgY;
+      if (settings.darkBgWidth) window.playerHeaderDarkBg.width = settings.darkBgWidth;
+      if (settings.darkBgHeight) window.playerHeaderDarkBg.height = settings.darkBgHeight;
     }
 
     console.log("[TUNE] Settings applied");
