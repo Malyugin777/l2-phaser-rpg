@@ -363,6 +363,14 @@ function createPlayerHeader(scene) {
   window.playerHeaderPanel = panel;
   window.playerHeaderDarkBg = headerBg;
 
+  // Expose text elements for TuneMode
+  window.headerTextLevel = levelText;
+  window.headerTextNickname = nicknameText;
+  window.headerTextEnergy = resourceTexts[0];    // Energy ⚡
+  window.headerTextStars = resourceTexts[1];     // Stars ⭐
+  window.headerTextGems = resourceTexts[2];      // Gems 💎
+  window.headerTextAdena = resourceTexts[3];     // Adena 🪙
+
   return api;
 }
 

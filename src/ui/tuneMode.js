@@ -70,7 +70,13 @@ function initTuneMode(scene, cityBg, heroOffset) {
     headerAvatar: window.playerHeaderAvatar,
     headerRing: window.playerHeaderExpRing,
     headerPanel: window.playerHeaderPanel,
-    headerDarkBg: window.playerHeaderDarkBg
+    headerDarkBg: window.playerHeaderDarkBg,
+    txtLevel: window.headerTextLevel,
+    txtNickname: window.headerTextNickname,
+    txtEnergy: window.headerTextEnergy,
+    txtStars: window.headerTextStars,
+    txtGems: window.headerTextGems,
+    txtAdena: window.headerTextAdena
   });
 
   // Create overlay
@@ -93,10 +99,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
   `;
   document.body.appendChild(overlay);
 
-  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a', darkbg:'#aaa' };
+  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a', darkbg:'#aaa', txtLevel:'#f88', txtNickname:'#8f8', txtEnergy:'#ff8', txtStars:'#8ff', txtGems:'#f8f', txtAdena:'#fa8' };
 
   const updateOverlay = () => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     document.getElementById('tune-sel').style.color = selColors[selectedElement] || '#fff';
     document.getElementById('tune-sel').textContent = selectedElement;
 
@@ -114,12 +120,18 @@ function initTuneMode(scene, cityBg, heroOffset) {
     html += `<b style="color:#0fa">-.Ring:</b> ${(headerRing?.ringX ?? headerRing?.x ?? 0).toFixed(0)},${(headerRing?.ringY ?? headerRing?.y ?? 0).toFixed(0)} r:${headerRing?.ringConfig?.radius ?? 0}<br>`;
     html += `<b style="color:#f0a">=.HPanel:</b> ${headerPanel?.x.toFixed(0)},${headerPanel?.y.toFixed(0)} s:${headerPanel?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#aaa">B.DarkBG:</b> ${headerDarkBg?.x.toFixed(0)},${headerDarkBg?.y.toFixed(0)} w:${headerDarkBg?.width.toFixed(0)} h:${headerDarkBg?.height.toFixed(0)}<br>`;
+    html += `<b style="color:#f88">L.TxtLvl:</b> ${txtLevel?.x.toFixed(0)},${txtLevel?.y.toFixed(0)}<br>`;
+    html += `<b style="color:#8f8">N.TxtName:</b> ${txtNickname?.x.toFixed(0)},${txtNickname?.y.toFixed(0)}<br>`;
+    html += `<b style="color:#ff8">R.TxtEnrgy:</b> ${txtEnergy?.x.toFixed(0)},${txtEnergy?.y.toFixed(0)}<br>`;
+    html += `<b style="color:#8ff">S.TxtStars:</b> ${txtStars?.x.toFixed(0)},${txtStars?.y.toFixed(0)}<br>`;
+    html += `<b style="color:#f8f">G.TxtGems:</b> ${txtGems?.x.toFixed(0)},${txtGems?.y.toFixed(0)}<br>`;
+    html += `<b style="color:#fa8">A.TxtAdena:</b> ${txtAdena?.x.toFixed(0)},${txtAdena?.y.toFixed(0)}<br>`;
     document.getElementById('tune-values').innerHTML = html;
   };
 
   // SAVE button
   document.getElementById('tune-save').onclick = () => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     const settings = {
       bgX: cityBg.x,
       bgY: cityBg.y,
@@ -153,7 +165,19 @@ function initTuneMode(scene, cityBg, heroOffset) {
       darkBgX: headerDarkBg?.x,
       darkBgY: headerDarkBg?.y,
       darkBgWidth: headerDarkBg?.width,
-      darkBgHeight: headerDarkBg?.height
+      darkBgHeight: headerDarkBg?.height,
+      txtLevelX: txtLevel?.x,
+      txtLevelY: txtLevel?.y,
+      txtNicknameX: txtNickname?.x,
+      txtNicknameY: txtNickname?.y,
+      txtEnergyX: txtEnergy?.x,
+      txtEnergyY: txtEnergy?.y,
+      txtStarsX: txtStars?.x,
+      txtStarsY: txtStars?.y,
+      txtGemsX: txtGems?.x,
+      txtGemsY: txtGems?.y,
+      txtAdenaX: txtAdena?.x,
+      txtAdenaY: txtAdena?.y
     };
     const json = JSON.stringify(settings, null, 2);
     localStorage.setItem('TUNE_SETTINGS', json);
@@ -179,7 +203,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   let dragging = false, startX = 0, startY = 0;
 
   scene.input.on('pointerdown', (p) => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
 
     // TELEPORT MODE: If clicking on empty space, teleport selected element to click position
     let clickedOnElement = false;
@@ -247,6 +271,37 @@ function initTuneMode(scene, cityBg, heroOffset) {
         const offsetY = p.y - headerCont.y;
         headerDarkBg.x = offsetX;
         headerDarkBg.y = offsetY;
+      } else if (selectedElement === 'txtLevel' && txtLevel) {
+        // Text is relative to container
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        txtLevel.x = offsetX;
+        txtLevel.y = offsetY;
+      } else if (selectedElement === 'txtNickname' && txtNickname) {
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        txtNickname.x = offsetX;
+        txtNickname.y = offsetY;
+      } else if (selectedElement === 'txtEnergy' && txtEnergy) {
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        txtEnergy.x = offsetX;
+        txtEnergy.y = offsetY;
+      } else if (selectedElement === 'txtStars' && txtStars) {
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        txtStars.x = offsetX;
+        txtStars.y = offsetY;
+      } else if (selectedElement === 'txtGems' && txtGems) {
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        txtGems.x = offsetX;
+        txtGems.y = offsetY;
+      } else if (selectedElement === 'txtAdena' && txtAdena) {
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        txtAdena.x = offsetX;
+        txtAdena.y = offsetY;
       } else if (selectedElement === 'panel' && cont) {
         cont.x = p.x;
         cont.y = p.y;
@@ -269,7 +324,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   scene.input.on('pointermove', (p) => {
     if (!dragging) return;
-    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     const dx = p.x - startX, dy = p.y - startY;
     startX = p.x; startY = p.y;
 
@@ -300,6 +355,18 @@ function initTuneMode(scene, cityBg, heroOffset) {
       headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement === 'darkbg' && headerDarkBg) {
       headerDarkBg.x += dx; headerDarkBg.y += dy;
+    } else if (selectedElement === 'txtLevel' && txtLevel) {
+      txtLevel.x += dx; txtLevel.y += dy;
+    } else if (selectedElement === 'txtNickname' && txtNickname) {
+      txtNickname.x += dx; txtNickname.y += dy;
+    } else if (selectedElement === 'txtEnergy' && txtEnergy) {
+      txtEnergy.x += dx; txtEnergy.y += dy;
+    } else if (selectedElement === 'txtStars' && txtStars) {
+      txtStars.x += dx; txtStars.y += dy;
+    } else if (selectedElement === 'txtGems' && txtGems) {
+      txtGems.x += dx; txtGems.y += dy;
+    } else if (selectedElement === 'txtAdena' && txtAdena) {
+      txtAdena.x += dx; txtAdena.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const i = parseInt(selectedElement[4]);
       if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
@@ -311,7 +378,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Arrow keys
   const moveSelected = (dx, dy) => {
-    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
 
     if (selectedElement === 'bg') {
       cityBg.x += dx; cityBg.y += dy;
@@ -341,6 +408,18 @@ function initTuneMode(scene, cityBg, heroOffset) {
       headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement === 'darkbg' && headerDarkBg) {
       headerDarkBg.x += dx; headerDarkBg.y += dy;
+    } else if (selectedElement === 'txtLevel' && txtLevel) {
+      txtLevel.x += dx; txtLevel.y += dy;
+    } else if (selectedElement === 'txtNickname' && txtNickname) {
+      txtNickname.x += dx; txtNickname.y += dy;
+    } else if (selectedElement === 'txtEnergy' && txtEnergy) {
+      txtEnergy.x += dx; txtEnergy.y += dy;
+    } else if (selectedElement === 'txtStars' && txtStars) {
+      txtStars.x += dx; txtStars.y += dy;
+    } else if (selectedElement === 'txtGems' && txtGems) {
+      txtGems.x += dx; txtGems.y += dy;
+    } else if (selectedElement === 'txtAdena' && txtAdena) {
+      txtAdena.x += dx; txtAdena.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) {
@@ -404,6 +483,14 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-MINUS', () => { selectedElement = 'ring'; updateOverlay(); });
   scene.input.keyboard.on('keydown-PLUS', () => { selectedElement = 'hpanel'; updateOverlay(); });
   scene.input.keyboard.on('keydown-B', () => { selectedElement = 'darkbg'; updateOverlay(); });
+
+  // Text element shortcuts
+  scene.input.keyboard.on('keydown-L', () => { selectedElement = 'txtLevel'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-N', () => { selectedElement = 'txtNickname'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-R', () => { selectedElement = 'txtEnergy'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-S', () => { selectedElement = 'txtStars'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-G', () => { selectedElement = 'txtGems'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-A', () => { selectedElement = 'txtAdena'; updateOverlay(); });
 
   // Initial update
   setTimeout(updateOverlay, 500);
@@ -482,6 +569,32 @@ function applyTuneSettings(scene, cityBg, heroOffset) {
       window.playerHeaderDarkBg.y = settings.darkBgY;
       if (settings.darkBgWidth) window.playerHeaderDarkBg.width = settings.darkBgWidth;
       if (settings.darkBgHeight) window.playerHeaderDarkBg.height = settings.darkBgHeight;
+    }
+
+    // Text elements
+    if (window.headerTextLevel && settings.txtLevelX !== undefined) {
+      window.headerTextLevel.x = settings.txtLevelX;
+      window.headerTextLevel.y = settings.txtLevelY;
+    }
+    if (window.headerTextNickname && settings.txtNicknameX !== undefined) {
+      window.headerTextNickname.x = settings.txtNicknameX;
+      window.headerTextNickname.y = settings.txtNicknameY;
+    }
+    if (window.headerTextEnergy && settings.txtEnergyX !== undefined) {
+      window.headerTextEnergy.x = settings.txtEnergyX;
+      window.headerTextEnergy.y = settings.txtEnergyY;
+    }
+    if (window.headerTextStars && settings.txtStarsX !== undefined) {
+      window.headerTextStars.x = settings.txtStarsX;
+      window.headerTextStars.y = settings.txtStarsY;
+    }
+    if (window.headerTextGems && settings.txtGemsX !== undefined) {
+      window.headerTextGems.x = settings.txtGemsX;
+      window.headerTextGems.y = settings.txtGemsY;
+    }
+    if (window.headerTextAdena && settings.txtAdenaX !== undefined) {
+      window.headerTextAdena.x = settings.txtAdenaX;
+      window.headerTextAdena.y = settings.txtAdenaY;
     }
 
     console.log("[TUNE] Settings applied");
