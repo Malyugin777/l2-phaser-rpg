@@ -6,10 +6,10 @@
 // ============================================================
 
 const PLAYER_HEADER_CONFIG = {
-  // Container position - near TOP center
+  // Container position - FROM SAVED TUNE
   container: {
-    x: 390,        // Center X
-    y: 80,         // Near TOP
+    x: 387,        // FROM SAVED TUNE
+    y: 374,        // FROM SAVED TUNE
     offsetX: 0,
     offsetY: 0
   },
@@ -21,18 +21,27 @@ const PLAYER_HEADER_CONFIG = {
     offsetY: 0
   },
 
-  // Avatar settings (bottom layer) - relative to container
+  // Avatar settings (bottom layer) - FROM SAVED TUNE
   avatar: {
-    x: -300,       // Left side (relative to container center)
-    y: 0,          // Same Y as container
-    scale: 0.8
+    x: 8,          // FROM SAVED TUNE
+    y: 229,        // FROM SAVED TUNE
+    scale: 0.82    // FROM SAVED TUNE
   },
 
-  // EXP ring settings (middle layer) - SAME position as avatar
+  // EXP ring settings (middle layer) - SAME AS AVATAR (ring around it)
   expRing: {
-    x: -300,       // SAME as avatar
-    y: 0,          // SAME as avatar
-    scale: 0.9
+    x: 8,          // SAME AS AVATAR
+    y: 229,        // SAME AS AVATAR
+    scale: 0.86    // FROM SAVED TUNE
+  },
+
+  // Dark background behind header
+  darkBg: {
+    x: 0,
+    y: -100,       // Above container center
+    width: 900,
+    height: 250,
+    alpha: 0.85
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
@@ -102,9 +111,19 @@ function createPlayerHeader(scene) {
   headerContainer.setScrollFactor(0);
 
   // === LAYER 0: DARK BACKGROUND (Behind all elements) ===
-  const headerBg = scene.add.rectangle(0, 0, w + 100, 200, 0x1a1a2e, 0.95);
+  const headerBg = scene.add.rectangle(
+    cfg.darkBg.x,
+    cfg.darkBg.y,
+    cfg.darkBg.width,
+    cfg.darkBg.height,
+    0x000000,
+    cfg.darkBg.alpha
+  );
   headerContainer.add(headerBg);
-  console.log('[PLAYER_HEADER] Dark background added at Y=0');
+
+  // Expose for TuneMode
+  window.playerHeaderDarkBg = headerBg;
+  console.log('[PLAYER_HEADER] DarkBg exposed for TuneMode');
 
   // === LAYER 1: AVATAR (Bottom - drawn first) ===
   const avatar = scene.add.image(
@@ -122,8 +141,9 @@ function createPlayerHeader(scene) {
     cfg.expRing.y,
     'ui_exp_ring_full'
   );
-  expRing.setScale(cfg.expRing.scale);  // Normal scale
-  expRing.setTint(0xFFD700);            // GOLD not red
+  expRing.setScale(cfg.expRing.scale);
+  expRing.setTint(0xff0000);  // RED to see it clearly
+  expRing.setAlpha(1);
 
   // TEMPORARILY DISABLE MASK for debugging
   // const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -318,6 +338,7 @@ function createPlayerHeader(scene) {
   window.playerHeaderExpRing = expRing;  // tuneMode uses this name
   window.playerHeaderRing = expRing;     // alternative name
   window.playerHeaderPanel = panel;
+  window.playerHeaderDarkBg = headerBg;  // already exposed above, but ensure it's here
 
   return api;
 }

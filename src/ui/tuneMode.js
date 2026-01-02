@@ -69,7 +69,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
     headerCont: window.playerHeader?.container,
     headerAvatar: window.playerHeaderAvatar,
     headerRing: window.playerHeaderExpRing,
-    headerPanel: window.playerHeaderPanel
+    headerPanel: window.playerHeaderPanel,
+    headerDarkBg: window.playerHeaderDarkBg
   });
 
   // Create overlay
@@ -92,10 +93,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
   `;
   document.body.appendChild(overlay);
 
-  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a' };
+  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a', darkbg:'#aaa' };
 
   const updateOverlay = () => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
     document.getElementById('tune-sel').style.color = selColors[selectedElement] || '#fff';
     document.getElementById('tune-sel').textContent = selectedElement;
 
@@ -112,6 +113,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
     html += `<b style="color:#fa0">0.Avatar:</b> ${headerAvatar?.x.toFixed(0)},${headerAvatar?.y.toFixed(0)} s:${headerAvatar?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#0fa">-.Ring:</b> ${headerRing?.x.toFixed(0)},${headerRing?.y.toFixed(0)} s:${headerRing?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#f0a">=.HPanel:</b> ${headerPanel?.x.toFixed(0)},${headerPanel?.y.toFixed(0)} s:${headerPanel?.scaleX.toFixed(2)}<br>`;
+    html += `<b style="color:#aaa">B.DarkBG:</b> ${headerDarkBg?.x.toFixed(0)},${headerDarkBg?.y.toFixed(0)} w:${headerDarkBg?.width.toFixed(0)} h:${headerDarkBg?.height.toFixed(0)}<br>`;
     document.getElementById('tune-values').innerHTML = html;
   };
 
@@ -281,7 +283,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Arrow keys
   const moveSelected = (dx, dy) => {
-    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
 
     if (selectedElement === 'bg') {
       cityBg.x += dx; cityBg.y += dy;
@@ -299,6 +301,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
       headerRing.x += dx; headerRing.y += dy;
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.x += dx; headerPanel.y += dy;
+    } else if (selectedElement === 'darkbg' && headerDarkBg) {
+      headerDarkBg.x += dx; headerDarkBg.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) {
@@ -314,9 +318,9 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-LEFT', () => moveSelected(-STEP, 0));
   scene.input.keyboard.on('keydown-RIGHT', () => moveSelected(STEP, 0));
 
-  // Q/E for scale
+  // Q/E for scale (or width/height for rectangles)
   const scaleSelected = (delta) => {
-    const { panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel } = getUI();
+    const { panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
     if (selectedElement === 'bg') {
       cityBg.setScale(cityBg.scaleX + delta);
     } else if (selectedElement === 'panel' && panel) {
@@ -334,6 +338,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
       headerRing.setScale(headerRing.scaleX + delta);
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.setScale(headerPanel.scaleX + delta);
+    } else if (selectedElement === 'darkbg' && headerDarkBg) {
+      // For rectangle, change width/height instead of scale
+      headerDarkBg.width += delta * 100;
+      headerDarkBg.height += delta * 50;
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) icons[idx].setScale(icons[idx].scaleX + delta);
@@ -344,7 +352,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-E', () => scaleSelected(SCALE_STEP));
   scene.input.keyboard.on('keydown-Q', () => scaleSelected(-SCALE_STEP));
 
-  // Number keys 1-9, 0, -, =
+  // Number keys 1-9, 0, -, =, B
   scene.input.keyboard.on('keydown-ONE', () => { selectedElement = 'bg'; updateOverlay(); });
   scene.input.keyboard.on('keydown-TWO', () => { selectedElement = 'panel'; updateOverlay(); });
   scene.input.keyboard.on('keydown-THREE', () => { selectedElement = 'hero'; updateOverlay(); });
@@ -357,6 +365,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-ZERO', () => { selectedElement = 'avatar'; updateOverlay(); });
   scene.input.keyboard.on('keydown-MINUS', () => { selectedElement = 'ring'; updateOverlay(); });
   scene.input.keyboard.on('keydown-PLUS', () => { selectedElement = 'hpanel'; updateOverlay(); });
+  scene.input.keyboard.on('keydown-B', () => { selectedElement = 'darkbg'; updateOverlay(); });
 
   // Initial update
   setTimeout(updateOverlay, 500);
