@@ -30,9 +30,9 @@ const PLAYER_HEADER_CONFIG = {
 
   // EXP ring settings (middle layer) - FIXED FROM TUNEMODE
   expRing: {
-    x: -319,         // Center X - FIXED FROM TUNEMODE
-    y: 230,          // Center Y - FIXED FROM TUNEMODE
-    radius: 52,      // Ring radius - FIXED FROM TUNEMODE (r:52)
+    x: -333,         // Center X - FROM SAVED
+    y: 239,          // Center Y - FROM SAVED
+    radius: 55,      // Ring radius - FROM SAVED (r:55)
     thickness: 8,    // Line thickness - FIXED
     color: 0xFFD700, // Gold color - FIXED
     bgColor: 0x333333,     // Background ring dark gray - FIXED
@@ -48,26 +48,26 @@ const PLAYER_HEADER_CONFIG = {
     alpha: 0.92
   },
 
-  // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
-  resources: [
-    { x: -40, y: -5, icon: '⚡', fontSize: 18 },  // Slot 1: Energy (lightning)
-    { x: 90, y: -5, icon: '⭐', fontSize: 18 },   // Slot 2: Stars
-    { x: 220, y: -5, icon: '💎', fontSize: 18 },  // Slot 3: Gems (crystal)
-    { x: 350, y: -5, icon: '🪙', fontSize: 18 }   // Slot 4: Adena (coin)
-  ],
+  // Resource texts - ALL FROM SAVED
+  resources: {
+    energy: { x: -20, y: 226, fontSize: 18 },   // FROM SAVED
+    stars:  { x: 96,  y: 227, fontSize: 18 },   // FROM SAVED
+    gems:   { x: 200, y: 227, fontSize: 18 },   // FROM SAVED
+    adena:  { x: 311, y: 226, fontSize: 18 }    // FROM SAVED
+  },
 
   // Level text position - FIXED FROM TUNEMODE
   level: {
-    x: -274,         // FROM TUNEMODE
-    y: 269,          // FROM TUNEMODE
-    fontSize: 12     // FROM TUNEMODE (sz:12)
+    x: -330,         // FROM SAVED
+    y: 40,           // FROM SAVED
+    fontSize: 20     // FROM SAVED (sz:20)
   },
 
   // Nickname text position - FIXED FROM TUNEMODE
   nickname: {
-    x: -249,         // FROM TUNEMODE
-    y: 226,          // FROM TUNEMODE
-    fontSize: 15     // FROM TUNEMODE (sz:15)
+    x: -249,         // FROM SAVED
+    y: 230,          // FROM SAVED
+    fontSize: 24     // FROM SAVED (sz:24)
   },
 
   // Text style (Gemini recommended)
@@ -208,21 +208,57 @@ function createPlayerHeader(scene) {
   nicknameText.setOrigin(0, 0.5);
   headerContainer.add(nicknameText);
 
-  // Resource texts (4 slots)
-  const resourceTexts = cfg.resources.map((slot, index) => {
-    const text = scene.add.text(
-      slot.x,
-      slot.y,
-      '0',
-      {
-        ...textStyle,
-        fontSize: slot.fontSize
-      }
-    );
-    text.setOrigin(0.5);
-    headerContainer.add(text);
-    return text;
-  });
+  // Resource texts (4 slots: Energy, Stars, Gems, Adena)
+  const energyText = scene.add.text(
+    cfg.resources.energy.x,
+    cfg.resources.energy.y,
+    '30',
+    {
+      ...textStyle,
+      fontSize: cfg.resources.energy.fontSize + 'px'
+    }
+  );
+  energyText.setOrigin(0.5);
+  headerContainer.add(energyText);
+
+  const starsText = scene.add.text(
+    cfg.resources.stars.x,
+    cfg.resources.stars.y,
+    '150',
+    {
+      ...textStyle,
+      fontSize: cfg.resources.stars.fontSize + 'px'
+    }
+  );
+  starsText.setOrigin(0.5);
+  headerContainer.add(starsText);
+
+  const gemsText = scene.add.text(
+    cfg.resources.gems.x,
+    cfg.resources.gems.y,
+    '5000',
+    {
+      ...textStyle,
+      fontSize: cfg.resources.gems.fontSize + 'px'
+    }
+  );
+  gemsText.setOrigin(0.5);
+  headerContainer.add(gemsText);
+
+  const adenaText = scene.add.text(
+    cfg.resources.adena.x,
+    cfg.resources.adena.y,
+    '125K',
+    {
+      ...textStyle,
+      fontSize: cfg.resources.adena.fontSize + 'px'
+    }
+  );
+  adenaText.setOrigin(0.5);
+  headerContainer.add(adenaText);
+
+  // Array for setResources() API
+  const resourceTexts = [energyText, starsText, gemsText, adenaText];
 
   // DISABLED: Update EXP Ring Mask (mask disabled for debugging)
   // function updateExpMask(percent) {
