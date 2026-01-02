@@ -82,8 +82,35 @@ function initTuneMode(scene, cityBg, heroOffset) {
   // Create overlay
   const overlay = document.createElement('div');
   overlay.id = 'tune-overlay';
-  overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:12px;font:11px monospace;z-index:99999;border-radius:5px;min-width:240px;';
+  overlay.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:12px;font:11px monospace;z-index:99999;border-radius:5px;min-width:240px;cursor:move;';
   overlay.addEventListener('pointerdown', e => e.stopPropagation());
+
+  // Make overlay draggable
+  let isDraggingOverlay = false;
+  let overlayStartX = 0, overlayStartY = 0;
+  let overlayOffsetX = 0, overlayOffsetY = 0;
+
+  overlay.addEventListener('pointerdown', (e) => {
+    isDraggingOverlay = true;
+    overlayStartX = e.clientX;
+    overlayStartY = e.clientY;
+    const rect = overlay.getBoundingClientRect();
+    overlayOffsetX = overlayStartX - rect.left;
+    overlayOffsetY = overlayStartY - rect.top;
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!isDraggingOverlay) return;
+    const newX = e.clientX - overlayOffsetX;
+    const newY = e.clientY - overlayOffsetY;
+    overlay.style.left = newX + 'px';
+    overlay.style.top = newY + 'px';
+    overlay.style.right = 'auto'; // Remove right positioning
+  });
+
+  document.addEventListener('pointerup', () => {
+    isDraggingOverlay = false;
+  });
   overlay.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <b>🎮 TUNE MODE</b>
@@ -121,7 +148,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
     }
   };
 
-  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', hpanel:'#f0a', darkbg:'#aaa', txtLevel:'#f88', txtNickname:'#8f8', txtEnergy:'#ff8', txtStars:'#8ff', txtGems:'#f8f', txtAdena:'#fa8' };
+  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a', darkbg:'#aaa', txtLevel:'#f88', txtNickname:'#8f8', txtEnergy:'#ff8', txtStars:'#8ff', txtGems:'#f8f', txtAdena:'#fa8' };
 
   const updateOverlay = () => {
     const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
@@ -139,6 +166,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
     });
     html += `<b style="color:#0af">9.HeaderCont:</b> ${headerCont?.x.toFixed(0)},${headerCont?.y.toFixed(0)} s:${headerCont?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#fa0">0.Avatar:</b> ${headerAvatar?.x.toFixed(0)},${headerAvatar?.y.toFixed(0)} s:${headerAvatar?.scaleX.toFixed(2)}<br>`;
+    html += `<b style="color:#0fa">-.Ring:</b> ${(headerRing?.ringX ?? headerRing?.x ?? 0).toFixed(1)},${(headerRing?.ringY ?? headerRing?.y ?? 0).toFixed(1)} r:${headerRing?.ringConfig?.radius ?? 0}<br>`;
     html += `<b style="color:#f0a">=.HPanel:</b> ${headerPanel?.x.toFixed(0)},${headerPanel?.y.toFixed(0)} s:${headerPanel?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#aaa">B.DarkBG:</b> ${headerDarkBg?.x.toFixed(0)},${headerDarkBg?.y.toFixed(0)} w:${headerDarkBg?.width.toFixed(0)} h:${headerDarkBg?.height.toFixed(0)}<br>`;
     html += `<b style="color:#f88">L.TxtLvl:</b> ${txtLevel?.x.toFixed(0)},${txtLevel?.y.toFixed(0)} sz:${parseInt(txtLevel?.style.fontSize) || 20}<br>`;
@@ -177,6 +205,9 @@ function initTuneMode(scene, cityBg, heroOffset) {
       avatarX: headerAvatar?.x,
       avatarY: headerAvatar?.y,
       avatarScale: headerAvatar?.scaleX,
+      ringX: headerRing?.ringX ?? headerRing?.x,
+      ringY: headerRing?.ringY ?? headerRing?.y,
+      ringRadius: headerRing?.ringConfig?.radius,
       hpanelX: headerPanel?.x,
       hpanelY: headerPanel?.y,
       hpanelScale: headerPanel?.scaleX,
@@ -270,6 +301,19 @@ function initTuneMode(scene, cityBg, heroOffset) {
         const offsetY = p.y - headerCont.y;
         headerAvatar.x = offsetX;
         headerAvatar.y = offsetY;
+      } else if (selectedElement === 'ring' && headerRing) {
+        // Ring is relative to container - update ringConfig
+        const offsetX = p.x - headerCont.x;
+        const offsetY = p.y - headerCont.y;
+        if (headerRing.ringConfig) {
+          headerRing.ringConfig.x = offsetX;
+          headerRing.ringConfig.y = offsetY;
+          headerRing.ringX = offsetX;
+          headerRing.ringY = offsetY;
+          if (window.playerHeader?.setExp) {
+            window.playerHeader.setExp(0.75);
+          }
+        }
       } else if (selectedElement === 'hpanel' && headerPanel) {
         // Panel is relative to container
         const offsetX = p.x - headerCont.x;
@@ -351,6 +395,17 @@ function initTuneMode(scene, cityBg, heroOffset) {
       headerCont.x += dx; headerCont.y += dy;
     } else if (selectedElement === 'avatar' && headerAvatar) {
       headerAvatar.x += dx; headerAvatar.y += dy;
+    } else if (selectedElement === 'ring' && headerRing) {
+      // Graphics object - update ringConfig and redraw
+      if (headerRing.ringConfig) {
+        headerRing.ringConfig.x += dx;
+        headerRing.ringConfig.y += dy;
+        headerRing.ringX = headerRing.ringConfig.x;
+        headerRing.ringY = headerRing.ringConfig.y;
+        if (window.playerHeader?.setExp) {
+          window.playerHeader.setExp(0.75);
+        }
+      }
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement === 'darkbg' && headerDarkBg) {
@@ -392,6 +447,18 @@ function initTuneMode(scene, cityBg, heroOffset) {
       headerCont.x += dx; headerCont.y += dy;
     } else if (selectedElement === 'avatar' && headerAvatar) {
       headerAvatar.x += dx; headerAvatar.y += dy;
+    } else if (selectedElement === 'ring' && headerRing) {
+      // Graphics object - update ringConfig and redraw
+      if (headerRing.ringConfig) {
+        headerRing.ringConfig.x += dx;
+        headerRing.ringConfig.y += dy;
+        headerRing.ringX = headerRing.ringConfig.x;
+        headerRing.ringY = headerRing.ringConfig.y;
+        // Redraw ring
+        if (window.playerHeader?.setExp) {
+          window.playerHeader.setExp(0.75); // Redraw at current percent
+        }
+      }
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.x += dx; headerPanel.y += dy;
     } else if (selectedElement === 'darkbg' && headerDarkBg) {
@@ -485,7 +552,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-EIGHT', () => { selectedElement = 'icon3'; updateOverlay(); });
   scene.input.keyboard.on('keydown-NINE', () => { selectedElement = 'header'; updateOverlay(); });
   scene.input.keyboard.on('keydown-ZERO', () => { selectedElement = 'avatar'; updateOverlay(); });
-  // MINUS key removed - ring position is FIXED
+  scene.input.keyboard.on('keydown-MINUS', () => { selectedElement = 'ring'; updateOverlay(); });
   scene.input.keyboard.on('keydown-PLUS', () => { selectedElement = 'hpanel'; updateOverlay(); });
   scene.input.keyboard.on('keydown-B', () => { selectedElement = 'darkbg'; updateOverlay(); });
 
@@ -546,7 +613,21 @@ function applyTuneSettings(scene, cityBg, heroOffset) {
       if (settings.avatarScale) window.playerHeaderAvatar.setScale(settings.avatarScale);
     }
 
-    // Ring position is FIXED in config, not loaded from settings
+    // Header Ring (Graphics)
+    if (window.playerHeaderRing && settings.ringX !== undefined) {
+      // Graphics objects don't have x/y directly, need to update ringConfig
+      if (window.playerHeaderRing.ringConfig) {
+        window.playerHeaderRing.ringConfig.x = settings.ringX;
+        window.playerHeaderRing.ringConfig.y = settings.ringY;
+        window.playerHeaderRing.ringX = settings.ringX;
+        window.playerHeaderRing.ringY = settings.ringY;
+        if (settings.ringRadius) window.playerHeaderRing.ringConfig.radius = settings.ringRadius;
+        // Redraw ring
+        if (window.playerHeader?.setExp) {
+          window.playerHeader.setExp(0.75); // Redraw at 75%
+        }
+      }
+    }
 
     // Header Panel
     if (window.playerHeaderPanel && settings.hpanelX !== undefined) {
