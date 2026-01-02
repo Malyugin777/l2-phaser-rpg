@@ -120,12 +120,12 @@ function initTuneMode(scene, cityBg, heroOffset) {
     html += `<b style="color:#0fa">-.Ring:</b> ${(headerRing?.ringX ?? headerRing?.x ?? 0).toFixed(0)},${(headerRing?.ringY ?? headerRing?.y ?? 0).toFixed(0)} r:${headerRing?.ringConfig?.radius ?? 0}<br>`;
     html += `<b style="color:#f0a">=.HPanel:</b> ${headerPanel?.x.toFixed(0)},${headerPanel?.y.toFixed(0)} s:${headerPanel?.scaleX.toFixed(2)}<br>`;
     html += `<b style="color:#aaa">B.DarkBG:</b> ${headerDarkBg?.x.toFixed(0)},${headerDarkBg?.y.toFixed(0)} w:${headerDarkBg?.width.toFixed(0)} h:${headerDarkBg?.height.toFixed(0)}<br>`;
-    html += `<b style="color:#f88">L.TxtLvl:</b> ${txtLevel?.x.toFixed(0)},${txtLevel?.y.toFixed(0)}<br>`;
-    html += `<b style="color:#8f8">N.TxtName:</b> ${txtNickname?.x.toFixed(0)},${txtNickname?.y.toFixed(0)}<br>`;
-    html += `<b style="color:#ff8">R.TxtEnrgy:</b> ${txtEnergy?.x.toFixed(0)},${txtEnergy?.y.toFixed(0)}<br>`;
-    html += `<b style="color:#8ff">S.TxtStars:</b> ${txtStars?.x.toFixed(0)},${txtStars?.y.toFixed(0)}<br>`;
-    html += `<b style="color:#f8f">G.TxtGems:</b> ${txtGems?.x.toFixed(0)},${txtGems?.y.toFixed(0)}<br>`;
-    html += `<b style="color:#fa8">A.TxtAdena:</b> ${txtAdena?.x.toFixed(0)},${txtAdena?.y.toFixed(0)}<br>`;
+    html += `<b style="color:#f88">L.TxtLvl:</b> ${txtLevel?.x.toFixed(0)},${txtLevel?.y.toFixed(0)} sz:${parseInt(txtLevel?.style.fontSize) || 20}<br>`;
+    html += `<b style="color:#8f8">N.TxtName:</b> ${txtNickname?.x.toFixed(0)},${txtNickname?.y.toFixed(0)} sz:${parseInt(txtNickname?.style.fontSize) || 18}<br>`;
+    html += `<b style="color:#ff8">R.TxtEnrgy:</b> ${txtEnergy?.x.toFixed(0)},${txtEnergy?.y.toFixed(0)} sz:${parseInt(txtEnergy?.style.fontSize) || 18}<br>`;
+    html += `<b style="color:#8ff">S.TxtStars:</b> ${txtStars?.x.toFixed(0)},${txtStars?.y.toFixed(0)} sz:${parseInt(txtStars?.style.fontSize) || 18}<br>`;
+    html += `<b style="color:#f8f">G.TxtGems:</b> ${txtGems?.x.toFixed(0)},${txtGems?.y.toFixed(0)} sz:${parseInt(txtGems?.style.fontSize) || 18}<br>`;
+    html += `<b style="color:#fa8">A.TxtAdena:</b> ${txtAdena?.x.toFixed(0)},${txtAdena?.y.toFixed(0)} sz:${parseInt(txtAdena?.style.fontSize) || 18}<br>`;
     document.getElementById('tune-values').innerHTML = html;
   };
 
@@ -168,16 +168,22 @@ function initTuneMode(scene, cityBg, heroOffset) {
       darkBgHeight: headerDarkBg?.height,
       txtLevelX: txtLevel?.x,
       txtLevelY: txtLevel?.y,
+      txtLevelSize: parseInt(txtLevel?.style.fontSize) || 20,
       txtNicknameX: txtNickname?.x,
       txtNicknameY: txtNickname?.y,
+      txtNicknameSize: parseInt(txtNickname?.style.fontSize) || 18,
       txtEnergyX: txtEnergy?.x,
       txtEnergyY: txtEnergy?.y,
+      txtEnergySize: parseInt(txtEnergy?.style.fontSize) || 18,
       txtStarsX: txtStars?.x,
       txtStarsY: txtStars?.y,
+      txtStarsSize: parseInt(txtStars?.style.fontSize) || 18,
       txtGemsX: txtGems?.x,
       txtGemsY: txtGems?.y,
+      txtGemsSize: parseInt(txtGems?.style.fontSize) || 18,
       txtAdenaX: txtAdena?.x,
-      txtAdenaY: txtAdena?.y
+      txtAdenaY: txtAdena?.y,
+      txtAdenaSize: parseInt(txtAdena?.style.fontSize) || 18
     };
     const json = JSON.stringify(settings, null, 2);
     localStorage.setItem('TUNE_SETTINGS', json);
@@ -435,9 +441,9 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-LEFT', () => moveSelected(-STEP, 0));
   scene.input.keyboard.on('keydown-RIGHT', () => moveSelected(STEP, 0));
 
-  // Q/E for scale (or width/height for rectangles)
+  // Q/E for scale (or width/height for rectangles, fontSize for texts)
   const scaleSelected = (delta) => {
-    const { panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg } = getUI();
+    const { panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     if (selectedElement === 'bg') {
       cityBg.setScale(cityBg.scaleX + delta);
     } else if (selectedElement === 'panel' && panel) {
@@ -459,6 +465,25 @@ function initTuneMode(scene, cityBg, heroOffset) {
       // For rectangle, change width/height instead of scale
       headerDarkBg.width += delta * 100;
       headerDarkBg.height += delta * 50;
+    } else if (selectedElement === 'txtLevel' && txtLevel) {
+      // For text, change fontSize (delta * 20 for 2px steps)
+      const currentSize = parseInt(txtLevel.style.fontSize) || 20;
+      txtLevel.setFontSize(currentSize + delta * 20);
+    } else if (selectedElement === 'txtNickname' && txtNickname) {
+      const currentSize = parseInt(txtNickname.style.fontSize) || 18;
+      txtNickname.setFontSize(currentSize + delta * 20);
+    } else if (selectedElement === 'txtEnergy' && txtEnergy) {
+      const currentSize = parseInt(txtEnergy.style.fontSize) || 18;
+      txtEnergy.setFontSize(currentSize + delta * 20);
+    } else if (selectedElement === 'txtStars' && txtStars) {
+      const currentSize = parseInt(txtStars.style.fontSize) || 18;
+      txtStars.setFontSize(currentSize + delta * 20);
+    } else if (selectedElement === 'txtGems' && txtGems) {
+      const currentSize = parseInt(txtGems.style.fontSize) || 18;
+      txtGems.setFontSize(currentSize + delta * 20);
+    } else if (selectedElement === 'txtAdena' && txtAdena) {
+      const currentSize = parseInt(txtAdena.style.fontSize) || 18;
+      txtAdena.setFontSize(currentSize + delta * 20);
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) icons[idx].setScale(icons[idx].scaleX + delta);
@@ -575,26 +600,32 @@ function applyTuneSettings(scene, cityBg, heroOffset) {
     if (window.headerTextLevel && settings.txtLevelX !== undefined) {
       window.headerTextLevel.x = settings.txtLevelX;
       window.headerTextLevel.y = settings.txtLevelY;
+      if (settings.txtLevelSize) window.headerTextLevel.setFontSize(settings.txtLevelSize);
     }
     if (window.headerTextNickname && settings.txtNicknameX !== undefined) {
       window.headerTextNickname.x = settings.txtNicknameX;
       window.headerTextNickname.y = settings.txtNicknameY;
+      if (settings.txtNicknameSize) window.headerTextNickname.setFontSize(settings.txtNicknameSize);
     }
     if (window.headerTextEnergy && settings.txtEnergyX !== undefined) {
       window.headerTextEnergy.x = settings.txtEnergyX;
       window.headerTextEnergy.y = settings.txtEnergyY;
+      if (settings.txtEnergySize) window.headerTextEnergy.setFontSize(settings.txtEnergySize);
     }
     if (window.headerTextStars && settings.txtStarsX !== undefined) {
       window.headerTextStars.x = settings.txtStarsX;
       window.headerTextStars.y = settings.txtStarsY;
+      if (settings.txtStarsSize) window.headerTextStars.setFontSize(settings.txtStarsSize);
     }
     if (window.headerTextGems && settings.txtGemsX !== undefined) {
       window.headerTextGems.x = settings.txtGemsX;
       window.headerTextGems.y = settings.txtGemsY;
+      if (settings.txtGemsSize) window.headerTextGems.setFontSize(settings.txtGemsSize);
     }
     if (window.headerTextAdena && settings.txtAdenaX !== undefined) {
       window.headerTextAdena.x = settings.txtAdenaX;
       window.headerTextAdena.y = settings.txtAdenaY;
+      if (settings.txtAdenaSize) window.headerTextAdena.setFontSize(settings.txtAdenaSize);
     }
 
     console.log("[TUNE] Settings applied");
