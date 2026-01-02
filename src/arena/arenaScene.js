@@ -671,12 +671,12 @@ function hideCity() {
   if (window.locationBg) window.locationBg.setVisible(false);
 
   // Hide city UI when entering arena
-  if (window.playerHeader) {
+  if (window.playerHeader?.setVisible) {
     window.playerHeader.setVisible(false);
     console.log('[ARENA] Player header hidden');
   }
 
-  if (window.bottomUI?.container) {
+  if (window.bottomUI?.container?.setVisible) {
     window.bottomUI.container.setVisible(false);
     console.log('[ARENA] Bottom UI hidden');
   }
@@ -688,12 +688,12 @@ function showCity() {
   if (window.panelContainer) window.panelContainer.setVisible(true);
 
   // Show city UI when returning from arena
-  if (window.playerHeader) {
+  if (window.playerHeader?.setVisible) {
     window.playerHeader.setVisible(true);
     console.log('[ARENA] Player header restored');
   }
 
-  if (window.bottomUI?.container) {
+  if (window.bottomUI?.container?.setVisible) {
     window.bottomUI.container.setVisible(true);
     console.log('[ARENA] Bottom UI restored');
   }

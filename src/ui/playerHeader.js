@@ -6,33 +6,33 @@
 // ============================================================
 
 const PLAYER_HEADER_CONFIG = {
-  // Container position (FIXED coordinates - moved to TOP)
+  // Container position - near TOP center
   container: {
-    x: 387,        // Fixed X position
-    y: 100,        // Move to TOP (was 374)
+    x: 390,        // Center X
+    y: 80,         // Near TOP
     offsetX: 0,
     offsetY: 0
   },
 
   // Panel settings
   panel: {
-    scale: 0.8,    // Scaled down to fit screen
+    scale: 0.8,
     offsetX: 0,
     offsetY: 0
   },
 
   // Avatar settings (bottom layer) - relative to container
   avatar: {
-    x: 8,          // From tune mode
-    y: 229,        // From tune mode
-    scale: 0.82
+    x: -300,       // Left side (relative to container center)
+    y: 0,          // Same Y as container
+    scale: 0.8
   },
 
-  // EXP ring settings (middle layer) - SAME position as avatar (ring goes around it)
+  // EXP ring settings (middle layer) - SAME position as avatar
   expRing: {
-    x: 8,          // SAME as avatar.x
-    y: 229,        // SAME as avatar.y
-    scale: 0.86
+    x: -300,       // SAME as avatar
+    y: 0,          // SAME as avatar
+    scale: 0.9
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
@@ -122,9 +122,8 @@ function createPlayerHeader(scene) {
     cfg.expRing.y,
     'ui_exp_ring_full'
   );
-  expRing.setScale(1.5);           // BIGGER for visibility
-  expRing.setTint(0xff0000);       // RED to see it easily
-  expRing.setAlpha(1);
+  expRing.setScale(cfg.expRing.scale);  // Normal scale
+  expRing.setTint(0xFFD700);            // GOLD not red
 
   // TEMPORARILY DISABLE MASK for debugging
   // const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
@@ -133,9 +132,6 @@ function createPlayerHeader(scene) {
 
   headerContainer.add(expRing);
   console.log('[PLAYER_HEADER] Ring at SAME position as avatar:', cfg.expRing.x, cfg.expRing.y);
-  console.log('[DEBUG] Ring texture:', expRing.texture.key);
-  console.log('[DEBUG] Ring size:', expRing.width, 'x', expRing.height);
-  console.log('[DEBUG] Ring visible:', expRing.visible);
 
   // DISABLED: Mask data (mask is disabled for debugging)
   // const maskData = {
@@ -233,15 +229,11 @@ function createPlayerHeader(scene) {
 
   console.log("[PLAYER_HEADER] Created successfully");
 
-  // Expose for tune mode
-  window.playerHeaderAvatar = avatar;
-  window.playerHeaderExpRing = expRing;
-  window.playerHeaderPanel = panel;
-
   // === PUBLIC API ===
-  return {
+  const api = {
     container: headerContainer,
     avatar: avatar,
+    ring: expRing,
     expRing: expRing,
     panel: panel,
 
@@ -314,10 +306,20 @@ function createPlayerHeader(scene) {
      * Destroy header
      */
     destroy() {
-      maskData.graphics.destroy();
+      // maskData.graphics.destroy();  // Disabled with mask
       headerContainer.destroy();
     }
   };
+
+  // Expose ALL elements for TuneMode
+  window.playerHeader = api;
+  window.playerHeaderContainer = headerContainer;
+  window.playerHeaderAvatar = avatar;
+  window.playerHeaderExpRing = expRing;  // tuneMode uses this name
+  window.playerHeaderRing = expRing;     // alternative name
+  window.playerHeaderPanel = panel;
+
+  return api;
 }
 
 // Export for global access
