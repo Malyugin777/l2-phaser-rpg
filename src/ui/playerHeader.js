@@ -30,9 +30,9 @@ const PLAYER_HEADER_CONFIG = {
 
   // EXP ring settings (middle layer) - SAME AS AVATAR (ring around it)
   expRing: {
-    x: 8,          // SAME AS AVATAR
-    y: 229,        // SAME AS AVATAR
-    scale: 0.86    // FROM SAVED TUNE
+    x: -327,       // From saved
+    y: 233,        // From saved
+    scale: 0.98    // From saved
   },
 
   // Dark background behind header
@@ -66,21 +66,14 @@ const PLAYER_HEADER_CONFIG = {
     fontSize: 18
   },
 
-  // Text style (improved readability with stroke and shadow)
+  // Text style (Gemini recommended)
   textStyle: {
-    fontFamily: 'Arial, sans-serif',
+    fontFamily: 'Verdana, Arial, sans-serif',
     fontSize: '18px',
     color: '#ffffff',
     fontStyle: 'bold',
     stroke: '#000000',
-    strokeThickness: 4,  // Thick stroke for readability
-    shadow: {
-      offsetX: 2,
-      offsetY: 2,
-      color: '#000000',
-      blur: 2,
-      fill: true
-    }
+    strokeThickness: 3
   }
 };
 
@@ -111,13 +104,14 @@ function createPlayerHeader(scene) {
   headerContainer.setScrollFactor(0);
 
   // === LAYER 0: DARK BACKGROUND (Behind all elements) ===
+  // Stone-gray color instead of black
   const headerBg = scene.add.rectangle(
     cfg.darkBg.x,
     cfg.darkBg.y,
     cfg.darkBg.width,
     cfg.darkBg.height,
-    0x000000,
-    cfg.darkBg.alpha
+    0x3a3a4a,      // GRAY (was 0x000000 black)
+    0.92           // Slightly more opaque
   );
   headerContainer.add(headerBg);
 
