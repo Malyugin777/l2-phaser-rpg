@@ -17,8 +17,8 @@ const PLAYER_HEADER_CONFIG = {
   // Panel settings
   panel: {
     scale: 0.8,
-    offsetX: 0,
-    offsetY: 0
+    offsetX: 1,
+    offsetY: 1
   },
 
   // Avatar settings (bottom layer) - FROM SAVED TUNE
@@ -28,11 +28,11 @@ const PLAYER_HEADER_CONFIG = {
     scale: 0.82    // FROM SAVED TUNE
   },
 
-  // EXP ring settings (middle layer) - FIXED FROM TUNEMODE
+  // EXP ring settings (middle layer) - FINAL FROM TUNEMODE
   expRing: {
-    x: -333,         // Center X - FROM SAVED
-    y: 239,          // Center Y - FROM SAVED
-    radius: 55,      // Ring radius - FROM SAVED (r:55)
+    x: -319,         // Center X - FINAL
+    y: 229,          // Center Y - FINAL
+    radius: 52,      // Ring radius - FINAL (r:52)
     thickness: 8,    // Line thickness - FIXED
     color: 0xFFD700, // Gold color - FIXED
     bgColor: 0x333333,     // Background ring dark gray - FIXED
@@ -48,26 +48,26 @@ const PLAYER_HEADER_CONFIG = {
     alpha: 0.92
   },
 
-  // Resource texts - ALL FROM SAVED
+  // Resource texts - FINAL FROM TUNEMODE
   resources: {
-    energy: { x: -20, y: 226, fontSize: 18 },   // FROM SAVED
-    stars:  { x: 96,  y: 227, fontSize: 18 },   // FROM SAVED
-    gems:   { x: 200, y: 227, fontSize: 18 },   // FROM SAVED
-    adena:  { x: 311, y: 226, fontSize: 18 }    // FROM SAVED
+    energy: { x: -18, y: 227, fontSize: 18 },   // FINAL
+    stars:  { x: 95,  y: 226, fontSize: 18 },   // FINAL
+    gems:   { x: 200, y: 226, fontSize: 18 },   // FINAL
+    adena:  { x: 313, y: 226, fontSize: 18 }    // FINAL
   },
 
-  // Level text position - FIXED FROM TUNEMODE
+  // Level text position - FINAL FROM TUNEMODE
   level: {
-    x: -330,         // FROM SAVED
-    y: 40,           // FROM SAVED
-    fontSize: 20     // FROM SAVED (sz:20)
+    x: -271,         // FINAL
+    y: 268,          // FINAL
+    fontSize: 12     // FINAL (sz:12)
   },
 
-  // Nickname text position - FIXED FROM TUNEMODE
+  // Nickname text position - FINAL FROM TUNEMODE
   nickname: {
-    x: -249,         // FROM SAVED
-    y: 230,          // FROM SAVED
-    fontSize: 24     // FROM SAVED (sz:24)
+    x: -244,         // FINAL
+    y: 228,          // FINAL
+    fontSize: 24     // FINAL (sz:24)
   },
 
   // Text style (Gemini recommended)
