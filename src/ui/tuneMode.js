@@ -1,7 +1,28 @@
 "use strict";
 
 // ============================================================
-//  TUNE MODE — Visual positioning tool (?tune=1)
+//  TUNE MODE — Visual Positioning Tool (?tune=1)
+//  REFERENCE STANDARD for all UI positioning
+// ============================================================
+//
+//  UNIVERSAL CONTROLS (ALL elements):
+//  ✓ Arrow Keys: Move (1px step)
+//  ✓ Q/E: Scale/Resize
+//  ✓ Mouse Drag: Free movement
+//  ✓ Click empty: Teleport to cursor
+//  ✓ Panel: Draggable + Collapsible
+//
+//  ELEMENT TYPES:
+//  • Images/Sprites → x, y, scale
+//  • Graphics (ring) → x, y, radius
+//  • Rectangles (darkBg) → x, y, width, height
+//  • Texts → x, y, fontSize
+//
+//  SELECTION KEYS:
+//  1-8: Icons | 9: Header | 0: Avatar | -: Ring | =: Panel | B: DarkBG
+//  L: Level | N: Nickname | R: Energy | S: Stars | G: Gems | A: Adena
+//
+//  SAVED: All positions + sizes → localStorage JSON
 // ============================================================
 
 const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
@@ -121,8 +142,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
       <hr style="border-color:#333;margin:5px 0">
       <div id="tune-values" style="line-height:1.4"></div>
       <hr style="border-color:#333;margin:5px 0">
-      <small>1-9,0,-,=: select | Arrows: move | Q/E: scale</small><br>
-      <small>Drag: move | Click: select</small>
+      <small>↑↓←→: Move 1px | Q/E: Resize | Drag: Move | Click: Teleport</small><br>
+      <small>L,N,R,S,G,A: Texts | -: Ring | B: DarkBG</small>
       <div style="margin-top:10px;display:flex;gap:5px;">
         <button id="tune-save" style="flex:1;padding:5px;cursor:pointer">💾 SAVE</button>
         <button id="tune-reset" style="padding:5px;cursor:pointer">🔄</button>
@@ -506,6 +527,18 @@ function initTuneMode(scene, cityBg, heroOffset) {
       headerCont.setScale(headerCont.scaleX + delta);
     } else if (selectedElement === 'avatar' && headerAvatar) {
       headerAvatar.setScale(headerAvatar.scaleX + delta);
+    } else if (selectedElement === 'ring' && headerRing) {
+      // For ring, change radius (delta * 50 for bigger steps)
+      if (headerRing.ringConfig) {
+        const newRadius = headerRing.ringConfig.radius + delta * 50;
+        if (newRadius > 10 && newRadius < 200) { // Min 10, max 200
+          headerRing.ringConfig.radius = newRadius;
+          // Redraw ring with new radius
+          if (window.playerHeader?.setExp) {
+            window.playerHeader.setExp(0.75);
+          }
+        }
+      }
     } else if (selectedElement === 'hpanel' && headerPanel) {
       headerPanel.setScale(headerPanel.scaleX + delta);
     } else if (selectedElement === 'darkbg' && headerDarkBg) {
