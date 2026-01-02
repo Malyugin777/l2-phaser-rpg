@@ -181,14 +181,15 @@ function createPlayerHeader(scene) {
   // === TEXTS ===
   const textStyle = cfg.textStyle;
 
-  // Level text
+  // Level text (two lines: "Lvl" on first line, number on second)
   const levelText = scene.add.text(
     cfg.level.x,
     cfg.level.y,
-    'Lvl 1',
+    'Lvl\n1',
     {
       ...textStyle,
-      fontSize: cfg.level.fontSize
+      fontSize: cfg.level.fontSize,
+      align: 'center'
     }
   );
   levelText.setOrigin(0.5);
@@ -310,10 +311,10 @@ function createPlayerHeader(scene) {
     },
 
     /**
-     * Set player level
+     * Set player level (two-line format: "Lvl" + level number)
      */
     setLevel(level) {
-      levelText.setText(`Lvl ${level}`);
+      levelText.setText(`Lvl\n${level}`);
     },
 
     /**
