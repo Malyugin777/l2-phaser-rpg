@@ -6,10 +6,10 @@
 // ============================================================
 
 const PLAYER_HEADER_CONFIG = {
-  // Container position (FIXED coordinates from tune mode)
+  // Container position (FIXED coordinates - moved to TOP)
   container: {
     x: 387,        // Fixed X position
-    y: 374,        // Fixed Y position
+    y: 100,        // Move to TOP (was 374)
     offsetX: 0,
     offsetY: 0
   },
@@ -28,11 +28,11 @@ const PLAYER_HEADER_CONFIG = {
     scale: 0.82
   },
 
-  // EXP ring settings (middle layer) - FROM TUNE MODE
+  // EXP ring settings (middle layer) - SAME position as avatar (ring goes around it)
   expRing: {
-    x: -317,       // From tune mode
-    y: 225,        // From tune mode
-    scale: 0.86    // From tune mode
+    x: 8,          // SAME as avatar.x
+    y: 229,        // SAME as avatar.y
+    scale: 0.86
   },
 
   // Resource slots positions (4 slots: Energy, Stars, Gems, Adena)
@@ -87,6 +87,12 @@ function createPlayerHeader(scene) {
 
   console.log("[PLAYER_HEADER] Creating UI, screen:", w, "x", h);
 
+  // === DEBUG: Check textures ===
+  console.log('[DEBUG] Textures available:');
+  console.log('  ui_exp_ring_full:', scene.textures.exists('ui_exp_ring_full'));
+  console.log('  ui_avatar_placeholder:', scene.textures.exists('ui_avatar_placeholder'));
+  console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
+
   // === CONTAINER === (using fixed absolute coordinates)
   const containerX = cfg.container.x + cfg.container.offsetX;
   const containerY = cfg.container.y + cfg.container.offsetY;
@@ -96,9 +102,9 @@ function createPlayerHeader(scene) {
   headerContainer.setScrollFactor(0);
 
   // === LAYER 0: DARK BACKGROUND (Behind all elements) ===
-  const headerBg = scene.add.rectangle(0, 60, w + 100, 150, 0x1a1a2e, 0.95);
+  const headerBg = scene.add.rectangle(0, 0, w + 100, 200, 0x1a1a2e, 0.95);
   headerContainer.add(headerBg);
-  console.log('[PLAYER_HEADER] Dark background added');
+  console.log('[PLAYER_HEADER] Dark background added at Y=0');
 
   // === LAYER 1: AVATAR (Bottom - drawn first) ===
   const avatar = scene.add.image(
@@ -110,32 +116,35 @@ function createPlayerHeader(scene) {
   headerContainer.add(avatar);
   console.log('[PLAYER_HEADER] Avatar created at', cfg.avatar.x, cfg.avatar.y, 'scale', cfg.avatar.scale);
 
-  // === LAYER 2: EXP RING with MASK (Middle - drawn second) ===
+  // === LAYER 2: EXP RING (Middle - drawn second) ===
   const expRing = scene.add.image(
     cfg.expRing.x,
     cfg.expRing.y,
     'ui_exp_ring_full'
   );
-  expRing.setScale(cfg.expRing.scale);
-  expRing.setTint(0xFFD700);  // Gold color for better visibility (not blue on blue sky)
+  expRing.setScale(1.5);           // BIGGER for visibility
+  expRing.setTint(0xff0000);       // RED to see it easily
+  expRing.setAlpha(1);
 
-  // Create mask graphics for radial progress
-  const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
-  const expMask = new Phaser.Display.Masks.GeometryMask(scene, maskGraphics);
-  expRing.setMask(expMask);
+  // TEMPORARILY DISABLE MASK for debugging
+  // const maskGraphics = scene.make.graphics({ x: 0, y: 0 }, false);
+  // const expMask = new Phaser.Display.Masks.GeometryMask(scene, maskGraphics);
+  // expRing.setMask(expMask);
 
   headerContainer.add(expRing);
-  console.log('[PLAYER_HEADER] Ring created at', cfg.expRing.x, cfg.expRing.y, 'scale', cfg.expRing.scale);
+  console.log('[PLAYER_HEADER] Ring at SAME position as avatar:', cfg.expRing.x, cfg.expRing.y);
+  console.log('[DEBUG] Ring texture:', expRing.texture.key);
+  console.log('[DEBUG] Ring size:', expRing.width, 'x', expRing.height);
+  console.log('[DEBUG] Ring visible:', expRing.visible);
 
-  // Store mask graphics for later updates
-  // Ring absolute position: container + ring offset
-  const maskData = {
-    graphics: maskGraphics,
-    centerX: containerX + cfg.expRing.x,  // 387 + (-317) = 70
-    centerY: containerY + cfg.expRing.y,  // 374 + 225 = 599
-    radius: 50,  // Adjusted for scale 0.86
-    currentPercent: 1.0  // Start at 100%
-  };
+  // DISABLED: Mask data (mask is disabled for debugging)
+  // const maskData = {
+  //   graphics: maskGraphics,
+  //   centerX: containerX + cfg.expRing.x,
+  //   centerY: containerY + cfg.expRing.y,
+  //   radius: 50,
+  //   currentPercent: 1.0
+  // };
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
   const panel = scene.add.image(
@@ -190,38 +199,37 @@ function createPlayerHeader(scene) {
     return text;
   });
 
-  // === HELPER: Update EXP Ring Mask ===
-  function updateExpMask(percent) {
-    percent = Phaser.Math.Clamp(percent, 0, 1);
-    maskData.currentPercent = percent;
+  // DISABLED: Update EXP Ring Mask (mask disabled for debugging)
+  // function updateExpMask(percent) {
+  //   percent = Phaser.Math.Clamp(percent, 0, 1);
+  //   maskData.currentPercent = percent;
+  //
+  //   const graphics = maskData.graphics;
+  //   graphics.clear();
+  //
+  //   if (percent > 0) {
+  //     graphics.fillStyle(0xffffff);
+  //
+  //     const startAngle = Phaser.Math.DegToRad(-90);
+  //     const endAngle = startAngle + Phaser.Math.DegToRad(360 * percent);
+  //
+  //     graphics.beginPath();
+  //     graphics.arc(
+  //       maskData.centerX,
+  //       maskData.centerY,
+  //       maskData.radius,
+  //       startAngle,
+  //       endAngle,
+  //       false
+  //     );
+  //     graphics.lineTo(maskData.centerX, maskData.centerY);
+  //     graphics.closePath();
+  //     graphics.fillPath();
+  //   }
+  // }
 
-    const graphics = maskData.graphics;
-    graphics.clear();
-
-    if (percent > 0) {
-      graphics.fillStyle(0xffffff);
-
-      // Draw arc from -90° (top) clockwise
-      const startAngle = Phaser.Math.DegToRad(-90);
-      const endAngle = startAngle + Phaser.Math.DegToRad(360 * percent);
-
-      graphics.beginPath();
-      graphics.arc(
-        maskData.centerX,
-        maskData.centerY,
-        maskData.radius,
-        startAngle,
-        endAngle,
-        false  // Clockwise
-      );
-      graphics.lineTo(maskData.centerX, maskData.centerY);
-      graphics.closePath();
-      graphics.fillPath();
-    }
-  }
-
-  // Initialize mask at 100%
-  updateExpMask(1.0);
+  // DISABLED: Initialize mask
+  // updateExpMask(1.0);
 
   console.log("[PLAYER_HEADER] Created successfully");
 
@@ -239,9 +247,11 @@ function createPlayerHeader(scene) {
 
     /**
      * Set EXP percentage (0.0 to 1.0)
+     * DISABLED: mask is disabled for debugging
      */
     setExp(percent) {
-      updateExpMask(percent);
+      // updateExpMask(percent);
+      console.log('[PLAYER_HEADER] setExp called (mask disabled):', percent);
     },
 
     /**
