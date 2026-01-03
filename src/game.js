@@ -10,27 +10,58 @@ window.UI_MODE = UI_MODE;
 // ============================================================
 
 function initSafeArea(scene) {
-  let top = 0;
-  let bottom = 0;
+  // ============================================================
+  // SAFE AREA: Конвертируем CSS-пиксели в game-пиксели
+  // ============================================================
+  //
+  // Проблема: Игра использует ENVELOP с фиксированным 780x1688
+  // На iPhone (393x852 CSS) scale = ~0.5, значит:
+  // - 100 game px = 50 CSS px (недостаточно для челки 59px!)
+  //
+  // Решение: Получаем scale factor и умножаем CSS insets на него
+  // ============================================================
 
-  // Для HD разрешения 1688px:
-  // iPhone челка ~5.5% = 90px
-  // iPhone home indicator ~4% = 70px
-  if (isIOS()) {
-    top = 100;
-    bottom = 40;
-    console.log('[SAFE_AREA] iOS -> Hardcoded:', top, bottom);
-  } else {
-    // PC/Android - минимальные отступы
-    top = 20;
-    bottom = 0;
-    console.log('[SAFE_AREA] Desktop/Android:', top, bottom);
+  const gameHeight = scene.scale.height;    // 1688 (game pixels)
+  const screenHeight = window.innerHeight;  // ~852 (CSS pixels)
+  const scaleFactor = gameHeight / screenHeight;  // ~1.98
+
+  console.log('[SAFE_AREA] Game:', gameHeight, 'Screen:', screenHeight, 'Scale:', scaleFactor.toFixed(2));
+
+  let cssTop = 0;
+  let cssBottom = 0;
+
+  // 1. Пробуем Telegram SDK (самый точный источник)
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    // contentSafeAreaInset учитывает и челку и хедер Telegram
+    const content = tg.contentSafeAreaInset || {};
+    const device = tg.safeAreaInset || {};
+
+    cssTop = Math.max(content.top || 0, device.top || 0);
+    cssBottom = Math.max(content.bottom || 0, device.bottom || 0);
+
+    console.log('[SAFE_AREA] TG SDK - content:', JSON.stringify(content), 'device:', JSON.stringify(device));
   }
 
-  window.SAFE_ZONE_TOP = top;
-  window.SAFE_ZONE_BOTTOM = bottom;
+  // 2. Fallback для iOS если SDK не дал данных
+  if (cssTop === 0 && isIOS()) {
+    // Типичные значения для iPhone в CSS пикселях
+    cssTop = 59;     // Dynamic Island / Notch
+    cssBottom = 34;  // Home Indicator
+    console.log('[SAFE_AREA] iOS fallback CSS:', cssTop, cssBottom);
+  }
 
-  console.log('[SAFE_AREA] FINAL: TOP=' + top + ', BOTTOM=' + bottom);
+  // 3. Конвертируем в game-пиксели
+  const gameTop = Math.round(cssTop * scaleFactor);
+  const gameBottom = Math.round(cssBottom * scaleFactor);
+
+  window.SAFE_ZONE_TOP = gameTop;
+  window.SAFE_ZONE_BOTTOM = gameBottom;
+  window.SAFE_ZONE_SCALE = scaleFactor;
+
+  console.log('[SAFE_AREA] CSS:', cssTop + '/' + cssBottom,
+              '→ Game:', gameTop + '/' + gameBottom,
+              '(scale ' + scaleFactor.toFixed(2) + 'x)');
 }
 
 // Определение iOS
