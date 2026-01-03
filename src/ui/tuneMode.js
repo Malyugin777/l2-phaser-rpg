@@ -657,16 +657,16 @@ function applyTuneSettings(scene, cityBg, heroOffset) {
       if (settings.heroScale) window.spineHero.setScale(settings.heroScale);
     }
 
-    // Bottom Container
+    // Bottom Container (- Safe Zone for iPhone home indicator)
     if (window.panelContainer && settings.containerX !== undefined) {
       window.panelContainer.x = settings.containerX;
-      window.panelContainer.y = settings.containerY;
+      window.panelContainer.y = settings.containerY - (window.SAFE_ZONE_BOTTOM || 0);
     }
 
-    // Header Container
+    // Header Container (+ Safe Zone for iPhone notch)
     if (window.playerHeader?.container && settings.headerX !== undefined) {
       window.playerHeader.container.x = settings.headerX;
-      window.playerHeader.container.y = settings.headerY;
+      window.playerHeader.container.y = settings.headerY + (window.SAFE_ZONE_TOP || 0);
       if (settings.headerScale) window.playerHeader.container.setScale(settings.headerScale);
     }
 

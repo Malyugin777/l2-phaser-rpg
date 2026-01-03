@@ -269,43 +269,6 @@ function create() {
   // Initialize Safe Area zones for iPhone Notch/Home Indicator
   initSafeArea();
 
-  // DEBUG - Safe Area diagnostic
-  console.log('[DEBUG] SAFE_ZONE_TOP:', window.SAFE_ZONE_TOP);
-  console.log('[DEBUG] SAFE_ZONE_BOTTOM:', window.SAFE_ZONE_BOTTOM);
-  console.log('[DEBUG] Telegram WebApp exists:', !!window.Telegram?.WebApp);
-  console.log('[DEBUG] contentSafeAreaInset:', window.Telegram?.WebApp?.contentSafeAreaInset);
-  console.log('[DEBUG] safeAreaInset:', window.Telegram?.WebApp?.safeAreaInset);
-  console.log('[DEBUG] isIOS:', /iPhone|iPad|iPod/.test(navigator.userAgent));
-
-  // SUPER DEBUG - BIG RED BOX (impossible to miss!)
-  const debugBox = this.add.rectangle(
-    this.scale.width / 2,  // Center X
-    80,                     // Near top
-    300,                    // Width
-    60,                     // Height
-    0xff0000,              // RED
-    1                       // Full opacity
-  );
-  debugBox.setScrollFactor(0);
-  debugBox.setDepth(99999);
-
-  // Text on top of red box
-  const debugText = this.add.text(
-    this.scale.width / 2,
-    80,
-    'SAFE: ' + window.SAFE_ZONE_TOP + '/' + window.SAFE_ZONE_BOTTOM,
-    {
-      fontSize: '24px',
-      color: '#ffffff',
-      fontStyle: 'bold'
-    }
-  );
-  debugText.setOrigin(0.5);
-  debugText.setScrollFactor(0);
-  debugText.setDepth(99999);
-
-  console.log('[DEBUG] Red box created at top of screen');
-
   loadGame();
 
   const w = this.scale.width;
@@ -414,10 +377,9 @@ function setupCityCleanMode(scene) {
   if (typeof initTuneMode === "function") {
     initTuneMode(scene, cityBg, HERO_OFFSET);
   }
-  // TEMPORARY DISABLED FOR SAFE ZONE TEST
-  // if (typeof applyTuneSettings === "function") {
-  //   applyTuneSettings(scene, cityBg, HERO_OFFSET);
-  // }
+  if (typeof applyTuneSettings === "function") {
+    applyTuneSettings(scene, cityBg, HERO_OFFSET);
+  }
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
@@ -464,10 +426,9 @@ function setupCleanMode(scene) {
   if (typeof initTuneMode === "function") {
     initTuneMode(scene, cityBg, HERO_OFFSET);
   }
-  // TEMPORARY DISABLED FOR SAFE ZONE TEST
-  // if (typeof applyTuneSettings === "function") {
-  //   applyTuneSettings(scene, cityBg, HERO_OFFSET);
-  // }
+  if (typeof applyTuneSettings === "function") {
+    applyTuneSettings(scene, cityBg, HERO_OFFSET);
+  }
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
@@ -487,39 +448,8 @@ function setupCleanMode(scene) {
   // Hide all panels initially
   if (typeof hideAllPanels === "function") hideAllPanels();
 
-  // TEMPORARY DISABLED FOR SAFE ZONE TEST
-  // setTimeout(() => applyFinalPositions(scene), 200);
-
-  // SUPER DEBUG - BIG RED BOX AT END OF INIT
-  const debugBox = scene.add.rectangle(
-    scene.scale.width / 2,
-    200,
-    400,
-    100,
-    0xff0000,
-    1
-  );
-  debugBox.setScrollFactor(0);
-  debugBox.setDepth(999999);
-
-  const debugText = scene.add.text(
-    scene.scale.width / 2,
-    200,
-    'SAFE TOP:' + window.SAFE_ZONE_TOP + ' BOT:' + window.SAFE_ZONE_BOTTOM,
-    { fontSize: '28px', color: '#ffffff', fontStyle: 'bold' }
-  );
-  debugText.setOrigin(0.5);
-  debugText.setScrollFactor(0);
-  debugText.setDepth(999999);
-
-  console.log('[DEBUG] RED BOX CREATED IN CLEANMODE END');
-
-  // DOM DEBUG - 100% VISIBLE
-  const domDebug = document.createElement('div');
-  domDebug.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:red;color:white;padding:30px;font-size:32px;font-weight:bold;z-index:999999;border:5px solid yellow;';
-  domDebug.textContent = 'SAFE: ' + window.SAFE_ZONE_TOP + '/' + window.SAFE_ZONE_BOTTOM;
-  document.body.appendChild(domDebug);
-  console.log('[DEBUG] DOM DEBUG BOX ADDED');
+  // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
+  setTimeout(() => applyFinalPositions(scene), 200);
 
   console.log("[CLEAN MODE] Initialized");
 }
