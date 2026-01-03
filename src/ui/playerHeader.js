@@ -9,7 +9,7 @@ const PLAYER_HEADER_CONFIG = {
   // Container position - FROM SAVED TUNE
   container: {
     x: 387,        // FROM SAVED TUNE
-    y: 374,        // FROM SAVED TUNE
+    y: 272,        // FROM SAVED TUNE (was 374)
     offsetX: 0,
     offsetY: 0
   },
@@ -42,7 +42,7 @@ const PLAYER_HEADER_CONFIG = {
   // Dark background behind header - FIXED FROM TUNEMODE
   darkBg: {
     x: -10,          // FROM TUNEMODE
-    y: 149,          // FROM TUNEMODE
+    y: 135,          // FROM TUNEMODE (was 149)
     width: 900,
     height: 250,
     alpha: 0.92
