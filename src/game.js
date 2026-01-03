@@ -14,7 +14,11 @@ function initSafeArea(scene) {
   // COORDINATE PROJECTION — Проекция CSS→Game координат
   // ============================================================
   // SafeTop_Game = SafeTop_CSS × (GameHeight / WindowHeight)
+  // ?simios=1 — симуляция iPhone для теста на десктопе
   // ============================================================
+
+  const simulateIOS = new URLSearchParams(window.location.search).has('simios');
+  if (simulateIOS) console.log('[SAFE_AREA] 🔧 SIMULATE iOS MODE');
 
   // 1. Получаем размеры
   const gameHeight = scene.scale.gameSize.height;  // 1688
@@ -55,10 +59,10 @@ function initSafeArea(scene) {
     }
 
     // Fallback для iOS если API молчит
-    if (cssTop === 0 && isIOS()) {
+    if (cssTop === 0 && (isIOS() || simulateIOS)) {
       cssTop = 50;   // Средняя челка
       cssBottom = 34; // Home indicator
-      console.log('[SAFE_AREA] Source: iOS fallback');
+      console.log('[SAFE_AREA] Source: iOS fallback' + (simulateIOS ? ' (SIMULATED)' : ''));
     }
   }
 
