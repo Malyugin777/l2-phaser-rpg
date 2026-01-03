@@ -110,15 +110,27 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
-  // === DEBUG: Красная линия на границе Safe Area ===
+  // === DEBUG: Линии для визуализации ===
+  const cropTop = window.ENVELOP_CROP_TOP || 0;
+
+  // Жёлтая линия: граница видимого viewport (crop)
+  const cropLine = scene.add.rectangle(0, 0, w, 4, 0xffff00, 1);
+  cropLine.setOrigin(0, 0);
+  cropLine.setPosition(0, cropTop);
+  cropLine.setDepth(9999);
+  cropLine.setScrollFactor(0);
+
+  // Красная линия: граница safe area (crop + safe)
   if (safeTop > 0) {
-    const debugLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
-    debugLine.setOrigin(0, 0);
-    debugLine.setPosition(0, safeTop);
-    debugLine.setDepth(9999);
-    debugLine.setScrollFactor(0);
-    console.log('[DEBUG] 🔴 RED LINE at Y=' + safeTop);
+    const safeLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
+    safeLine.setOrigin(0, 0);
+    safeLine.setPosition(0, cropTop + safeTop);
+    safeLine.setDepth(9999);
+    safeLine.setScrollFactor(0);
   }
+
+  console.log('[DEBUG] 🟡 YELLOW LINE (viewport top) at Y=' + cropTop);
+  console.log('[DEBUG] 🔴 RED LINE (safe area) at Y=' + (cropTop + safeTop));
 
   // === LAYER 0: DARK BACKGROUND ===
   // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера

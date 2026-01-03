@@ -11,50 +11,62 @@ window.UI_MODE = UI_MODE;
 
 function initSafeArea(scene) {
   // ============================================================
-  // COORDINATE PROJECTION — CSS pixels → Game pixels
+  // ENVELOP MODE: Учитываем реальный scale и crop
   // ============================================================
-  // Formula: GamePx = CSSPx × (GameHeight / ScreenHeight)
+  // ENVELOP масштабирует canvas чтобы ПОКРЫТЬ viewport
+  // Часть canvas обрезается (crop) сверху/снизу или слева/справа
   // ============================================================
 
   const simulateIOS = new URLSearchParams(window.location.search).has('simios');
 
-  // 1. Размеры и Scale Factor
+  // 1. Размеры
+  const gameW = scene.scale.gameSize.width;   // 780
   const gameH = scene.scale.gameSize.height;  // 1688
-  const screenH = window.innerHeight;          // ~844 iPhone
-  const scale = screenH > 0 ? gameH / screenH : 1;
+  const screenW = window.innerWidth;           // 550
+  const screenH = window.innerHeight;          // 888
+
+  // 2. ENVELOP scale = max(scaleX, scaleY) — чтобы покрыть экран
+  const scaleX = screenW / gameW;  // 550/780 = 0.705
+  const scaleY = screenH / gameH;  // 888/1688 = 0.526
+  const envelopScale = Math.max(scaleX, scaleY);  // 0.705
+
+  // 3. Canvas размер после масштабирования
+  const canvasW = gameW * envelopScale;  // 550
+  const canvasH = gameH * envelopScale;  // 1190
+
+  // 4. Crop offset (сколько обрезано из-за CENTER_BOTH)
+  const cropTop = (canvasH - screenH) / 2;  // (1190-888)/2 = 151 CSS px
+  const cropTopGame = cropTop / envelopScale;  // 214 game px
 
   console.log('='.repeat(50));
-  console.log('[SAFE] 📐 DIMENSIONS:');
-  console.log(`  Game: ${scene.scale.gameSize.width}×${gameH}`);
-  console.log(`  Screen: ${window.innerWidth}×${screenH}`);
-  console.log(`  Scale Factor: ${scale.toFixed(2)}x`);
+  console.log('[SAFE] 📐 ENVELOP ANALYSIS:');
+  console.log(`  Game: ${gameW}×${gameH}`);
+  console.log(`  Screen: ${screenW}×${screenH}`);
+  console.log(`  ENVELOP Scale: ${envelopScale.toFixed(3)}`);
+  console.log(`  Canvas: ${canvasW.toFixed(0)}×${canvasH.toFixed(0)} CSS px`);
+  console.log(`  Crop Top: ${cropTop.toFixed(0)} CSS px = ${cropTopGame.toFixed(0)} game px`);
   if (simulateIOS) console.log('  🔧 SIMULATE iOS: ON');
 
-  // 2. Источники Safe Area (детальная диагностика)
+  // 5. Источники Safe Area
   const tg = window.Telegram?.WebApp;
   let cssTop = 0, cssBottom = 0;
   let source = 'none';
 
   console.log('[SAFE] 📱 TELEGRAM SDK:');
   console.log(`  WebApp exists: ${!!tg}`);
-  console.log(`  platform: ${tg?.platform || 'N/A'}`);
-  console.log(`  version: ${tg?.version || 'N/A'}`);
   console.log(`  contentSafeAreaInset: ${JSON.stringify(tg?.contentSafeAreaInset || 'N/A')}`);
   console.log(`  safeAreaInset: ${JSON.stringify(tg?.safeAreaInset || 'N/A')}`);
 
-  // Приоритет 1: TG contentSafeAreaInset
   if (tg?.contentSafeAreaInset?.top !== undefined) {
     cssTop = tg.contentSafeAreaInset.top;
     cssBottom = tg.contentSafeAreaInset.bottom || 0;
     source = 'TG.contentSafeAreaInset';
   }
-  // Приоритет 2: TG safeAreaInset
   else if (tg?.safeAreaInset?.top !== undefined) {
     cssTop = tg.safeAreaInset.top;
     cssBottom = tg.safeAreaInset.bottom || 0;
     source = 'TG.safeAreaInset';
   }
-  // Приоритет 3: CSS env()
   else {
     const sensor = document.getElementById('safe-area-sensor');
     if (sensor) {
@@ -65,26 +77,32 @@ function initSafeArea(scene) {
     }
   }
 
-  // Приоритет 4: iOS/Simulator fallback
   if (cssTop === 0 && (isIOS() || simulateIOS)) {
-    cssTop = 59;    // iPhone Dynamic Island / Notch
-    cssBottom = 34; // Home Indicator
+    cssTop = 59;
+    cssBottom = 34;
     source = simulateIOS ? 'iOS SIMULATED' : 'iOS fallback';
   }
 
-  console.log(`[SAFE] 📊 SOURCE: ${source}`);
-  console.log(`  CSS pixels: top=${cssTop}, bottom=${cssBottom}`);
+  console.log(`[SAFE] 📊 SOURCE: ${source} → CSS: top=${cssTop}, bottom=${cssBottom}`);
 
-  // 3. ПРОЕКЦИЯ в Game координаты
-  const gameTop = Math.round(cssTop * scale);
-  const gameBottom = Math.round(cssBottom * scale);
+  // 6. 🔥 ПРАВИЛЬНАЯ ПРОЕКЦИЯ для ENVELOP 🔥
+  // Safe area в CSS пикселях → конвертируем в game пиксели
+  // Формула: gamePx = cssPx / envelopScale
+  const safeTopGame = cssTop / envelopScale;
+  const safeBottomGame = cssBottom / envelopScale;
 
-  window.SAFE_ZONE_TOP = gameTop;
-  window.SAFE_ZONE_BOTTOM = gameBottom;
+  // Crop offset УЖЕ учтён в позиционировании canvas,
+  // нам нужно только добавить safe area
+  window.SAFE_ZONE_TOP = Math.round(safeTopGame);
+  window.SAFE_ZONE_BOTTOM = Math.round(safeBottomGame);
+
+  // Сохраняем для debug
+  window.ENVELOP_CROP_TOP = Math.round(cropTopGame);
 
   console.log('[SAFE] 🎯 FINAL (game pixels):');
-  console.log(`  TOP: ${cssTop} × ${scale.toFixed(2)} = ${gameTop}`);
-  console.log(`  BOTTOM: ${cssBottom} × ${scale.toFixed(2)} = ${gameBottom}`);
+  console.log(`  Safe Top: ${cssTop} CSS / ${envelopScale.toFixed(3)} = ${window.SAFE_ZONE_TOP} game px`);
+  console.log(`  Safe Bottom: ${cssBottom} CSS / ${envelopScale.toFixed(3)} = ${window.SAFE_ZONE_BOTTOM} game px`);
+  console.log(`  Crop Top (for reference): ${window.ENVELOP_CROP_TOP} game px`);
   console.log('='.repeat(50));
 }
 
