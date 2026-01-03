@@ -277,12 +277,34 @@ function create() {
   console.log('[DEBUG] safeAreaInset:', window.Telegram?.WebApp?.safeAreaInset);
   console.log('[DEBUG] isIOS:', /iPhone|iPad|iPod/.test(navigator.userAgent));
 
-  // Debug text on screen (remove later)
-  this.add.text(10, 100, 'SAFE: ' + window.SAFE_ZONE_TOP + '/' + window.SAFE_ZONE_BOTTOM, {
-    fontSize: '18px',
-    color: '#00ff00',
-    backgroundColor: '#000000'
-  }).setScrollFactor(0).setDepth(9999);
+  // SUPER DEBUG - BIG RED BOX (impossible to miss!)
+  const debugBox = this.add.rectangle(
+    this.scale.width / 2,  // Center X
+    80,                     // Near top
+    300,                    // Width
+    60,                     // Height
+    0xff0000,              // RED
+    1                       // Full opacity
+  );
+  debugBox.setScrollFactor(0);
+  debugBox.setDepth(99999);
+
+  // Text on top of red box
+  const debugText = this.add.text(
+    this.scale.width / 2,
+    80,
+    'SAFE: ' + window.SAFE_ZONE_TOP + '/' + window.SAFE_ZONE_BOTTOM,
+    {
+      fontSize: '24px',
+      color: '#ffffff',
+      fontStyle: 'bold'
+    }
+  );
+  debugText.setOrigin(0.5);
+  debugText.setScrollFactor(0);
+  debugText.setDepth(99999);
+
+  console.log('[DEBUG] Red box created at top of screen');
 
   loadGame();
 
