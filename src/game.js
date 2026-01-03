@@ -11,70 +11,81 @@ window.UI_MODE = UI_MODE;
 
 function initSafeArea(scene) {
   // ============================================================
-  // COORDINATE PROJECTION — Проекция CSS→Game координат
+  // COORDINATE PROJECTION — CSS pixels → Game pixels
   // ============================================================
-  // SafeTop_Game = SafeTop_CSS × (GameHeight / WindowHeight)
-  // ?simios=1 — симуляция iPhone для теста на десктопе
+  // Formula: GamePx = CSSPx × (GameHeight / ScreenHeight)
   // ============================================================
 
   const simulateIOS = new URLSearchParams(window.location.search).has('simios');
-  if (simulateIOS) console.log('[SAFE_AREA] 🔧 SIMULATE iOS MODE');
 
-  // 1. Получаем размеры
-  const gameHeight = scene.scale.gameSize.height;  // 1688
-  const windowHeight = window.innerHeight;          // ~844 на iPhone
+  // 1. Размеры и Scale Factor
+  const gameH = scene.scale.gameSize.height;  // 1688
+  const screenH = window.innerHeight;          // ~844 iPhone
+  const scale = screenH > 0 ? gameH / screenH : 1;
 
-  // 2. Коэффициент масштаба (во сколько раз игра больше экрана)
-  let scaleFactor = (windowHeight > 0) ? (gameHeight / windowHeight) : 1;
-  scaleFactor = Math.round(scaleFactor * 100) / 100;
+  console.log('='.repeat(50));
+  console.log('[SAFE] 📐 DIMENSIONS:');
+  console.log(`  Game: ${scene.scale.gameSize.width}×${gameH}`);
+  console.log(`  Screen: ${window.innerWidth}×${screenH}`);
+  console.log(`  Scale Factor: ${scale.toFixed(2)}x`);
+  if (simulateIOS) console.log('  🔧 SIMULATE iOS: ON');
 
-  console.log(`[SAFE_AREA] 📐 SCALE: Game(${gameHeight}) / Screen(${windowHeight}) = x${scaleFactor}`);
-
-  let cssTop = 0;
-  let cssBottom = 0;
-
-  // 3. Запрашиваем у Telegram SDK (первоисточник)
+  // 2. Источники Safe Area (детальная диагностика)
   const tg = window.Telegram?.WebApp;
+  let cssTop = 0, cssBottom = 0;
+  let source = 'none';
 
-  if (tg?.contentSafeAreaInset) {
-    // Приоритет 1: contentSafeAreaInset (учитывает хедер TG)
-    cssTop = tg.contentSafeAreaInset.top || 0;
+  console.log('[SAFE] 📱 TELEGRAM SDK:');
+  console.log(`  WebApp exists: ${!!tg}`);
+  console.log(`  platform: ${tg?.platform || 'N/A'}`);
+  console.log(`  version: ${tg?.version || 'N/A'}`);
+  console.log(`  contentSafeAreaInset: ${JSON.stringify(tg?.contentSafeAreaInset || 'N/A')}`);
+  console.log(`  safeAreaInset: ${JSON.stringify(tg?.safeAreaInset || 'N/A')}`);
+
+  // Приоритет 1: TG contentSafeAreaInset
+  if (tg?.contentSafeAreaInset?.top !== undefined) {
+    cssTop = tg.contentSafeAreaInset.top;
     cssBottom = tg.contentSafeAreaInset.bottom || 0;
-    console.log('[SAFE_AREA] Source: TG contentSafeAreaInset:', cssTop, cssBottom);
+    source = 'TG.contentSafeAreaInset';
   }
-  else if (tg?.safeAreaInset) {
-    // Приоритет 2: safeAreaInset (чистый девайс)
-    cssTop = tg.safeAreaInset.top || 0;
+  // Приоритет 2: TG safeAreaInset
+  else if (tg?.safeAreaInset?.top !== undefined) {
+    cssTop = tg.safeAreaInset.top;
     cssBottom = tg.safeAreaInset.bottom || 0;
-    console.log('[SAFE_AREA] Source: TG safeAreaInset:', cssTop, cssBottom);
+    source = 'TG.safeAreaInset';
   }
+  // Приоритет 3: CSS env()
   else {
-    // Приоритет 3: CSS env() через сенсор
     const sensor = document.getElementById('safe-area-sensor');
     if (sensor) {
-      const style = window.getComputedStyle(sensor);
+      const style = getComputedStyle(sensor);
       cssTop = parseInt(style.paddingTop) || 0;
       cssBottom = parseInt(style.paddingBottom) || 0;
-      console.log('[SAFE_AREA] Source: CSS env():', cssTop, cssBottom);
-    }
-
-    // Fallback для iOS если API молчит
-    if (cssTop === 0 && (isIOS() || simulateIOS)) {
-      cssTop = 50;   // Средняя челка
-      cssBottom = 34; // Home indicator
-      console.log('[SAFE_AREA] Source: iOS fallback' + (simulateIOS ? ' (SIMULATED)' : ''));
+      if (cssTop > 0) source = 'CSS env()';
     }
   }
 
-  // 4. 🔥 ПРОЕКЦИЯ: CSS → Game координаты
-  const gameTop = Math.ceil(cssTop * scaleFactor);
-  const gameBottom = Math.ceil(cssBottom * scaleFactor);
+  // Приоритет 4: iOS/Simulator fallback
+  if (cssTop === 0 && (isIOS() || simulateIOS)) {
+    cssTop = 59;    // iPhone Dynamic Island / Notch
+    cssBottom = 34; // Home Indicator
+    source = simulateIOS ? 'iOS SIMULATED' : 'iOS fallback';
+  }
+
+  console.log(`[SAFE] 📊 SOURCE: ${source}`);
+  console.log(`  CSS pixels: top=${cssTop}, bottom=${cssBottom}`);
+
+  // 3. ПРОЕКЦИЯ в Game координаты
+  const gameTop = Math.round(cssTop * scale);
+  const gameBottom = Math.round(cssBottom * scale);
 
   window.SAFE_ZONE_TOP = gameTop;
   window.SAFE_ZONE_BOTTOM = gameBottom;
 
-  console.log(`[SAFE_AREA] ✅ RESULT: ${cssTop}px × ${scaleFactor} = ${gameTop} game_px (top)`);
-  console.log(`[SAFE_AREA] ✅ RESULT: ${cssBottom}px × ${scaleFactor} = ${gameBottom} game_px (bottom)`);
+  console.log('[SAFE] 🎯 FINAL (game pixels):');
+  console.log(`  TOP: ${cssTop} × ${scale.toFixed(2)} = ${gameTop}`);
+  console.log(`  BOTTOM: ${cssBottom} × ${scale.toFixed(2)} = ${gameBottom}`);
+  console.log('='.repeat(50));
 }
 
 // Определение iOS
