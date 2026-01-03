@@ -476,7 +476,7 @@ function setupCleanMode(scene) {
   // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
   setTimeout(() => applyFinalPositions(scene), 200);
 
-  // DEBUG: show header position after all inits
+  // DEBUG: show header position after all inits + visual line
   setTimeout(() => {
     const hdr = window.playerHeader?.container;
     if (hdr) {
@@ -484,6 +484,11 @@ function setupCleanMode(scene) {
       dbg2.style.cssText = 'position:fixed;bottom:100px;left:10px;background:blue;color:white;padding:10px;font-size:16px;z-index:999999;';
       dbg2.textContent = 'HDR Y: ' + hdr.y + ' (expected: ' + (272 + window.SAFE_ZONE_TOP) + ')';
       document.body.appendChild(dbg2);
+
+      // Нарисуем красную линию на уровне header container
+      const line = scene.add.rectangle(scene.scale.width / 2, hdr.y, scene.scale.width, 4, 0xff0000);
+      line.setDepth(99999);
+      line.setScrollFactor(0);
     }
   }, 500);
 
