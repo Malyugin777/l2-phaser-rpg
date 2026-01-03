@@ -276,7 +276,13 @@ function create() {
   console.log('[DEBUG] contentSafeAreaInset:', window.Telegram?.WebApp?.contentSafeAreaInset);
   console.log('[DEBUG] safeAreaInset:', window.Telegram?.WebApp?.safeAreaInset);
   console.log('[DEBUG] isIOS:', /iPhone|iPad|iPod/.test(navigator.userAgent));
-  alert('TOP: ' + window.SAFE_ZONE_TOP + ', BOTTOM: ' + window.SAFE_ZONE_BOTTOM);
+
+  // Debug text on screen (remove later)
+  this.add.text(10, 100, 'SAFE: ' + window.SAFE_ZONE_TOP + '/' + window.SAFE_ZONE_BOTTOM, {
+    fontSize: '18px',
+    color: '#00ff00',
+    backgroundColor: '#000000'
+  }).setScrollFactor(0).setDepth(9999);
 
   loadGame();
 
@@ -386,9 +392,10 @@ function setupCityCleanMode(scene) {
   if (typeof initTuneMode === "function") {
     initTuneMode(scene, cityBg, HERO_OFFSET);
   }
-  if (typeof applyTuneSettings === "function") {
-    applyTuneSettings(scene, cityBg, HERO_OFFSET);
-  }
+  // TEMPORARY DISABLED FOR SAFE ZONE TEST
+  // if (typeof applyTuneSettings === "function") {
+  //   applyTuneSettings(scene, cityBg, HERO_OFFSET);
+  // }
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
@@ -435,9 +442,10 @@ function setupCleanMode(scene) {
   if (typeof initTuneMode === "function") {
     initTuneMode(scene, cityBg, HERO_OFFSET);
   }
-  if (typeof applyTuneSettings === "function") {
-    applyTuneSettings(scene, cityBg, HERO_OFFSET);
-  }
+  // TEMPORARY DISABLED FOR SAFE ZONE TEST
+  // if (typeof applyTuneSettings === "function") {
+  //   applyTuneSettings(scene, cityBg, HERO_OFFSET);
+  // }
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
@@ -457,8 +465,8 @@ function setupCleanMode(scene) {
   // Hide all panels initially
   if (typeof hideAllPanels === "function") hideAllPanels();
 
-  // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
-  setTimeout(() => applyFinalPositions(scene), 200);
+  // TEMPORARY DISABLED FOR SAFE ZONE TEST
+  // setTimeout(() => applyFinalPositions(scene), 200);
 
   console.log("[CLEAN MODE] Initialized");
 }
