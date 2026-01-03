@@ -89,6 +89,8 @@ function initSafeArea(scene) {
   }
 
   console.log(`[SAFE] 📊 SOURCE: ${source} → CSS: top=${cssTop}, bottom=${cssBottom}`);
+  window.SAFE_AREA_SOURCE = source;
+  window.SAFE_AREA_IN_TG = inTelegram;
 
   // 3. Calculate scale for CSS to game conversion
   // displaySize is the actual rendered size, gameSize is internal
@@ -459,11 +461,26 @@ function setupCleanMode(scene) {
 
   safeRecalc(scene);  // Recalculate stats
 
+  const h = scene.scale.height;
+
   // Bottom UI
   if (typeof createBottomUI === "function") {
     const bottomUI = createBottomUI(scene);
     window.bottomUI = bottomUI;
   }
+
+  // Version text at bottom-left (for cache debugging)
+  const BUILD_VERSION = 'v2046';
+  const versionText = scene.add.text(10, h - 10, BUILD_VERSION, {
+    fontSize: '14px',
+    color: '#888888',
+    fontFamily: 'monospace',
+    backgroundColor: '#00000066',
+    padding: { x: 4, y: 2 }
+  });
+  versionText.setOrigin(0, 1);
+  versionText.setScrollFactor(0);
+  versionText.setDepth(9999);
 
   // Player Header (Top UI)
   if (typeof createPlayerHeader === "function") {

@@ -123,8 +123,8 @@ function createPlayerHeader(scene) {
   const debugInfo = [
     'cropTop: ' + cropTop,
     'safeTop: ' + safeTop,
-    'TG.contentSafe: ' + JSON.stringify(tg?.contentSafeAreaInset || 'N/A'),
-    'TG.safeArea: ' + JSON.stringify(tg?.safeAreaInset || 'N/A')
+    'inTG: ' + window.SAFE_AREA_IN_TG,
+    'src: ' + (window.SAFE_AREA_SOURCE || '?')
   ].join('\n');
 
   const debugText = scene.add.text(10, cropTop + 20, debugInfo, {
