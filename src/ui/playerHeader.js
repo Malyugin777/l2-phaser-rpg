@@ -100,32 +100,32 @@ function createPlayerHeader(scene) {
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
   // === CONTAINER ===
-  // scrollFactor=0: position relative to CAMERA (Y=0 = camera top)
-  // For ENVELOP + CENTER_BOTH: need to offset by crop + safe area
+  // scrollFactor=0: position relative to CAMERA (Y=0 = game top, not visible top!)
+  // For ENVELOP + CENTER_BOTH: cropTop is cut off, so we add it
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const safeTop = window.SAFE_ZONE_TOP || 0;
   const containerX = w / 2;
-  const containerY = safeTop;  // Start at safe area (crop is handled by Phaser centering)
+  const containerY = cropTop + safeTop;  // Visible top + safe area offset
 
-  console.log('[PLAYER_HEADER] safeTop=' + safeTop + ', cropTop=' + cropTop + ' → containerY=' + containerY);
+  console.log('[PLAYER_HEADER] cropTop=' + cropTop + ' + safeTop=' + safeTop + ' → containerY=' + containerY);
 
   const headerContainer = scene.add.container(containerX, containerY);
   headerContainer.setDepth(300);
   headerContainer.setScrollFactor(0);
 
   // === LAYER 0: DARK BACKGROUND ===
-  // Extend from above safe area (cover any gap) down to panel bottom
+  // Cover from visible top (Y = -safeTop relative to container) down to panel bottom
   const headerBg = scene.add.rectangle(
     0,
-    -safeTop - 50,  // Start above container to cover safe area and any gap
+    -safeTop,  // Start at visible top (container is at cropTop + safeTop)
     cfg.darkBg.width,
-    cfg.darkBg.height + safeTop + 50,  // Extra height to cover
+    cfg.darkBg.height + safeTop,
     0x3a3a4a,
     0.92
   );
   headerBg.setOrigin(0.5, 0);
 
-  console.log('[HEADER_BG] bgHeight:', cfg.darkBg.height + safeTop + 50);
+  console.log('[HEADER_BG] starts at Y=' + (-safeTop) + ', height=' + (cfg.darkBg.height + safeTop));
   headerContainer.add(headerBg);
 
   // DEBUG: Red line at container Y=0 (should be at safe area boundary)
