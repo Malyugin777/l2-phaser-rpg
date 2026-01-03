@@ -285,6 +285,12 @@ function create() {
   // Initialize Safe Area zones for iPhone Notch/Home Indicator
   initSafeArea(this);
 
+  // DEBUG DOM - show scaled values
+  const dbg = document.createElement('div');
+  dbg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:red;color:white;padding:20px;font-size:24px;font-weight:bold;z-index:999999;text-align:center;';
+  dbg.innerHTML = 'TOP: ' + window.SAFE_ZONE_TOP + '<br>BOT: ' + window.SAFE_ZONE_BOTTOM + '<br>TUNE: ' + (localStorage.getItem('TUNE_VERSION') || 'none');
+  document.body.appendChild(dbg);
+
   loadGame();
 
   const w = this.scale.width;
