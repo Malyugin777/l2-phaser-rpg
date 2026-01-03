@@ -31,6 +31,9 @@ function initSafeArea(scene) {
   window.SAFE_ZONE_BOTTOM = bottom;
 
   console.log('[SAFE_AREA] FINAL: TOP=' + top + ', BOTTOM=' + bottom);
+
+  // DEBUG ALERT
+  alert('SAFE: ' + top + '/' + bottom + '\nisIOS: ' + isIOS());
 }
 
 // Определение iOS
