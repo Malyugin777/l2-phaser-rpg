@@ -69,7 +69,16 @@ function initSafeArea(scene) {
   }
 
   // Override safe area based on context
-  const inTelegram = !!window.Telegram?.WebApp;
+  // Detect Telegram via multiple methods (SDK may not be ready yet)
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasTgParams = urlParams.has('tgWebAppData') ||
+                      urlParams.has('tgWebAppVersion') ||
+                      urlParams.has('tgWebAppPlatform');
+  const hasTgHash = window.location.hash.includes('tgWebAppData');
+  const hasTgSDK = !!window.Telegram?.WebApp;
+  const inTelegram = hasTgSDK || hasTgParams || hasTgHash;
+
+  console.log(`[SAFE] 🔍 TG Detection: SDK=${hasTgSDK}, params=${hasTgParams}, hash=${hasTgHash} → inTG=${inTelegram}`);
 
   if (inTelegram) {
     // In Telegram - header bar already covers notch, ignore CSS env() values
@@ -470,7 +479,7 @@ function setupCleanMode(scene) {
   }
 
   // Version text at bottom-left (for cache debugging)
-  const BUILD_VERSION = 'v2046';
+  const BUILD_VERSION = 'v2047';
   const versionText = scene.add.text(10, h - 10, BUILD_VERSION, {
     fontSize: '14px',
     color: '#888888',
