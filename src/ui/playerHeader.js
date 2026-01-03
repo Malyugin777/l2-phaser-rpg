@@ -115,7 +115,7 @@ function createPlayerHeader(scene) {
   // Контейнер сдвинут вниз на safeTop, но фон тянем обратно вверх
   const headerBg = scene.add.rectangle(
     cfg.darkBg.x,
-    cfg.darkBg.y - (safeTop / 2),       // Сдвигаем центр вверх
+    cfg.darkBg.y - safeTop,             // Сдвигаем начало фона ВВЕРХ
     cfg.darkBg.width,
     cfg.darkBg.height + safeTop,        // Увеличиваем высоту
     0x3a3a4a,      // GRAY
