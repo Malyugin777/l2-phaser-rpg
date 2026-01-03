@@ -100,29 +100,38 @@ function createPlayerHeader(scene) {
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
   // === CONTAINER ===
-  // TEST: Just put it at cropTop to find visible screen top
+  // CANONICAL: cropTop = visible screen top, safeTop = notch offset
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const safeTop = window.SAFE_ZONE_TOP || 0;
   const containerX = w / 2;
-  const containerY = cropTop;  // Just cropTop, no safeTop yet
+  const containerY = cropTop + safeTop;  // Below notch/safe area
 
-  console.log('[PLAYER_HEADER] TEST: containerY = cropTop = ' + cropTop);
-  console.log('[PLAYER_HEADER] (safeTop=' + safeTop + ' will add later)');
+  console.log('[PLAYER_HEADER] containerY = cropTop(' + cropTop + ') + safeTop(' + safeTop + ') = ' + containerY);
 
   const headerContainer = scene.add.container(containerX, containerY);
   headerContainer.setDepth(300);
-  headerContainer.setScrollFactor(0);  // Try with scrollFactor again
+  headerContainer.setScrollFactor(0);
 
-  // === DEBUG: Red line at container origin ===
-  // This should be at the TOP of visible screen
-  const debugLine = scene.add.rectangle(0, 0, w, 8, 0xff0000, 1);
+  // === DEBUG: Red line at container origin (safe area boundary) ===
+  const debugLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
   debugLine.setOrigin(0.5, 0);
   headerContainer.add(debugLine);
 
-  console.log('[DEBUG] Red line at Y=' + containerY + ' (should be visible screen top)');
+  // === LAYER 0: DARK BACKGROUND ===
+  // Extend UP to cover notch area (from -safeTop to panel bottom)
+  const headerBg = scene.add.rectangle(
+    0,
+    -safeTop,
+    cfg.darkBg.width,
+    cfg.darkBg.height + safeTop,
+    0x3a3a4a,
+    0.92
+  );
+  headerBg.setOrigin(0.5, 0);
+  headerContainer.add(headerBg);
 
-  // Skip other UI elements for this test
-  // Just the red debug line
+  // Expose for TuneMode
+  window.playerHeaderDarkBg = headerBg;
 
   // === LAYER 1: AVATAR (Bottom - drawn first) ===
   const avatar = scene.add.image(
