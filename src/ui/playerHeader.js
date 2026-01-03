@@ -110,29 +110,32 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
-  // === DEBUG: Линии для визуализации ===
-  // ENVELOP + CENTER: canvas центрирован, верх viewport = cropTop в game coords
-  const cropTop = window.ENVELOP_CROP_TOP || 0;
+  // === DEBUG: Линии через camera.worldView ===
+  const cam = scene.cameras.main;
+  const viewTop = cam.worldView.y;  // Реальный верх видимой области
+  const viewHeight = cam.worldView.height;
 
-  // Жёлтая линия: верх видимого экрана (cropTop)
-  const debugYellow = scene.add.rectangle(0, 0, w, 6, 0xffff00, 1);
-  debugYellow.setOrigin(0, 0);
-  debugYellow.setPosition(0, cropTop);
+  console.log('[DEBUG] Camera worldView:', JSON.stringify({
+    x: cam.worldView.x,
+    y: cam.worldView.y,
+    w: cam.worldView.width,
+    h: cam.worldView.height
+  }));
+
+  // Жёлтая линия: верх видимого экрана
+  const debugYellow = scene.add.rectangle(w/2, viewTop + 3, w, 6, 0xffff00, 1);
   debugYellow.setDepth(9999);
   debugYellow.setScrollFactor(0);
 
-  // Красная линия: граница safe area (cropTop + safeTop)
+  // Красная линия: граница safe area
   if (safeTop > 0) {
-    const debugRed = scene.add.rectangle(0, 0, w, 6, 0xff0000, 1);
-    debugRed.setOrigin(0, 0);
-    debugRed.setPosition(0, cropTop + safeTop);
+    const debugRed = scene.add.rectangle(w/2, viewTop + safeTop, w, 6, 0xff0000, 1);
     debugRed.setDepth(9999);
     debugRed.setScrollFactor(0);
   }
 
-  console.log('[DEBUG] cropTop=' + cropTop + ', safeTop=' + safeTop);
-  console.log('[DEBUG] 🟡 YELLOW LINE at Y=' + cropTop);
-  console.log('[DEBUG] 🔴 RED LINE at Y=' + (cropTop + safeTop));
+  console.log('[DEBUG] 🟡 YELLOW at viewTop=' + viewTop);
+  console.log('[DEBUG] 🔴 RED at viewTop+safeTop=' + (viewTop + safeTop));
 
   // === LAYER 0: DARK BACKGROUND ===
   // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера
