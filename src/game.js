@@ -7,9 +7,10 @@ window.UI_MODE = UI_MODE;
 // ============================================================
 //  SAFE AREA — iPhone Notch / Home Indicator support
 //  Priority: Telegram API → CSS env() → iOS fallback
+//  + Pixel Ratio scaling for HD game resolution
 // ============================================================
 
-function initSafeArea() {
+function initSafeArea(scene) {
   let top = 0;
   let bottom = 0;
 
@@ -18,14 +19,14 @@ function initSafeArea() {
     const inset = window.Telegram.WebApp.contentSafeAreaInset;
     top = inset.top || 0;
     bottom = inset.bottom || 0;
-    console.log('[SAFE_AREA] From Telegram API:', top, bottom);
+    console.log('[SAFE_AREA] From Telegram API (raw):', top, bottom);
   }
   // ВАРИАНТ 1.5: Старый API
   else if (window.Telegram?.WebApp?.safeAreaInset) {
     const inset = window.Telegram.WebApp.safeAreaInset;
     top = inset.top || 0;
     bottom = inset.bottom || 0;
-    console.log('[SAFE_AREA] From Telegram safeAreaInset:', top, bottom);
+    console.log('[SAFE_AREA] From Telegram safeAreaInset (raw):', top, bottom);
   }
   // ВАРИАНТ 2: CSS env() (может работать вне Telegram)
   else {
@@ -34,7 +35,7 @@ function initSafeArea() {
       const style = getComputedStyle(sensor);
       top = parseInt(style.paddingTop) || 0;
       bottom = parseInt(style.paddingBottom) || 0;
-      console.log('[SAFE_AREA] From CSS env():', top, bottom);
+      console.log('[SAFE_AREA] From CSS env() (raw):', top, bottom);
     }
   }
 
@@ -42,16 +43,31 @@ function initSafeArea() {
   if (top === 0 && isIOS()) {
     top = 47;      // iPhone notch
     bottom = 34;   // Home indicator
-    console.log('[SAFE_AREA] iOS fallback:', top, bottom);
+    console.log('[SAFE_AREA] iOS fallback (raw):', top, bottom);
   }
 
   // Минимальные отступы для любого устройства
   if (top === 0) top = 10;
 
+  // === 🔥 ГЛАВНЫЙ ФИКС: СЧИТАЕМ МАСШТАБ ===
+  // Если высота игры 1688, а окна браузера 844 -> коэффициент 2.0
+  // Нам нужно умножить 47 * 2.0 = 94 игровых пикселя.
+  if (scene && scene.scale) {
+    const scaleRatio = scene.scale.displaySize.height > 0
+      ? scene.scale.gameSize.height / scene.scale.displaySize.height
+      : 1;
+
+    console.log('[SAFE_AREA] Scale Ratio:', scaleRatio.toFixed(2));
+
+    // Применяем масштаб
+    top = Math.round(top * scaleRatio);
+    bottom = Math.round(bottom * scaleRatio);
+  }
+
   window.SAFE_ZONE_TOP = top;
   window.SAFE_ZONE_BOTTOM = bottom;
 
-  console.log('[SAFE_AREA] FINAL:', window.SAFE_ZONE_TOP, window.SAFE_ZONE_BOTTOM);
+  console.log('[SAFE_AREA] FINAL SCALED: TOP=' + top + ', BOTTOM=' + bottom);
 }
 
 // Определение iOS
@@ -267,7 +283,7 @@ function create() {
   window.gameScene = this;
 
   // Initialize Safe Area zones for iPhone Notch/Home Indicator
-  initSafeArea();
+  initSafeArea(this);
 
   loadGame();
 
