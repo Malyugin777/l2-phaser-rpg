@@ -99,32 +99,36 @@ function createPlayerHeader(scene) {
   console.log('  ui_avatar_placeholder:', scene.textures.exists('ui_avatar_placeholder'));
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
-  // === WORKING: Direct positioning with scrollFactor=0 ===
+  // === ALL DIRECT ON SCENE with scrollFactor=0 ===
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const safeTop = window.SAFE_ZONE_TOP || 0;
-  const baseY = cropTop + safeTop;  // Safe area boundary
+  const baseY = cropTop + safeTop;
 
-  console.log('[PLAYER_HEADER] baseY = cropTop(' + cropTop + ') + safeTop(' + safeTop + ') = ' + baseY);
+  console.log('[PLAYER_HEADER] cropTop=' + cropTop + ', safeTop=' + safeTop + ', baseY=' + baseY);
 
-  // Container positioned at safe area boundary
-  const containerX = w / 2;
-  const headerContainer = scene.add.container(containerX, baseY);
-  headerContainer.setDepth(300);
-  headerContainer.setScrollFactor(0);
+  // Yellow line = screen edge (cropTop)
+  const yellowLine = scene.add.rectangle(w/2, cropTop, w, 4, 0xffff00, 1);
+  yellowLine.setOrigin(0.5, 0);
+  yellowLine.setScrollFactor(0);
+  yellowLine.setDepth(9999);
 
-  // === DARK BACKGROUND (directly on scene, covers notch area) ===
+  // Red line = safe area boundary (cropTop + safeTop)
+  const redLine = scene.add.rectangle(w/2, baseY, w, 4, 0xff0000, 1);
+  redLine.setOrigin(0.5, 0);
+  redLine.setScrollFactor(0);
+  redLine.setDepth(9999);
+
+  // Dark background from screen edge
   const headerBg = scene.add.rectangle(w/2, cropTop, cfg.darkBg.width, cfg.darkBg.height, 0x3a3a4a, 0.92);
   headerBg.setOrigin(0.5, 0);
   headerBg.setScrollFactor(0);
-  headerBg.setDepth(299);  // Behind header container
-
-  console.log('[HEADER_BG] Y=' + cropTop + ', height=' + cfg.darkBg.height);
+  headerBg.setDepth(299);
   window.playerHeaderDarkBg = headerBg;
 
-  // DEBUG: Keep red line at safe area boundary (container origin)
-  const debugLine = scene.add.rectangle(0, 0, w, 2, 0xff0000, 1);
-  debugLine.setOrigin(0.5, 0);
-  headerContainer.add(debugLine);
+  // Container at baseY for other elements
+  const headerContainer = scene.add.container(w/2, baseY);
+  headerContainer.setDepth(300);
+  headerContainer.setScrollFactor(0);
 
   // === LAYER 1: AVATAR (Bottom - drawn first) ===
   const avatar = scene.add.image(
