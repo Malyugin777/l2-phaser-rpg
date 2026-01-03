@@ -110,25 +110,26 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
-  // === DEBUG: Линии в МИРОВЫХ координатах (без scrollFactor) ===
-  // CSS обрезает canvas, Phaser этого не знает
-  // cropTop = где начинается видимая область в мировых координатах
-  const cropTop = window.ENVELOP_CROP_TOP || 0;
+  // === DEBUG: Много линий чтобы найти видимую область ===
+  const testLines = [
+    { y: 0, color: 0xff0000, label: 'Y=0' },
+    { y: 100, color: 0xff4400, label: 'Y=100' },
+    { y: 200, color: 0xff8800, label: 'Y=200' },
+    { y: 300, color: 0xffcc00, label: 'Y=300' },
+    { y: 400, color: 0xffff00, label: 'Y=400' },
+    { y: 500, color: 0x88ff00, label: 'Y=500' },
+    { y: 600, color: 0x00ff00, label: 'Y=600' },
+    { y: 800, color: 0x00ffff, label: 'Y=800' },
+    { y: 1000, color: 0x0088ff, label: 'Y=1000' },
+  ];
 
-  // Жёлтая линия: верх видимого экрана (Y = cropTop в мире)
-  const debugYellow = scene.add.rectangle(w/2, cropTop + 3, w, 6, 0xffff00, 1);
-  debugYellow.setDepth(9999);
-  // НЕТ scrollFactor — линия в мировых координатах
+  testLines.forEach(line => {
+    const rect = scene.add.rectangle(w/2, line.y, w, 8, line.color, 1);
+    rect.setDepth(9999);
+    console.log('[DEBUG] Line ' + line.label + ' color=' + line.color.toString(16));
+  });
 
-  // Красная линия: граница safe area
-  if (safeTop > 0) {
-    const debugRed = scene.add.rectangle(w/2, cropTop + safeTop, w, 6, 0xff0000, 1);
-    debugRed.setDepth(9999);
-  }
-
-  console.log('[DEBUG] cropTop=' + cropTop + ' safeTop=' + safeTop);
-  console.log('[DEBUG] 🟡 YELLOW at world Y=' + cropTop);
-  console.log('[DEBUG] 🔴 RED at world Y=' + (cropTop + safeTop));
+  console.log('[DEBUG] Expected visible: Y=' + (window.ENVELOP_CROP_TOP || 0) + ' to Y=' + (h - (window.ENVELOP_CROP_TOP || 0)));
 
   // === LAYER 0: DARK BACKGROUND ===
   // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера
