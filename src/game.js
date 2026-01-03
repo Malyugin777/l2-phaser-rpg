@@ -490,6 +490,29 @@ function setupCleanMode(scene) {
   // TEMPORARY DISABLED FOR SAFE ZONE TEST
   // setTimeout(() => applyFinalPositions(scene), 200);
 
+  // SUPER DEBUG - BIG RED BOX AT END OF INIT
+  const debugBox = scene.add.rectangle(
+    scene.scale.width / 2,
+    200,
+    400,
+    100,
+    0xff0000,
+    1
+  );
+  debugBox.setScrollFactor(0);
+  debugBox.setDepth(999999);
+
+  const debugText = scene.add.text(
+    scene.scale.width / 2,
+    200,
+    'SAFE TOP:' + window.SAFE_ZONE_TOP + ' BOT:' + window.SAFE_ZONE_BOTTOM,
+    { fontSize: '28px', color: '#ffffff', fontStyle: 'bold' }
+  );
+  debugText.setOrigin(0.5);
+  debugText.setScrollFactor(0);
+  debugText.setDepth(999999);
+
+  console.log('[DEBUG] RED BOX CREATED IN CLEANMODE END');
   console.log("[CLEAN MODE] Initialized");
 }
 
