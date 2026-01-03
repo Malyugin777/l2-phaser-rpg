@@ -318,6 +318,17 @@ function create() {
   const scene = this;
   window.gameScene = this;
 
+  // FORCE canvas centering via JS (CSS might be cached)
+  const canvas = document.querySelector('canvas');
+  if (canvas) {
+    canvas.style.position = 'absolute';
+    canvas.style.top = '50%';
+    canvas.style.left = '50%';
+    canvas.style.bottom = 'auto';
+    canvas.style.transform = 'translate(-50%, -50%)';
+    console.log('[CANVAS] Forced centering via JS');
+  }
+
   // Initialize Safe Area zones for iPhone Notch/Home Indicator
   initSafeArea(this);
 
