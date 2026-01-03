@@ -100,38 +100,39 @@ function createPlayerHeader(scene) {
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
   // === CONTAINER ===
-  // scrollFactor=0: position relative to CAMERA (Y=0 = game top, not visible top!)
-  // For ENVELOP + CENTER_BOTH: cropTop is cut off, so we add it
+  // NO scrollFactor - use world coordinates directly
+  // Position at: cropTop (visible top) + safeTop (notch offset)
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const safeTop = window.SAFE_ZONE_TOP || 0;
   const containerX = w / 2;
-  const containerY = cropTop + safeTop;  // Visible top + safe area offset
+  const containerY = cropTop + safeTop;
 
-  console.log('[PLAYER_HEADER] cropTop=' + cropTop + ' + safeTop=' + safeTop + ' → containerY=' + containerY);
+  console.log('[PLAYER_HEADER] World coords: cropTop=' + cropTop + ' + safeTop=' + safeTop + ' → Y=' + containerY);
 
   const headerContainer = scene.add.container(containerX, containerY);
   headerContainer.setDepth(300);
-  headerContainer.setScrollFactor(0);
+  // NO scrollFactor - stays in world coords
 
   // === LAYER 0: DARK BACKGROUND ===
-  // Cover from visible top (Y = -safeTop relative to container) down to panel bottom
+  // Container is at cropTop + safeTop (world coords)
+  // Background should extend UP to cover the safe area (notch area)
   const headerBg = scene.add.rectangle(
     0,
-    -safeTop,  // Start at visible top (container is at cropTop + safeTop)
+    -safeTop,  // Extend up into safe area
     cfg.darkBg.width,
     cfg.darkBg.height + safeTop,
     0x3a3a4a,
     0.92
   );
   headerBg.setOrigin(0.5, 0);
-
-  console.log('[HEADER_BG] starts at Y=' + (-safeTop) + ', height=' + (cfg.darkBg.height + safeTop));
   headerContainer.add(headerBg);
 
-  // DEBUG: Red line at container Y=0 (should be at safe area boundary)
+  // DEBUG: Red line at container origin (should be at safe area boundary)
   const debugLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
   debugLine.setOrigin(0.5, 0);
   headerContainer.add(debugLine);
+
+  console.log('[HEADER_BG] extends from Y=' + (containerY - safeTop) + ' to Y=' + (containerY + cfg.darkBg.height));
 
   // Expose for TuneMode
   window.playerHeaderDarkBg = headerBg;
