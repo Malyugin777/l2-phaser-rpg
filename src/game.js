@@ -269,6 +269,15 @@ function create() {
   // Initialize Safe Area zones for iPhone Notch/Home Indicator
   initSafeArea();
 
+  // DEBUG - Safe Area diagnostic
+  console.log('[DEBUG] SAFE_ZONE_TOP:', window.SAFE_ZONE_TOP);
+  console.log('[DEBUG] SAFE_ZONE_BOTTOM:', window.SAFE_ZONE_BOTTOM);
+  console.log('[DEBUG] Telegram WebApp exists:', !!window.Telegram?.WebApp);
+  console.log('[DEBUG] contentSafeAreaInset:', window.Telegram?.WebApp?.contentSafeAreaInset);
+  console.log('[DEBUG] safeAreaInset:', window.Telegram?.WebApp?.safeAreaInset);
+  console.log('[DEBUG] isIOS:', /iPhone|iPad|iPod/.test(navigator.userAgent));
+  alert('TOP: ' + window.SAFE_ZONE_TOP + ', BOTTOM: ' + window.SAFE_ZONE_BOTTOM);
+
   loadGame();
 
   const w = this.scale.width;
