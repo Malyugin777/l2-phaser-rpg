@@ -99,9 +99,12 @@ function createPlayerHeader(scene) {
   console.log('  ui_avatar_placeholder:', scene.textures.exists('ui_avatar_placeholder'));
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
-  // === CONTAINER === (using fixed absolute coordinates)
+  // === CONTAINER === (using fixed absolute coordinates + Safe Area)
   const containerX = cfg.container.x + cfg.container.offsetX;
-  const containerY = cfg.container.y + cfg.container.offsetY;
+  const safeTop = window.SAFE_ZONE_TOP || 0;
+  const containerY = cfg.container.y + cfg.container.offsetY + safeTop;
+
+  console.log('[PLAYER_HEADER] Safe zone top:', safeTop, '→ containerY:', containerY);
 
   const headerContainer = scene.add.container(containerX, containerY);
   headerContainer.setDepth(300);  // Above other UI

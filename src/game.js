@@ -4,6 +4,34 @@ console.log("GAMEJS BUILD: 2025-12-31-BOY2");
 const UI_MODE = "CLEAN";  // CLEAN = new UI only, LEGACY = old UI, CITY_CLEAN = minimal
 window.UI_MODE = UI_MODE;
 
+// ============================================================
+//  SAFE AREA — iPhone Notch / Home Indicator support
+// ============================================================
+
+function initSafeArea() {
+  const sensor = document.getElementById('safe-area-sensor');
+
+  if (!sensor) {
+    console.warn('[SafeArea] Sensor not found, using defaults');
+    window.SAFE_ZONE_TOP = 10;
+    window.SAFE_ZONE_BOTTOM = 0;
+    return;
+  }
+
+  const style = getComputedStyle(sensor);
+  let top = parseFloat(style.paddingTop) || 0;
+  let bottom = parseFloat(style.paddingBottom) || 0;
+
+  // Minimum defaults for PC/Android (so UI doesn't stick to edge)
+  if (top === 0) top = 10;
+  if (bottom === 0) bottom = 0;
+
+  window.SAFE_ZONE_TOP = top;
+  window.SAFE_ZONE_BOTTOM = bottom;
+
+  console.log('[SafeArea] TOP:', top, 'BOTTOM:', bottom);
+}
+
 // Hero offset (adaptive positioning)
 // Hero final position (hardcoded from tune mode)
 const HERO_OFFSET = { x: -62, y: -235, scale: 0.37 };  // 328, 1453 on 780x1688
@@ -209,6 +237,9 @@ function update(time, delta) {
 function create() {
   const scene = this;
   window.gameScene = this;
+
+  // Initialize Safe Area zones for iPhone Notch/Home Indicator
+  initSafeArea();
 
   loadGame();
 

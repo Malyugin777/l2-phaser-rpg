@@ -40,8 +40,13 @@ function createBottomUI(scene) {
 
   console.log("[BOTTOMUI] Creating UI, screen:", w, "x", h);
 
-  // === CONTAINER ===
-  const panelContainer = scene.add.container(w / 2, h + UI_LAYOUT.container.offsetY);
+  // === CONTAINER === (with Safe Area for iPhone Home Indicator)
+  const safeBottom = window.SAFE_ZONE_BOTTOM || 0;
+  const containerY = h - safeBottom + UI_LAYOUT.container.offsetY;
+
+  console.log('[BOTTOMUI] Safe zone bottom:', safeBottom, '→ containerY:', containerY);
+
+  const panelContainer = scene.add.container(w / 2, containerY);
   panelContainer.setDepth(200);
   panelContainer.setScrollFactor(0);
 
