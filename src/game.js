@@ -41,7 +41,7 @@ function initSafeArea(scene) {
 
   // ВАРИАНТ 3: Хардкод для iOS если всё вернуло 0
   if (top === 0 && isIOS()) {
-    top = 47;      // iPhone notch
+    top = 59;      // iPhone notch (увеличено для теста)
     bottom = 34;   // Home indicator
     console.log('[SAFE_AREA] iOS fallback (raw):', top, bottom);
   }
@@ -63,6 +63,9 @@ function initSafeArea(scene) {
     top = Math.round(top * scaleRatio);
     bottom = Math.round(bottom * scaleRatio);
   }
+
+  // TEST: принудительно увеличиваем для проверки
+  top = 150;  // ТЕСТ - должно быть очень заметно
 
   window.SAFE_ZONE_TOP = top;
   window.SAFE_ZONE_BOTTOM = bottom;
