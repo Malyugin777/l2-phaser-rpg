@@ -11,23 +11,66 @@ window.UI_MODE = UI_MODE;
 
 function initSafeArea(scene) {
   // ============================================================
-  // SAFE AREA — Каноничный подход: проценты от game resolution
+  // COORDINATE PROJECTION — Проекция CSS→Game координат
   // ============================================================
-  // Используем getSafeArea() из config.js — это работает с ENVELOP
-  // потому что проценты рассчитываются от game coordinates (1688px)
+  // SafeTop_Game = SafeTop_CSS × (GameHeight / WindowHeight)
   // ============================================================
 
-  const safeArea = getSafeArea(scene);
+  // 1. Получаем размеры
+  const gameHeight = scene.scale.gameSize.height;  // 1688
+  const windowHeight = window.innerHeight;          // ~844 на iPhone
 
-  window.SAFE_ZONE_TOP = Math.round(safeArea.y);        // 8% = 135px
-  window.SAFE_ZONE_BOTTOM = Math.round(scene.scale.height - safeArea.y - safeArea.height);  // 10% = 169px
-  window.SAFE_ZONE_LEFT = Math.round(safeArea.x);
-  window.SAFE_ZONE_RIGHT = Math.round(scene.scale.width - safeArea.x - safeArea.width);
+  // 2. Коэффициент масштаба (во сколько раз игра больше экрана)
+  let scaleFactor = (windowHeight > 0) ? (gameHeight / windowHeight) : 1;
+  scaleFactor = Math.round(scaleFactor * 100) / 100;
 
-  console.log('[SAFE_AREA] Canonical % approach:',
-              'TOP=' + window.SAFE_ZONE_TOP,
-              'BOTTOM=' + window.SAFE_ZONE_BOTTOM,
-              '(game coords, ENVELOP handles scaling)');
+  console.log(`[SAFE_AREA] 📐 SCALE: Game(${gameHeight}) / Screen(${windowHeight}) = x${scaleFactor}`);
+
+  let cssTop = 0;
+  let cssBottom = 0;
+
+  // 3. Запрашиваем у Telegram SDK (первоисточник)
+  const tg = window.Telegram?.WebApp;
+
+  if (tg?.contentSafeAreaInset) {
+    // Приоритет 1: contentSafeAreaInset (учитывает хедер TG)
+    cssTop = tg.contentSafeAreaInset.top || 0;
+    cssBottom = tg.contentSafeAreaInset.bottom || 0;
+    console.log('[SAFE_AREA] Source: TG contentSafeAreaInset:', cssTop, cssBottom);
+  }
+  else if (tg?.safeAreaInset) {
+    // Приоритет 2: safeAreaInset (чистый девайс)
+    cssTop = tg.safeAreaInset.top || 0;
+    cssBottom = tg.safeAreaInset.bottom || 0;
+    console.log('[SAFE_AREA] Source: TG safeAreaInset:', cssTop, cssBottom);
+  }
+  else {
+    // Приоритет 3: CSS env() через сенсор
+    const sensor = document.getElementById('safe-area-sensor');
+    if (sensor) {
+      const style = window.getComputedStyle(sensor);
+      cssTop = parseInt(style.paddingTop) || 0;
+      cssBottom = parseInt(style.paddingBottom) || 0;
+      console.log('[SAFE_AREA] Source: CSS env():', cssTop, cssBottom);
+    }
+
+    // Fallback для iOS если API молчит
+    if (cssTop === 0 && isIOS()) {
+      cssTop = 50;   // Средняя челка
+      cssBottom = 34; // Home indicator
+      console.log('[SAFE_AREA] Source: iOS fallback');
+    }
+  }
+
+  // 4. 🔥 ПРОЕКЦИЯ: CSS → Game координаты
+  const gameTop = Math.ceil(cssTop * scaleFactor);
+  const gameBottom = Math.ceil(cssBottom * scaleFactor);
+
+  window.SAFE_ZONE_TOP = gameTop;
+  window.SAFE_ZONE_BOTTOM = gameBottom;
+
+  console.log(`[SAFE_AREA] ✅ RESULT: ${cssTop}px × ${scaleFactor} = ${gameTop} game_px (top)`);
+  console.log(`[SAFE_AREA] ✅ RESULT: ${cssBottom}px × ${scaleFactor} = ${gameBottom} game_px (bottom)`);
 }
 
 // Определение iOS
