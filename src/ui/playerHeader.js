@@ -111,26 +111,27 @@ function createPlayerHeader(scene) {
   headerContainer.setScrollFactor(0);
 
   // === DEBUG: Линии для визуализации ===
-  const cropTop = window.ENVELOP_CROP_TOP || 0;
+  // scrollFactor=0 = позиция относительно КАМЕРЫ, не мира!
+  // Y=0 = верх экрана, Y=safeTop = граница safe area
 
-  // Жёлтая линия: граница видимого viewport (crop)
-  const cropLine = scene.add.rectangle(0, 0, w, 4, 0xffff00, 1);
-  cropLine.setOrigin(0, 0);
-  cropLine.setPosition(0, cropTop);
-  cropLine.setDepth(9999);
-  cropLine.setScrollFactor(0);
+  // Жёлтая линия: верх видимого экрана
+  const debugYellow = scene.add.rectangle(0, 0, w, 4, 0xffff00, 1);
+  debugYellow.setOrigin(0, 0);
+  debugYellow.setPosition(0, 0);  // Верх камеры = верх экрана
+  debugYellow.setDepth(9999);
+  debugYellow.setScrollFactor(0);
 
-  // Красная линия: граница safe area (crop + safe)
+  // Красная линия: граница safe area
   if (safeTop > 0) {
-    const safeLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
-    safeLine.setOrigin(0, 0);
-    safeLine.setPosition(0, cropTop + safeTop);
-    safeLine.setDepth(9999);
-    safeLine.setScrollFactor(0);
+    const debugRed = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
+    debugRed.setOrigin(0, 0);
+    debugRed.setPosition(0, safeTop);  // safeTop game px от верха экрана
+    debugRed.setDepth(9999);
+    debugRed.setScrollFactor(0);
   }
 
-  console.log('[DEBUG] 🟡 YELLOW LINE (viewport top) at Y=' + cropTop);
-  console.log('[DEBUG] 🔴 RED LINE (safe area) at Y=' + (cropTop + safeTop));
+  console.log('[DEBUG] 🟡 YELLOW LINE (screen top) at Y=0');
+  console.log('[DEBUG] 🔴 RED LINE (safe area) at Y=' + safeTop);
 
   // === LAYER 0: DARK BACKGROUND ===
   // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера
