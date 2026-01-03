@@ -6,30 +6,58 @@ window.UI_MODE = UI_MODE;
 
 // ============================================================
 //  SAFE AREA — iPhone Notch / Home Indicator support
+//  Priority: Telegram API → CSS env() → iOS fallback
 // ============================================================
 
 function initSafeArea() {
-  const sensor = document.getElementById('safe-area-sensor');
+  let top = 0;
+  let bottom = 0;
 
-  if (!sensor) {
-    console.warn('[SafeArea] Sensor not found, using defaults');
-    window.SAFE_ZONE_TOP = 10;
-    window.SAFE_ZONE_BOTTOM = 0;
-    return;
+  // ВАРИАНТ 1: Telegram WebApp API (самый надежный)
+  if (window.Telegram?.WebApp?.contentSafeAreaInset) {
+    const inset = window.Telegram.WebApp.contentSafeAreaInset;
+    top = inset.top || 0;
+    bottom = inset.bottom || 0;
+    console.log('[SAFE_AREA] From Telegram API:', top, bottom);
+  }
+  // ВАРИАНТ 1.5: Старый API
+  else if (window.Telegram?.WebApp?.safeAreaInset) {
+    const inset = window.Telegram.WebApp.safeAreaInset;
+    top = inset.top || 0;
+    bottom = inset.bottom || 0;
+    console.log('[SAFE_AREA] From Telegram safeAreaInset:', top, bottom);
+  }
+  // ВАРИАНТ 2: CSS env() (может работать вне Telegram)
+  else {
+    const sensor = document.getElementById('safe-area-sensor');
+    if (sensor) {
+      const style = getComputedStyle(sensor);
+      top = parseInt(style.paddingTop) || 0;
+      bottom = parseInt(style.paddingBottom) || 0;
+      console.log('[SAFE_AREA] From CSS env():', top, bottom);
+    }
   }
 
-  const style = getComputedStyle(sensor);
-  let top = parseFloat(style.paddingTop) || 0;
-  let bottom = parseFloat(style.paddingBottom) || 0;
+  // ВАРИАНТ 3: Хардкод для iOS если всё вернуло 0
+  if (top === 0 && isIOS()) {
+    top = 47;      // iPhone notch
+    bottom = 34;   // Home indicator
+    console.log('[SAFE_AREA] iOS fallback:', top, bottom);
+  }
 
-  // Minimum defaults for PC/Android (so UI doesn't stick to edge)
+  // Минимальные отступы для любого устройства
   if (top === 0) top = 10;
-  if (bottom === 0) bottom = 0;
 
   window.SAFE_ZONE_TOP = top;
   window.SAFE_ZONE_BOTTOM = bottom;
 
-  console.log('[SafeArea] TOP:', top, 'BOTTOM:', bottom);
+  console.log('[SAFE_AREA] FINAL:', window.SAFE_ZONE_TOP, window.SAFE_ZONE_BOTTOM);
+}
+
+// Определение iOS
+function isIOS() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
 // Hero offset (adaptive positioning)
