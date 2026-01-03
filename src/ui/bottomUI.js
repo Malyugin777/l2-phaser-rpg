@@ -51,9 +51,17 @@ function createBottomUI(scene) {
   panelContainer.setScrollFactor(0);
 
   // === DARK BACKGROUND (Behind all elements) ===
-  const bottomBg = scene.add.rectangle(0, 0, w + 100, 250, 0x3a3a4a, 0.92);
+  // SMART BACKGROUND: Растягиваем вниз чтобы закрыть home indicator
+  const bottomBg = scene.add.rectangle(
+    0,
+    safeBottom / 2,           // Сдвигаем центр вниз
+    w + 100,
+    250 + safeBottom,         // Увеличиваем высоту
+    0x3a3a4a,
+    0.92
+  );
   panelContainer.add(bottomBg);
-  console.log('[BOTTOMUI] Dark background added');
+  console.log('[BOTTOMUI] Dark background added (stretched for safe area)');
 
   // === PANEL ===
   const tex = scene.textures.get('ui_bottom');

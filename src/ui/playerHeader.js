@@ -111,14 +111,15 @@ function createPlayerHeader(scene) {
   headerContainer.setScrollFactor(0);
 
   // === LAYER 0: DARK BACKGROUND (Behind all elements) ===
-  // Stone-gray color instead of black
+  // SMART BACKGROUND: Растягиваем вверх чтобы закрыть челку
+  // Контейнер сдвинут вниз на safeTop, но фон тянем обратно вверх
   const headerBg = scene.add.rectangle(
     cfg.darkBg.x,
-    cfg.darkBg.y,
+    cfg.darkBg.y - (safeTop / 2),       // Сдвигаем центр вверх
     cfg.darkBg.width,
-    cfg.darkBg.height,
-    0x3a3a4a,      // GRAY (was 0x000000 black)
-    0.92           // Slightly more opaque
+    cfg.darkBg.height + safeTop,        // Увеличиваем высоту
+    0x3a3a4a,      // GRAY
+    0.92
   );
   headerContainer.add(headerBg);
 

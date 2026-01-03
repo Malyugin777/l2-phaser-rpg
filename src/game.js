@@ -6,71 +6,31 @@ window.UI_MODE = UI_MODE;
 
 // ============================================================
 //  SAFE AREA — iPhone Notch / Home Indicator support
-//  Priority: Telegram API → CSS env() → iOS fallback
-//  + Pixel Ratio scaling for HD game resolution
+//  Hardcoded values for 1688px game height
 // ============================================================
 
 function initSafeArea(scene) {
   let top = 0;
   let bottom = 0;
 
-  // ВАРИАНТ 1: Telegram WebApp API (самый надежный)
-  if (window.Telegram?.WebApp?.contentSafeAreaInset) {
-    const inset = window.Telegram.WebApp.contentSafeAreaInset;
-    top = inset.top || 0;
-    bottom = inset.bottom || 0;
-    console.log('[SAFE_AREA] From Telegram API (raw):', top, bottom);
+  // Для HD разрешения 1688px:
+  // iPhone челка ~5.5% = 90px
+  // iPhone home indicator ~4% = 70px
+  if (isIOS()) {
+    top = 90;
+    bottom = 70;
+    console.log('[SAFE_AREA] iOS -> Hardcoded:', top, bottom);
+  } else {
+    // PC/Android - минимальные отступы
+    top = 20;
+    bottom = 0;
+    console.log('[SAFE_AREA] Desktop/Android:', top, bottom);
   }
-  // ВАРИАНТ 1.5: Старый API
-  else if (window.Telegram?.WebApp?.safeAreaInset) {
-    const inset = window.Telegram.WebApp.safeAreaInset;
-    top = inset.top || 0;
-    bottom = inset.bottom || 0;
-    console.log('[SAFE_AREA] From Telegram safeAreaInset (raw):', top, bottom);
-  }
-  // ВАРИАНТ 2: CSS env() (может работать вне Telegram)
-  else {
-    const sensor = document.getElementById('safe-area-sensor');
-    if (sensor) {
-      const style = getComputedStyle(sensor);
-      top = parseInt(style.paddingTop) || 0;
-      bottom = parseInt(style.paddingBottom) || 0;
-      console.log('[SAFE_AREA] From CSS env() (raw):', top, bottom);
-    }
-  }
-
-  // ВАРИАНТ 3: Хардкод для iOS если всё вернуло 0
-  if (top === 0 && isIOS()) {
-    top = 59;      // iPhone notch (увеличено для теста)
-    bottom = 34;   // Home indicator
-    console.log('[SAFE_AREA] iOS fallback (raw):', top, bottom);
-  }
-
-  // Минимальные отступы для любого устройства
-  if (top === 0) top = 10;
-
-  // === 🔥 ГЛАВНЫЙ ФИКС: СЧИТАЕМ МАСШТАБ ===
-  // Если высота игры 1688, а окна браузера 844 -> коэффициент 2.0
-  // Нам нужно умножить 47 * 2.0 = 94 игровых пикселя.
-  if (scene && scene.scale) {
-    const scaleRatio = scene.scale.displaySize.height > 0
-      ? scene.scale.gameSize.height / scene.scale.displaySize.height
-      : 1;
-
-    console.log('[SAFE_AREA] Scale Ratio:', scaleRatio.toFixed(2));
-
-    // Применяем масштаб
-    top = Math.round(top * scaleRatio);
-    bottom = Math.round(bottom * scaleRatio);
-  }
-
-  // TEST: принудительно увеличиваем для проверки
-  top = 150;  // ТЕСТ - должно быть очень заметно
 
   window.SAFE_ZONE_TOP = top;
   window.SAFE_ZONE_BOTTOM = bottom;
 
-  console.log('[SAFE_AREA] FINAL SCALED: TOP=' + top + ', BOTTOM=' + bottom);
+  console.log('[SAFE_AREA] FINAL: TOP=' + top + ', BOTTOM=' + bottom);
 }
 
 // Определение iOS
@@ -288,12 +248,6 @@ function create() {
   // Initialize Safe Area zones for iPhone Notch/Home Indicator
   initSafeArea(this);
 
-  // DEBUG DOM - show scaled values
-  const dbg = document.createElement('div');
-  dbg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:red;color:white;padding:20px;font-size:24px;font-weight:bold;z-index:999999;text-align:center;';
-  dbg.innerHTML = 'TOP: ' + window.SAFE_ZONE_TOP + '<br>BOT: ' + window.SAFE_ZONE_BOTTOM + '<br>TUNE: ' + (localStorage.getItem('TUNE_VERSION') || 'none');
-  document.body.appendChild(dbg);
-
   loadGame();
 
   const w = this.scale.width;
@@ -475,22 +429,6 @@ function setupCleanMode(scene) {
 
   // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
   setTimeout(() => applyFinalPositions(scene), 200);
-
-  // DEBUG: show header position after all inits + visual line
-  setTimeout(() => {
-    const hdr = window.playerHeader?.container;
-    if (hdr) {
-      const dbg2 = document.createElement('div');
-      dbg2.style.cssText = 'position:fixed;bottom:100px;left:10px;background:blue;color:white;padding:10px;font-size:16px;z-index:999999;';
-      dbg2.textContent = 'HDR Y: ' + hdr.y + ' (expected: ' + (272 + window.SAFE_ZONE_TOP) + ')';
-      document.body.appendChild(dbg2);
-
-      // Нарисуем красную линию на уровне header container
-      const line = scene.add.rectangle(scene.scale.width / 2, hdr.y, scene.scale.width, 4, 0xff0000);
-      line.setDepth(99999);
-      line.setScrollFactor(0);
-    }
-  }, 500);
 
   console.log("[CLEAN MODE] Initialized");
 }
