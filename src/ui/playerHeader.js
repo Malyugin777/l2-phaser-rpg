@@ -110,32 +110,25 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
-  // === DEBUG: Линии через camera.worldView ===
-  const cam = scene.cameras.main;
-  const viewTop = cam.worldView.y;  // Реальный верх видимой области
-  const viewHeight = cam.worldView.height;
+  // === DEBUG: Линии в МИРОВЫХ координатах (без scrollFactor) ===
+  // CSS обрезает canvas, Phaser этого не знает
+  // cropTop = где начинается видимая область в мировых координатах
+  const cropTop = window.ENVELOP_CROP_TOP || 0;
 
-  console.log('[DEBUG] Camera worldView:', JSON.stringify({
-    x: cam.worldView.x,
-    y: cam.worldView.y,
-    w: cam.worldView.width,
-    h: cam.worldView.height
-  }));
-
-  // Жёлтая линия: верх видимого экрана
-  const debugYellow = scene.add.rectangle(w/2, viewTop + 3, w, 6, 0xffff00, 1);
+  // Жёлтая линия: верх видимого экрана (Y = cropTop в мире)
+  const debugYellow = scene.add.rectangle(w/2, cropTop + 3, w, 6, 0xffff00, 1);
   debugYellow.setDepth(9999);
-  debugYellow.setScrollFactor(0);
+  // НЕТ scrollFactor — линия в мировых координатах
 
   // Красная линия: граница safe area
   if (safeTop > 0) {
-    const debugRed = scene.add.rectangle(w/2, viewTop + safeTop, w, 6, 0xff0000, 1);
+    const debugRed = scene.add.rectangle(w/2, cropTop + safeTop, w, 6, 0xff0000, 1);
     debugRed.setDepth(9999);
-    debugRed.setScrollFactor(0);
   }
 
-  console.log('[DEBUG] 🟡 YELLOW at viewTop=' + viewTop);
-  console.log('[DEBUG] 🔴 RED at viewTop+safeTop=' + (viewTop + safeTop));
+  console.log('[DEBUG] cropTop=' + cropTop + ' safeTop=' + safeTop);
+  console.log('[DEBUG] 🟡 YELLOW at world Y=' + cropTop);
+  console.log('[DEBUG] 🔴 RED at world Y=' + (cropTop + safeTop));
 
   // === LAYER 0: DARK BACKGROUND ===
   // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера
