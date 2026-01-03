@@ -513,6 +513,14 @@ function setupCleanMode(scene) {
   debugText.setDepth(999999);
 
   console.log('[DEBUG] RED BOX CREATED IN CLEANMODE END');
+
+  // DOM DEBUG - 100% VISIBLE
+  const domDebug = document.createElement('div');
+  domDebug.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:red;color:white;padding:30px;font-size:32px;font-weight:bold;z-index:999999;border:5px solid yellow;';
+  domDebug.textContent = 'SAFE: ' + window.SAFE_ZONE_TOP + '/' + window.SAFE_ZONE_BOTTOM;
+  document.body.appendChild(domDebug);
+  console.log('[DEBUG] DOM DEBUG BOX ADDED');
+
   console.log("[CLEAN MODE] Initialized");
 }
 
