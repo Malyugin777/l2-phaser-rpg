@@ -118,6 +118,24 @@ function createPlayerHeader(scene) {
   redLine.setScrollFactor(0);
   redLine.setDepth(9999);
 
+  // DEBUG TEXT on screen
+  const tg = window.Telegram?.WebApp;
+  const debugInfo = [
+    'cropTop: ' + cropTop,
+    'safeTop: ' + safeTop,
+    'TG.contentSafe: ' + JSON.stringify(tg?.contentSafeAreaInset || 'N/A'),
+    'TG.safeArea: ' + JSON.stringify(tg?.safeAreaInset || 'N/A')
+  ].join('\n');
+
+  const debugText = scene.add.text(10, cropTop + 20, debugInfo, {
+    fontSize: '14px',
+    color: '#00ff00',
+    backgroundColor: '#000000',
+    padding: { x: 5, y: 5 }
+  });
+  debugText.setScrollFactor(0);
+  debugText.setDepth(9999);
+
   // Dark background from screen edge
   const headerBg = scene.add.rectangle(w/2, cropTop, cfg.darkBg.width, cfg.darkBg.height, 0x3a3a4a, 0.92);
   headerBg.setOrigin(0.5, 0);
