@@ -29,7 +29,7 @@ const TUNE_ENABLED = new URLSearchParams(window.location.search).has('tune');
 if (TUNE_ENABLED) console.log("[TUNE] Mode ENABLED");
 
 // Tune settings version (increment to reset saved positions)
-const TUNE_VERSION = 'v17';
+const TUNE_VERSION = 'v18';
 
 function getTuneSettings() {
   const defaults = {
@@ -207,7 +207,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
       bgY: cityBg.y,
       bgScale: cityBg.scaleX,
       containerX: cont?.x,
-      containerY: cont?.y,
+      // FIX: Сохраняем "чистую" координату (без Safe Zone)
+      containerY: cont?.y ? cont.y + (window.SAFE_ZONE_BOTTOM || 0) : undefined,
       panelScale: panel?.scaleX,
       heroX: hero?.x,
       heroY: hero?.y,
@@ -221,7 +222,8 @@ function initTuneMode(scene, cityBg, heroOffset) {
       icon2: { x: icons[2]?.x, y: icons[2]?.y },
       icon3: { x: icons[3]?.x, y: icons[3]?.y },
       headerX: headerCont?.x,
-      headerY: headerCont?.y,
+      // FIX: Вычитаем челку при сохранении
+      headerY: headerCont?.y ? headerCont.y - (window.SAFE_ZONE_TOP || 0) : undefined,
       headerScale: headerCont?.scaleX,
       avatarX: headerAvatar?.x,
       avatarY: headerAvatar?.y,
