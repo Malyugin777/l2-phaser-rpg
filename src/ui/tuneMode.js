@@ -695,20 +695,20 @@ function applyTuneSettings(scene, cityBg, heroOffset) {
       }
     }
 
-    // Header Panel
-    if (window.playerHeaderPanel && settings.hpanelX !== undefined) {
-      window.playerHeaderPanel.x = settings.hpanelX;
-      window.playerHeaderPanel.y = settings.hpanelY;
-      if (settings.hpanelScale) window.playerHeaderPanel.setScale(settings.hpanelScale);
-    }
+    // Header Panel - ОТКЛЮЧЕНО! Позицией управляет playerHeader.js
+    // if (window.playerHeaderPanel && settings.hpanelX !== undefined) {
+    //   window.playerHeaderPanel.x = settings.hpanelX;
+    //   window.playerHeaderPanel.y = settings.hpanelY;
+    //   if (settings.hpanelScale) window.playerHeaderPanel.setScale(settings.hpanelScale);
+    // }
 
-    // Header Dark Background
-    if (window.playerHeaderDarkBg && settings.darkBgX !== undefined) {
-      window.playerHeaderDarkBg.x = settings.darkBgX;
-      window.playerHeaderDarkBg.y = settings.darkBgY;
-      if (settings.darkBgWidth) window.playerHeaderDarkBg.width = settings.darkBgWidth;
-      if (settings.darkBgHeight) window.playerHeaderDarkBg.height = settings.darkBgHeight;
-    }
+    // Header Dark Background - ОТКЛЮЧЕНО! Smart Background управляет этим
+    // if (window.playerHeaderDarkBg && settings.darkBgX !== undefined) {
+    //   window.playerHeaderDarkBg.x = settings.darkBgX;
+    //   window.playerHeaderDarkBg.y = settings.darkBgY;
+    //   if (settings.darkBgWidth) window.playerHeaderDarkBg.width = settings.darkBgWidth;
+    //   if (settings.darkBgHeight) window.playerHeaderDarkBg.height = settings.darkBgHeight;
+    // }
 
     // Text elements
     if (window.headerTextLevel && settings.txtLevelX !== undefined) {
