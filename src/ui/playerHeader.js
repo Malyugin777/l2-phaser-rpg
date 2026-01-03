@@ -100,43 +100,29 @@ function createPlayerHeader(scene) {
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
   // === CONTAINER ===
-  // NO scrollFactor - use world coordinates directly
-  // Position at: cropTop (visible top) + safeTop (notch offset)
+  // TEST: Just put it at cropTop to find visible screen top
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const safeTop = window.SAFE_ZONE_TOP || 0;
   const containerX = w / 2;
-  const containerY = cropTop + safeTop;
+  const containerY = cropTop;  // Just cropTop, no safeTop yet
 
-  console.log('[PLAYER_HEADER] World coords: cropTop=' + cropTop + ' + safeTop=' + safeTop + ' → Y=' + containerY);
+  console.log('[PLAYER_HEADER] TEST: containerY = cropTop = ' + cropTop);
+  console.log('[PLAYER_HEADER] (safeTop=' + safeTop + ' will add later)');
 
   const headerContainer = scene.add.container(containerX, containerY);
   headerContainer.setDepth(300);
-  // NO scrollFactor - stays in world coords
+  headerContainer.setScrollFactor(0);  // Try with scrollFactor again
 
-  // === LAYER 0: DARK BACKGROUND ===
-  // Container is at cropTop + safeTop (world coords)
-  // Background should extend UP to cover the safe area (notch area)
-  const headerBg = scene.add.rectangle(
-    0,
-    -safeTop,  // Extend up into safe area
-    cfg.darkBg.width,
-    cfg.darkBg.height + safeTop,
-    0x3a3a4a,
-    0.92
-  );
-  headerBg.setOrigin(0.5, 0);
-  headerContainer.add(headerBg);
-
-  // DEBUG: Red line at container origin (should be at safe area boundary)
-  const debugLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
+  // === DEBUG: Red line at container origin ===
+  // This should be at the TOP of visible screen
+  const debugLine = scene.add.rectangle(0, 0, w, 8, 0xff0000, 1);
   debugLine.setOrigin(0.5, 0);
   headerContainer.add(debugLine);
 
-  console.log('[HEADER_BG] extends from Y=' + (containerY - safeTop) + ' to Y=' + (containerY + cfg.darkBg.height));
+  console.log('[DEBUG] Red line at Y=' + containerY + ' (should be visible screen top)');
 
-  // Expose for TuneMode
-  window.playerHeaderDarkBg = headerBg;
-  console.log('[PLAYER_HEADER] DarkBg exposed for TuneMode');
+  // Skip other UI elements for this test
+  // Just the red debug line
 
   // === LAYER 1: AVATAR (Bottom - drawn first) ===
   const avatar = scene.add.image(
