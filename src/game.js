@@ -68,19 +68,19 @@ function initSafeArea(scene) {
     }
   }
 
-  // If in Telegram but SDK returns nothing - Telegram header handles safe area
+  // Override safe area based on context
   const inTelegram = !!window.Telegram?.WebApp;
 
-  if (cssTop === 0 && simulateIOS) {
-    // Only simulate on desktop with ?simios
-    cssTop = 59;
-    cssBottom = 34;
-    source = 'iOS SIMULATED';
-  } else if (cssTop === 0 && inTelegram) {
-    // In real Telegram - header bar already covers notch, no extra offset needed
+  if (inTelegram) {
+    // In Telegram - header bar already covers notch, ignore CSS env() values
     cssTop = 0;
     cssBottom = 0;
     source = 'TG header (no offset)';
+  } else if (simulateIOS) {
+    // Simulate iOS on desktop with ?simios
+    cssTop = 59;
+    cssBottom = 34;
+    source = 'iOS SIMULATED';
   } else if (cssTop === 0 && isIOS()) {
     // iOS Safari outside Telegram - use fallback
     cssTop = 59;
