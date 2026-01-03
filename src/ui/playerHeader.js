@@ -111,13 +111,40 @@ function createPlayerHeader(scene) {
   headerContainer.setScrollFactor(0);
 
   // === LAYER 0: DARK BACKGROUND (Behind all elements) ===
-  // SMART BACKGROUND: Растягиваем вверх чтобы закрыть челку
-  // Контейнер сдвинут вниз на safeTop, но фон тянем обратно вверх
+  // SMART BACKGROUND: Фон растягивается ВВЕРХ чтобы закрыть челку
+  //
+  // ЛОГИКА:
+  // - Container переместился ВНИЗ на safeTop (с 272 на 372)
+  // - DarkBg — child контейнера, его визуальная позиция = container.y + child.y
+  // - Нужно чтобы верхний край фона был на Y=0 экрана
+  // - Нижний край остался там же где был
+  //
+  // Оригинальный нижний край (без safe area):
+  // visualBottom = 272 + 135 + 125 = 532 (centerY + height/2)
+  //
+  // С safe area хотим:
+  // - visualTop = 0
+  // - visualBottom = 532
+  // - height = 532, center = 266
+  // - child.y = 266 - containerY
+
+  const originalContainerY = cfg.container.y + cfg.container.offsetY;  // 272
+  const originalBgCenter = originalContainerY + cfg.darkBg.y;          // 407
+  const originalBgBottom = originalBgCenter + cfg.darkBg.height / 2;   // 532
+
+  // Новый фон от Y=0 до оригинального низа
+  const bgHeight = originalBgBottom;                    // 532
+  const bgVisualCenter = bgHeight / 2;                  // 266
+  const bgY = bgVisualCenter - containerY;              // 266 - 372 = -106
+
+  console.log('[HEADER_BG] safeTop:', safeTop, 'containerY:', containerY,
+              'bgY:', bgY, 'bgHeight:', bgHeight);
+
   const headerBg = scene.add.rectangle(
     cfg.darkBg.x,
-    cfg.darkBg.y - safeTop,             // Сдвигаем начало фона ВВЕРХ
+    bgY,
     cfg.darkBg.width,
-    cfg.darkBg.height + safeTop,        // Увеличиваем высоту
+    bgHeight,
     0x3a3a4a,      // GRAY
     0.92
   );
