@@ -99,38 +99,35 @@ function createPlayerHeader(scene) {
   console.log('  ui_avatar_placeholder:', scene.textures.exists('ui_avatar_placeholder'));
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
-  // === CONTAINER ===
-  // CANONICAL: cropTop = visible screen top, safeTop = notch offset
+  // === TEST: Lines directly on scene, no container ===
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const safeTop = window.SAFE_ZONE_TOP || 0;
+
+  console.log('[TEST] cropTop=' + cropTop + ', safeTop=' + safeTop);
+
+  // Yellow line at cropTop (should be screen edge)
+  const yellowLine = scene.add.rectangle(w/2, cropTop, w, 6, 0xffff00, 1);
+  yellowLine.setOrigin(0.5, 0);
+  yellowLine.setScrollFactor(0);
+  yellowLine.setDepth(9999);
+
+  // Red line at cropTop + safeTop (should be safe area boundary)
+  const redLine = scene.add.rectangle(w/2, cropTop + safeTop, w, 6, 0xff0000, 1);
+  redLine.setOrigin(0.5, 0);
+  redLine.setScrollFactor(0);
+  redLine.setDepth(9999);
+
+  console.log('[TEST] Yellow at Y=' + cropTop + ', Red at Y=' + (cropTop + safeTop));
+
+  // Temporary container for other elements (will fix later)
   const containerX = w / 2;
-  const containerY = cropTop + safeTop;  // Below notch/safe area
-
-  console.log('[PLAYER_HEADER] containerY = cropTop(' + cropTop + ') + safeTop(' + safeTop + ') = ' + containerY);
-
+  const containerY = cropTop + safeTop;
   const headerContainer = scene.add.container(containerX, containerY);
   headerContainer.setDepth(300);
   headerContainer.setScrollFactor(0);
 
-  // === DEBUG: Red line at container origin (safe area boundary) ===
-  const debugLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
-  debugLine.setOrigin(0.5, 0);
-  headerContainer.add(debugLine);
-
-  // === LAYER 0: DARK BACKGROUND ===
-  // Extend UP to cover notch area (from -safeTop to panel bottom)
-  const headerBg = scene.add.rectangle(
-    0,
-    -safeTop,
-    cfg.darkBg.width,
-    cfg.darkBg.height + safeTop,
-    0x3a3a4a,
-    0.92
-  );
-  headerBg.setOrigin(0.5, 0);
-  headerContainer.add(headerBg);
-
-  // Expose for TuneMode
+  // Skip background for now
+  const headerBg = null;
   window.playerHeaderDarkBg = headerBg;
 
   // === LAYER 1: AVATAR (Bottom - drawn first) ===
