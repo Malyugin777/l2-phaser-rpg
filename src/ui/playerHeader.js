@@ -110,6 +110,16 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
+  // === DEBUG: Красная линия на границе Safe Area ===
+  if (safeTop > 0) {
+    const debugLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
+    debugLine.setOrigin(0, 0);
+    debugLine.setPosition(0, safeTop);
+    debugLine.setDepth(9999);
+    debugLine.setScrollFactor(0);
+    console.log('[DEBUG] 🔴 RED LINE at Y=' + safeTop);
+  }
+
   // === LAYER 0: DARK BACKGROUND ===
   // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера
   const headerBg = scene.add.rectangle(
