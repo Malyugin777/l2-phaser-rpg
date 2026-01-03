@@ -110,44 +110,20 @@ function createPlayerHeader(scene) {
   headerContainer.setDepth(300);  // Above other UI
   headerContainer.setScrollFactor(0);
 
-  // === LAYER 0: DARK BACKGROUND (Behind all elements) ===
-  // SMART BACKGROUND: Фон растягивается ВВЕРХ чтобы закрыть челку
-  //
-  // ЛОГИКА:
-  // - Container переместился ВНИЗ на safeTop (с 272 на 372)
-  // - DarkBg — child контейнера, его визуальная позиция = container.y + child.y
-  // - Нужно чтобы верхний край фона был на Y=0 экрана
-  // - Нижний край остался там же где был
-  //
-  // Оригинальный нижний край (без safe area):
-  // visualBottom = 272 + 135 + 125 = 532 (centerY + height/2)
-  //
-  // С safe area хотим:
-  // - visualTop = 0
-  // - visualBottom = 532
-  // - height = 532, center = 266
-  // - child.y = 266 - containerY
-
-  const originalContainerY = cfg.container.y + cfg.container.offsetY;  // 272
-  const originalBgCenter = originalContainerY + cfg.darkBg.y;          // 407
-  const originalBgBottom = originalBgCenter + cfg.darkBg.height / 2;   // 532
-
-  // Новый фон от Y=0 до оригинального низа
-  const bgHeight = originalBgBottom;                    // 532
-  const bgVisualCenter = bgHeight / 2;                  // 266
-  const bgY = bgVisualCenter - containerY;              // 266 - 372 = -106
-
-  console.log('[HEADER_BG] safeTop:', safeTop, 'containerY:', containerY,
-              'bgY:', bgY, 'bgHeight:', bgHeight);
-
+  // === LAYER 0: DARK BACKGROUND ===
+  // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера
   const headerBg = scene.add.rectangle(
     cfg.darkBg.x,
-    bgY,
+    0,                           // Начинаем от origin контейнера
     cfg.darkBg.width,
-    bgHeight,
-    0x3a3a4a,      // GRAY
+    cfg.darkBg.height + containerY,  // Растягиваем вверх на всю высоту до края
+    0x3a3a4a,
     0.92
   );
+  headerBg.setOrigin(0.5, 0);     // Origin сверху по центру
+  headerBg.setY(-containerY);     // Сдвигаем вверх на высоту контейнера от края
+
+  console.log('[HEADER_BG] containerY:', containerY, 'bgHeight:', cfg.darkBg.height + containerY);
   headerContainer.add(headerBg);
 
   // Expose for TuneMode

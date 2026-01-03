@@ -50,41 +50,22 @@ function createBottomUI(scene) {
   panelContainer.setDepth(200);
   panelContainer.setScrollFactor(0);
 
-  // === DARK BACKGROUND (Behind all elements) ===
-  // SMART BACKGROUND: Фон тянется ВНИЗ до края экрана (home indicator)
-  //
-  // ЛОГИКА:
-  // - Container переместился ВВЕРХ на safeBottom (с 1679 на 1639)
-  // - Фон должен доходить до низа экрана (Y = h = 1688)
-  // - Верхний край фона остается там же где был
-  //
-  // Container относительный Y = 0, фон относительно контейнера
-  // Хотим: visualBottom = h (низ экрана)
-  //        visualTop = где был (примерно 1554 на 1688h экране)
-
-  const originalContainerY = h + UI_LAYOUT.container.offsetY;  // 1679 без safe area
-  const bgOriginalHeight = 250;
-  const bgOriginalTop = originalContainerY - bgOriginalHeight / 2;  // 1554
-
-  // Новый фон от оригинального верха до низа экрана
-  const bgNewBottom = h;                                    // 1688
-  const bgNewHeight = bgNewBottom - bgOriginalTop;          // 1688 - 1554 = 134... actually more
-  const bgNewCenter = (bgOriginalTop + bgNewBottom) / 2;    // середина
-  const bgY = bgNewCenter - containerY;                     // относительно контейнера
-
-  console.log('[BOTTOMUI_BG] safeBottom:', safeBottom, 'containerY:', containerY,
-              'bgY:', bgY, 'bgHeight:', bgNewHeight);
-
+  // === DARK BACKGROUND ===
+  // Простой подход: фон с origin снизу, тянется от контейнера до низа экрана
+  const distanceToBottom = h - containerY;  // Расстояние от контейнера до низа экрана
   const bottomBg = scene.add.rectangle(
     0,
-    bgY,
+    0,
     w + 100,
-    bgNewHeight,
+    250 + distanceToBottom,  // Высота панели + расстояние до низа
     0x3a3a4a,
     0.92
   );
+  bottomBg.setOrigin(0.5, 0);      // Origin сверху
+  bottomBg.setY(-125);             // Сдвигаем вверх на половину панели
   panelContainer.add(bottomBg);
-  console.log('[BOTTOMUI] Dark background added');
+
+  console.log('[BOTTOMUI_BG] containerY:', containerY, 'distanceToBottom:', distanceToBottom);
 
   // === PANEL ===
   const tex = scene.textures.get('ui_bottom');
