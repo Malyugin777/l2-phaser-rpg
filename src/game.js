@@ -11,40 +11,31 @@ window.UI_MODE = UI_MODE;
 
 function initSafeArea(scene) {
   // ============================================================
-  // ENVELOP MODE: Учитываем реальный scale и crop
-  // ============================================================
-  // ENVELOP масштабирует canvas чтобы ПОКРЫТЬ viewport
-  // Часть canvas обрезается (crop) сверху/снизу или слева/справа
+  // CANONICAL SAFE AREA for Phaser ENVELOP + CENTER_BOTH
   // ============================================================
 
   const simulateIOS = new URLSearchParams(window.location.search).has('simios');
 
-  // 1. Размеры
-  const gameW = scene.scale.gameSize.width;   // 780
-  const gameH = scene.scale.gameSize.height;  // 1688
-  const screenW = window.innerWidth;           // 550
-  const screenH = window.innerHeight;          // 888
-
-  // 2. ENVELOP scale = max(scaleX, scaleY) — чтобы покрыть экран
-  const scaleX = screenW / gameW;  // 550/780 = 0.705
-  const scaleY = screenH / gameH;  // 888/1688 = 0.526
-  const envelopScale = Math.max(scaleX, scaleY);  // 0.705
-
-  // 3. Canvas размер после масштабирования
-  const canvasW = gameW * envelopScale;  // 550
-  const canvasH = gameH * envelopScale;  // 1190
-
-  // 4. Crop offset (сколько обрезано из-за CENTER_BOTH)
-  const cropTop = (canvasH - screenH) / 2;  // (1190-888)/2 = 151 CSS px
-  const cropTopGame = cropTop / envelopScale;  // 214 game px
+  // 1. Get sizes from Phaser's scale manager (canonical way)
+  const gameW = scene.scale.gameSize.width;     // 780
+  const gameH = scene.scale.gameSize.height;    // 1688
+  const displayW = scene.scale.displaySize.width;
+  const displayH = scene.scale.displaySize.height;
+  const parentW = scene.scale.parentSize.width;
+  const parentH = scene.scale.parentSize.height;
 
   console.log('='.repeat(50));
-  console.log('[SAFE] 📐 ENVELOP ANALYSIS:');
-  console.log(`  Game: ${gameW}×${gameH}`);
-  console.log(`  Screen: ${screenW}×${screenH}`);
-  console.log(`  ENVELOP Scale: ${envelopScale.toFixed(3)}`);
-  console.log(`  Canvas: ${canvasW.toFixed(0)}×${canvasH.toFixed(0)} CSS px`);
-  console.log(`  Crop Top: ${cropTop.toFixed(0)} CSS px = ${cropTopGame.toFixed(0)} game px`);
+  console.log('[SAFE] 📐 PHASER SCALE MANAGER:');
+  console.log(`  gameSize: ${gameW}×${gameH}`);
+  console.log(`  displaySize: ${displayW}×${displayH}`);
+  console.log(`  parentSize: ${parentW}×${parentH}`);
+
+  // 2. Calculate actual scale factor
+  const scaleX = displayW / gameW;
+  const scaleY = displayH / gameH;
+  const actualScale = Math.min(scaleX, scaleY);  // For ENVELOP it's max, but display might differ
+
+  console.log(`  Scale factors: X=${scaleX.toFixed(3)}, Y=${scaleY.toFixed(3)}`);
   if (simulateIOS) console.log('  🔧 SIMULATE iOS: ON');
 
   // 5. Источники Safe Area
@@ -85,24 +76,30 @@ function initSafeArea(scene) {
 
   console.log(`[SAFE] 📊 SOURCE: ${source} → CSS: top=${cssTop}, bottom=${cssBottom}`);
 
-  // 6. 🔥 ПРАВИЛЬНАЯ ПРОЕКЦИЯ для ENVELOP 🔥
-  // Safe area в CSS пикселях → конвертируем в game пиксели
-  // Формула: gamePx = cssPx / envelopScale
-  const safeTopGame = cssTop / envelopScale;
-  const safeBottomGame = cssBottom / envelopScale;
+  // 3. Calculate scale for CSS to game conversion
+  // displaySize is the actual rendered size, gameSize is internal
+  const scale = displayH / gameH;  // Use Y scale for ENVELOP (height determines scale)
 
-  // Crop offset УЖЕ учтён в позиционировании canvas,
-  // нам нужно только добавить safe area
+  // 4. Convert CSS safe area to game pixels
+  // Safe area is in CSS pixels, we need game pixels
+  const safeTopGame = cssTop / scale;
+  const safeBottomGame = cssBottom / scale;
+
   window.SAFE_ZONE_TOP = Math.round(safeTopGame);
   window.SAFE_ZONE_BOTTOM = Math.round(safeBottomGame);
 
-  // Сохраняем для debug
+  // With CENTER_BOTH, Phaser centers the canvas
+  // The crop offset is handled by Phaser, we just need safe area offset
+  // Calculate crop for reference (how much is cut off top/bottom)
+  const cropTopCSS = (displayH - parentH) / 2;
+  const cropTopGame = cropTopCSS > 0 ? cropTopCSS / scale : 0;
   window.ENVELOP_CROP_TOP = Math.round(cropTopGame);
 
   console.log('[SAFE] 🎯 FINAL (game pixels):');
-  console.log(`  Safe Top: ${cssTop} CSS / ${envelopScale.toFixed(3)} = ${window.SAFE_ZONE_TOP} game px`);
-  console.log(`  Safe Bottom: ${cssBottom} CSS / ${envelopScale.toFixed(3)} = ${window.SAFE_ZONE_BOTTOM} game px`);
-  console.log(`  Crop Top (for reference): ${window.ENVELOP_CROP_TOP} game px`);
+  console.log(`  Scale: ${scale.toFixed(3)}`);
+  console.log(`  Safe Top: ${cssTop} CSS → ${window.SAFE_ZONE_TOP} game px`);
+  console.log(`  Safe Bottom: ${cssBottom} CSS → ${window.SAFE_ZONE_BOTTOM} game px`);
+  console.log(`  Crop Top: ${cropTopCSS.toFixed(0)} CSS → ${window.ENVELOP_CROP_TOP} game px`);
   console.log('='.repeat(50));
 }
 
@@ -317,17 +314,6 @@ function update(time, delta) {
 function create() {
   const scene = this;
   window.gameScene = this;
-
-  // FORCE canvas centering via JS (CSS might be cached)
-  const canvas = document.querySelector('canvas');
-  if (canvas) {
-    canvas.style.position = 'absolute';
-    canvas.style.top = '50%';
-    canvas.style.left = '50%';
-    canvas.style.bottom = 'auto';
-    canvas.style.transform = 'translate(-50%, -50%)';
-    console.log('[CANVAS] Forced centering via JS');
-  }
 
   // Initialize Safe Area zones for iPhone Notch/Home Indicator
   initSafeArea(this);

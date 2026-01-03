@@ -99,53 +99,39 @@ function createPlayerHeader(scene) {
   console.log('  ui_avatar_placeholder:', scene.textures.exists('ui_avatar_placeholder'));
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
-  // === CONTAINER === (using fixed absolute coordinates + Safe Area)
-  const containerX = cfg.container.x + cfg.container.offsetX;
+  // === CONTAINER ===
+  // scrollFactor=0: position relative to CAMERA (Y=0 = camera top)
+  // For ENVELOP + CENTER_BOTH: need to offset by crop + safe area
+  const cropTop = window.ENVELOP_CROP_TOP || 0;
   const safeTop = window.SAFE_ZONE_TOP || 0;
-  const containerY = cfg.container.y + cfg.container.offsetY + safeTop;
+  const containerX = w / 2;
+  const containerY = safeTop;  // Start at safe area (crop is handled by Phaser centering)
 
-  console.log('[PLAYER_HEADER] Safe zone top:', safeTop, '→ containerY:', containerY);
+  console.log('[PLAYER_HEADER] safeTop=' + safeTop + ', cropTop=' + cropTop + ' → containerY=' + containerY);
 
   const headerContainer = scene.add.container(containerX, containerY);
-  headerContainer.setDepth(300);  // Above other UI
+  headerContainer.setDepth(300);
   headerContainer.setScrollFactor(0);
 
-  // === DEBUG: Много линий чтобы найти видимую область ===
-  const testLines = [
-    { y: 0, color: 0xff0000, label: 'Y=0' },
-    { y: 100, color: 0xff4400, label: 'Y=100' },
-    { y: 200, color: 0xff8800, label: 'Y=200' },
-    { y: 300, color: 0xffcc00, label: 'Y=300' },
-    { y: 400, color: 0xffff00, label: 'Y=400' },
-    { y: 500, color: 0x88ff00, label: 'Y=500' },
-    { y: 600, color: 0x00ff00, label: 'Y=600' },
-    { y: 800, color: 0x00ffff, label: 'Y=800' },
-    { y: 1000, color: 0x0088ff, label: 'Y=1000' },
-  ];
-
-  testLines.forEach(line => {
-    const rect = scene.add.rectangle(w/2, line.y, w, 8, line.color, 1);
-    rect.setDepth(9999);
-    console.log('[DEBUG] Line ' + line.label + ' color=' + line.color.toString(16));
-  });
-
-  console.log('[DEBUG] Expected visible: Y=' + (window.ENVELOP_CROP_TOP || 0) + ' to Y=' + (h - (window.ENVELOP_CROP_TOP || 0)));
-
   // === LAYER 0: DARK BACKGROUND ===
-  // Простой подход: фон с origin сверху, тянется от -containerY до низа хедера
+  // Extend from above safe area (cover any gap) down to panel bottom
   const headerBg = scene.add.rectangle(
-    cfg.darkBg.x,
-    0,                           // Начинаем от origin контейнера
+    0,
+    -safeTop - 50,  // Start above container to cover safe area and any gap
     cfg.darkBg.width,
-    cfg.darkBg.height + containerY,  // Растягиваем вверх на всю высоту до края
+    cfg.darkBg.height + safeTop + 50,  // Extra height to cover
     0x3a3a4a,
     0.92
   );
-  headerBg.setOrigin(0.5, 0);     // Origin сверху по центру
-  headerBg.setY(-containerY);     // Сдвигаем вверх на высоту контейнера от края
+  headerBg.setOrigin(0.5, 0);
 
-  console.log('[HEADER_BG] containerY:', containerY, 'bgHeight:', cfg.darkBg.height + containerY);
+  console.log('[HEADER_BG] bgHeight:', cfg.darkBg.height + safeTop + 50);
   headerContainer.add(headerBg);
+
+  // DEBUG: Red line at container Y=0 (should be at safe area boundary)
+  const debugLine = scene.add.rectangle(0, 0, w, 4, 0xff0000, 1);
+  debugLine.setOrigin(0.5, 0);
+  headerContainer.add(debugLine);
 
   // Expose for TuneMode
   window.playerHeaderDarkBg = headerBg;
@@ -196,15 +182,14 @@ function createPlayerHeader(scene) {
   console.log('[PLAYER_HEADER] Ring drawn with Graphics at', ringConfig.x, ringConfig.y);
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
-  const panel = scene.add.image(
-    cfg.panel.offsetX,
-    cfg.panel.offsetY,
-    'ui_top_panel'
-  );
+  const panel = scene.add.image(0, 0, 'ui_top_panel');
   panel.setScale(cfg.panel.scale);
   panel.setOrigin(0.5, 0);  // Top-center origin
   headerContainer.add(panel);
-  console.log('[PLAYER_HEADER] Panel created at', cfg.panel.offsetX, cfg.panel.offsetY, 'scale', cfg.panel.scale);
+
+  // Get panel height for positioning content
+  const panelHeight = panel.displayHeight;
+  console.log('[PLAYER_HEADER] Panel at Y=0, displayHeight=' + panelHeight);
 
   // === TEXTS ===
   const textStyle = cfg.textStyle;
