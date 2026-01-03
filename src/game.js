@@ -17,8 +17,8 @@ function initSafeArea(scene) {
   // iPhone челка ~5.5% = 90px
   // iPhone home indicator ~4% = 70px
   if (isIOS()) {
-    top = 90;
-    bottom = 70;
+    top = 100;
+    bottom = 40;
     console.log('[SAFE_AREA] iOS -> Hardcoded:', top, bottom);
   } else {
     // PC/Android - минимальные отступы
