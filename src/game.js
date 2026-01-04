@@ -479,7 +479,7 @@ function setupCleanMode(scene) {
   }
 
   // Version text at bottom-left (account for ENVELOP crop)
-  const BUILD_VERSION = 'v2062';
+  const BUILD_VERSION = 'v2063';
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const versionY = h - cropTop - 150;  // above bottom panel
   const versionText = scene.add.text(cropTop + 10, versionY, BUILD_VERSION, {
