@@ -106,37 +106,7 @@ function createPlayerHeader(scene) {
 
   console.log('[PLAYER_HEADER] cropTop=' + cropTop + ', safeTop=' + safeTop + ', baseY=' + baseY);
 
-  // Yellow line = screen edge (cropTop)
-  const yellowLine = scene.add.rectangle(w/2, cropTop, w, 4, 0xffff00, 1);
-  yellowLine.setOrigin(0.5, 0);
-  yellowLine.setScrollFactor(0);
-  yellowLine.setDepth(9999);
-
-  // Red line = safe area boundary (cropTop + safeTop)
-  const redLine = scene.add.rectangle(w/2, baseY, w, 4, 0xff0000, 1);
-  redLine.setOrigin(0.5, 0);
-  redLine.setScrollFactor(0);
-  redLine.setDepth(9999);
-
-  // DEBUG TEXT on screen
-  const tg = window.Telegram?.WebApp;
-  const debugInfo = [
-    'cropTop: ' + cropTop,
-    'safeTop: ' + safeTop,
-    'inTG: ' + window.SAFE_AREA_IN_TG,
-    'src: ' + (window.SAFE_AREA_SOURCE || '?')
-  ].join('\n');
-
-  const debugText = scene.add.text(10, cropTop + 20, debugInfo, {
-    fontSize: '14px',
-    color: '#00ff00',
-    backgroundColor: '#000000',
-    padding: { x: 5, y: 5 }
-  });
-  debugText.setScrollFactor(0);
-  debugText.setDepth(9999);
-
-  // Dark background from screen edge
+  // Dark background from screen edge (cropTop = top of visible area)
   const headerBg = scene.add.rectangle(w/2, cropTop, cfg.darkBg.width, cfg.darkBg.height, 0x3a3a4a, 0.92);
   headerBg.setOrigin(0.5, 0);
   headerBg.setScrollFactor(0);
