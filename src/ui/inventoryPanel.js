@@ -285,10 +285,15 @@ function createInventoryOverlay() {
       <!-- Grid -->
       <div id="inv-grid" class="inv-element"></div>
     </div>
-    
-    ${INV_TUNE_ENABLED ? createTunePanel() : ''}
   `;
   document.body.appendChild(inventoryOverlay);
+
+  // Tune panel - append separately to body for proper event handling
+  if (INV_TUNE_ENABLED) {
+    const tuneDiv = document.createElement('div');
+    tuneDiv.innerHTML = createTunePanel();
+    document.body.appendChild(tuneDiv.firstElementChild);
+  }
 
   // Get element refs
   els = {
@@ -502,37 +507,41 @@ function initInvTuneMode() {
   });
 
   // Make tune panel draggable via header
-  const panel = document.getElementById('inv-tune-panel');
-  const header = document.getElementById('inv-tune-header');
-  let tunePanelDrag = false;
-  let tunePanelOffsetX = 0, tunePanelOffsetY = 0;
+  const tunePanel = document.getElementById('inv-tune-panel');
+  const tuneHeader = document.getElementById('inv-tune-header');
 
-  header.addEventListener('mousedown', (e) => {
-    if (e.target.tagName === 'BUTTON') return;
-    e.preventDefault();
-    e.stopPropagation();
-    tunePanelDrag = true;
-    const rect = panel.getBoundingClientRect();
-    tunePanelOffsetX = e.clientX - rect.left;
-    tunePanelOffsetY = e.clientY - rect.top;
-    header.style.cursor = 'grabbing';
-    console.log('[TUNE] Drag started');
-  });
+  if (tunePanel && tuneHeader) {
+    let dragging = false;
+    let startX = 0, startY = 0;
+    let panelX = 10, panelY = 10;
 
-  window.addEventListener('mousemove', (e) => {
-    if (!tunePanelDrag) return;
-    panel.style.left = (e.clientX - tunePanelOffsetX) + 'px';
-    panel.style.top = (e.clientY - tunePanelOffsetY) + 'px';
-    panel.style.right = 'auto';
-  });
+    tuneHeader.onmousedown = function(e) {
+      if (e.target.tagName === 'BUTTON') return;
+      dragging = true;
+      startX = e.clientX - panelX;
+      startY = e.clientY - panelY;
+      tuneHeader.style.cursor = 'grabbing';
+      console.log('[TUNE] Drag START');
+    };
 
-  window.addEventListener('mouseup', () => {
-    if (tunePanelDrag) {
-      tunePanelDrag = false;
-      header.style.cursor = 'grab';
-      console.log('[TUNE] Drag ended');
-    }
-  });
+    document.onmousemove = function(e) {
+      if (!dragging) return;
+      panelX = e.clientX - startX;
+      panelY = e.clientY - startY;
+      tunePanel.style.left = panelX + 'px';
+      tunePanel.style.top = panelY + 'px';
+    };
+
+    document.onmouseup = function() {
+      if (dragging) {
+        dragging = false;
+        tuneHeader.style.cursor = 'grab';
+        console.log('[TUNE] Drag END');
+      }
+    };
+
+    console.log('[TUNE] Drag handler attached to header');
+  }
 
   // Initial highlight
   if (els.bg) els.bg.classList.add('selected');
