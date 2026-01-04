@@ -21,53 +21,53 @@ const PLAYER_HEADER_CONFIG = {
     offsetY: 1
   },
 
-  // Avatar settings (bottom layer) - FROM SAVED TUNE
+  // Avatar settings (bottom layer) - ADJUSTED for safeTop=0
   avatar: {
-    x: 8,          // FROM SAVED TUNE
-    y: 229,        // FROM SAVED TUNE
-    scale: 0.82    // FROM SAVED TUNE
+    x: 8,
+    y: 121,        // was 229, adjusted -108 for safeTop change
+    scale: 0.82
   },
 
-  // EXP ring settings (middle layer) - FINAL FROM TUNEMODE
+  // EXP ring settings (middle layer) - ADJUSTED for safeTop=0
   expRing: {
-    x: -319,         // Center X - FINAL
-    y: 229,          // Center Y - FINAL
-    radius: 52,      // Ring radius - FINAL (r:52)
-    thickness: 8,    // Line thickness - FIXED
-    color: 0xFFD700, // Gold color - FIXED
-    bgColor: 0x333333,     // Background ring dark gray - FIXED
-    bgAlpha: 0.3           // Background transparency - FIXED
+    x: -319,
+    y: 121,          // was 229, adjusted -108
+    radius: 52,
+    thickness: 8,
+    color: 0xFFD700,
+    bgColor: 0x333333,
+    bgAlpha: 0.3
   },
 
-  // Dark background behind header - FIXED FROM TUNEMODE
+  // Dark background behind header
   darkBg: {
-    x: -10,          // FROM TUNEMODE
-    y: 135,          // FROM TUNEMODE (was 149)
+    x: -10,
+    y: 0,            // starts at top of visible area
     width: 900,
-    height: 250,
+    height: 180,     // reduced height
     alpha: 0.92
   },
 
-  // Resource texts - FINAL FROM TUNEMODE
+  // Resource texts - ADJUSTED for safeTop=0
   resources: {
-    energy: { x: -18, y: 227, fontSize: 18 },   // FINAL
-    stars:  { x: 95,  y: 226, fontSize: 18 },   // FINAL
-    gems:   { x: 200, y: 226, fontSize: 18 },   // FINAL
-    adena:  { x: 313, y: 226, fontSize: 18 }    // FINAL
+    energy: { x: -18, y: 119, fontSize: 18 },   // was 227, -108
+    stars:  { x: 95,  y: 118, fontSize: 18 },   // was 226, -108
+    gems:   { x: 200, y: 118, fontSize: 18 },   // was 226, -108
+    adena:  { x: 313, y: 118, fontSize: 18 }    // was 226, -108
   },
 
-  // Level text position - FINAL FROM TUNEMODE
+  // Level text position - ADJUSTED for safeTop=0
   level: {
-    x: -271,         // FINAL
-    y: 268,          // FINAL
-    fontSize: 12     // FINAL (sz:12)
+    x: -271,
+    y: 160,          // was 268, -108
+    fontSize: 12
   },
 
-  // Nickname text position - FINAL FROM TUNEMODE
+  // Nickname text position - ADJUSTED for safeTop=0
   nickname: {
-    x: -244,         // FINAL
-    y: 228,          // FINAL
-    fontSize: 24     // FINAL (sz:24)
+    x: -244,
+    y: 120,          // was 228, -108
+    fontSize: 24
   },
 
   // Text style (Gemini recommended)

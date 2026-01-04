@@ -40,11 +40,12 @@ function createBottomUI(scene) {
 
   console.log("[BOTTOMUI] Creating UI, screen:", w, "x", h);
 
-  // === CONTAINER === (with Safe Area for iPhone Home Indicator)
-  const safeBottom = window.SAFE_ZONE_BOTTOM || 0;
-  const containerY = h - safeBottom + UI_LAYOUT.container.offsetY;
+  // === CONTAINER === (account for ENVELOP crop at bottom)
+  // ENVELOP crops equally from top and bottom when centered
+  const cropBottom = window.ENVELOP_CROP_TOP || 0;  // same as cropTop for centered canvas
+  const containerY = h - cropBottom + UI_LAYOUT.container.offsetY;
 
-  console.log('[BOTTOMUI] Safe zone bottom:', safeBottom, '→ containerY:', containerY);
+  console.log('[BOTTOMUI] Crop bottom:', cropBottom, '→ containerY:', containerY);
 
   const panelContainer = scene.add.container(w / 2, containerY);
   panelContainer.setDepth(200);
