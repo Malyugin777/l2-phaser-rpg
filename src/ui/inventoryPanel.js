@@ -331,8 +331,8 @@ function createInventoryOverlay() {
 function createTunePanel() {
   return `
     <div id="inv-tune-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <b>🎮 INV TUNE</b>
+      <div id="inv-tune-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:5px;background:#111;margin:-12px -12px 8px -12px;cursor:grab;">
+        <b style="pointer-events:none;">🎮 INV TUNE (drag here)</b>
         <button onclick="toggleTuneCollapse()">➖</button>
       </div>
       <div id="inv-tune-body">
@@ -501,33 +501,36 @@ function initInvTuneMode() {
     }
   });
 
-  // Make tune panel draggable
+  // Make tune panel draggable via header
   const panel = document.getElementById('inv-tune-panel');
+  const header = document.getElementById('inv-tune-header');
   let tunePanelDrag = false;
   let tunePanelOffsetX = 0, tunePanelOffsetY = 0;
 
-  panel.addEventListener('mousedown', (e) => {
-    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.tagName === 'BUTTON') return;
     e.preventDefault();
+    e.stopPropagation();
     tunePanelDrag = true;
     const rect = panel.getBoundingClientRect();
     tunePanelOffsetX = e.clientX - rect.left;
     tunePanelOffsetY = e.clientY - rect.top;
-    panel.style.cursor = 'grabbing';
+    header.style.cursor = 'grabbing';
+    console.log('[TUNE] Drag started');
   });
 
-  document.addEventListener('mousemove', (e) => {
+  window.addEventListener('mousemove', (e) => {
     if (!tunePanelDrag) return;
-    e.preventDefault();
     panel.style.left = (e.clientX - tunePanelOffsetX) + 'px';
     panel.style.top = (e.clientY - tunePanelOffsetY) + 'px';
     panel.style.right = 'auto';
   });
 
-  document.addEventListener('mouseup', () => {
+  window.addEventListener('mouseup', () => {
     if (tunePanelDrag) {
       tunePanelDrag = false;
-      panel.style.cursor = 'move';
+      header.style.cursor = 'grab';
+      console.log('[TUNE] Drag ended');
     }
   });
 
