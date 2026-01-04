@@ -106,8 +106,8 @@ function createPlayerHeader(scene) {
 
   console.log('[PLAYER_HEADER] cropTop=' + cropTop + ', safeTop=' + safeTop + ', baseY=' + baseY);
 
-  // Dark background from screen edge (moved up 10px)
-  const headerBg = scene.add.rectangle(w/2, cropTop - 10, cfg.darkBg.width, cfg.darkBg.height, 0x3a3a4a, 0.92);
+  // Dark background from screen edge (moved up 20px)
+  const headerBg = scene.add.rectangle(w/2, cropTop - 20, cfg.darkBg.width, cfg.darkBg.height, 0x3a3a4a, 0.92);
   headerBg.setOrigin(0.5, 0);
   headerBg.setScrollFactor(0);
   headerBg.setDepth(299);
