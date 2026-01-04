@@ -43,7 +43,7 @@ function createBottomUI(scene) {
   // === CONTAINER === (account for ENVELOP crop at bottom)
   // ENVELOP crops equally from top and bottom when centered
   const cropBottom = window.ENVELOP_CROP_TOP || 0;  // same as cropTop for centered canvas
-  const containerY = h - cropBottom + UI_LAYOUT.container.offsetY;
+  const containerY = h - cropBottom + UI_LAYOUT.container.offsetY - 20;  // -20 to move up a bit
 
   console.log('[BOTTOMUI] Crop bottom:', cropBottom, '→ containerY:', containerY);
 

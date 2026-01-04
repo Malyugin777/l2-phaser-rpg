@@ -479,17 +479,19 @@ function setupCleanMode(scene) {
   }
 
   // Version text at bottom-left (account for ENVELOP crop)
-  const BUILD_VERSION = 'v2049';
+  const BUILD_VERSION = 'v2050';
   const cropTop = window.ENVELOP_CROP_TOP || 0;
-  const versionY = h - cropTop - 10;  // cropTop ≈ cropBottom for centered canvas
-  const versionText = scene.add.text(10, versionY, BUILD_VERSION, {
-    fontSize: '12px',
-    color: '#666666',
-    fontFamily: 'monospace'
+  const versionY = h - cropTop - 150;  // above bottom panel
+  const versionText = scene.add.text(cropTop + 10, versionY, BUILD_VERSION, {
+    fontSize: '14px',
+    color: '#ffffff',
+    fontFamily: 'monospace',
+    backgroundColor: '#000000aa',
+    padding: { x: 4, y: 2 }
   });
   versionText.setOrigin(0, 1);
   versionText.setScrollFactor(0);
-  versionText.setDepth(500);
+  versionText.setDepth(9999);
 
   // Player Header (Top UI)
   if (typeof createPlayerHeader === "function") {

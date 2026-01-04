@@ -163,7 +163,8 @@ function createPlayerHeader(scene) {
   console.log('[PLAYER_HEADER] Ring drawn with Graphics at', ringConfig.x, ringConfig.y);
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
-  const panel = scene.add.image(0, 0, 'ui_top_panel');
+  // Panel moved up by 108 to match text adjustment
+  const panel = scene.add.image(0, -108, 'ui_top_panel');
   panel.setScale(cfg.panel.scale);
   panel.setOrigin(0.5, 0);  // Top-center origin
   headerContainer.add(panel);
