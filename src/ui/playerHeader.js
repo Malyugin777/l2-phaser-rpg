@@ -9,20 +9,20 @@ const PLAYER_HEADER_CONFIG = {
   // Panel settings
   panel: {
     scale: 0.8,
-    y: -50           // Small offset to show panel top decoration
+    y: 0             // Panel starts at cropTop
   },
 
   // Avatar settings - positioned relative to visible top
   avatar: {
     x: -312,         // Left side
-    y: 45,           // From top of visible area
+    y: 70,           // From top of visible area
     scale: 0.82
   },
 
   // EXP ring settings - around avatar
   expRing: {
     x: -312,         // Same as avatar
-    y: 45,           // Same as avatar
+    y: 70,           // Same as avatar
     radius: 52,
     thickness: 8,
     color: 0xFFD700,
@@ -33,29 +33,29 @@ const PLAYER_HEADER_CONFIG = {
   // Dark background behind header
   darkBg: {
     width: 900,
-    height: 120,
+    height: 130,
     alpha: 0.92
   },
 
   // Resource texts - right side of header
   resources: {
-    energy: { x: -10, y: 42, fontSize: 18 },
-    stars:  { x: 95,  y: 42, fontSize: 18 },
-    gems:   { x: 200, y: 42, fontSize: 18 },
-    adena:  { x: 305, y: 42, fontSize: 18 }
+    energy: { x: -10, y: 65, fontSize: 18 },
+    stars:  { x: 95,  y: 65, fontSize: 18 },
+    gems:   { x: 200, y: 65, fontSize: 18 },
+    adena:  { x: 305, y: 65, fontSize: 18 }
   },
 
   // Level text - below avatar
   level: {
     x: -312,
-    y: 85,
+    y: 110,
     fontSize: 12
   },
 
   // Nickname text - next to avatar
   nickname: {
     x: -244,
-    y: 45,
+    y: 70,
     fontSize: 24
   },
 
