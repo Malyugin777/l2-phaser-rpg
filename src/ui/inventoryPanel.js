@@ -15,17 +15,17 @@ const INV_CONFIG = {
   slots: {
     columns: 5,
     rows: 4,
-    gap: 6,
-    targetSize: 64  // Target slot size in pixels
+    gap: 8,
+    targetSize: 90  // Target slot size in pixels
   },
   header: {
-    targetWidth: 350  // Target header width
+    targetWidth: 650  // Target header width (almost full screen)
   },
   closeBtn: {
-    targetSize: 40  // Target close button size
+    targetSize: 50  // Target close button size
   },
   bodyColor: 0x1a1a1a,
-  bodyPadding: 15,
+  bodyPadding: 20,
   dimmerAlpha: 0.75
 };
 
