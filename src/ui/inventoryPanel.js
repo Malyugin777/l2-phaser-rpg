@@ -506,41 +506,48 @@ function initInvTuneMode() {
     }
   });
 
-  // Make tune panel draggable via header
+  // Make tune panel draggable via header - use window level global
+  window._tuneDrag = { active: false, startX: 0, startY: 0, panelX: 10, panelY: 10 };
+
   const tunePanel = document.getElementById('inv-tune-panel');
   const tuneHeader = document.getElementById('inv-tune-header');
 
+  console.log('[TUNE] Panel found:', !!tunePanel, 'Header found:', !!tuneHeader);
+
   if (tunePanel && tuneHeader) {
-    let dragging = false;
-    let startX = 0, startY = 0;
-    let panelX = 10, panelY = 10;
+    // Remove pointer-events block
+    tuneHeader.style.pointerEvents = 'auto';
+    tunePanel.style.pointerEvents = 'auto';
 
-    tuneHeader.onmousedown = function(e) {
+    tuneHeader.addEventListener('mousedown', function(e) {
       if (e.target.tagName === 'BUTTON') return;
-      dragging = true;
-      startX = e.clientX - panelX;
-      startY = e.clientY - panelY;
+      e.preventDefault();
+      e.stopPropagation();
+
+      window._tuneDrag.active = true;
+      window._tuneDrag.startX = e.clientX - window._tuneDrag.panelX;
+      window._tuneDrag.startY = e.clientY - window._tuneDrag.panelY;
       tuneHeader.style.cursor = 'grabbing';
-      console.log('[TUNE] Drag START');
-    };
+      console.log('[TUNE] mousedown at', e.clientX, e.clientY);
+    }, true);
 
-    document.onmousemove = function(e) {
-      if (!dragging) return;
-      panelX = e.clientX - startX;
-      panelY = e.clientY - startY;
-      tunePanel.style.left = panelX + 'px';
-      tunePanel.style.top = panelY + 'px';
-    };
+    window.addEventListener('mousemove', function(e) {
+      if (!window._tuneDrag.active) return;
+      window._tuneDrag.panelX = e.clientX - window._tuneDrag.startX;
+      window._tuneDrag.panelY = e.clientY - window._tuneDrag.startY;
+      tunePanel.style.left = window._tuneDrag.panelX + 'px';
+      tunePanel.style.top = window._tuneDrag.panelY + 'px';
+    }, true);
 
-    document.onmouseup = function() {
-      if (dragging) {
-        dragging = false;
+    window.addEventListener('mouseup', function() {
+      if (window._tuneDrag.active) {
+        window._tuneDrag.active = false;
         tuneHeader.style.cursor = 'grab';
-        console.log('[TUNE] Drag END');
+        console.log('[TUNE] mouseup');
       }
-    };
+    }, true);
 
-    console.log('[TUNE] Drag handler attached to header');
+    console.log('[TUNE] Drag handlers attached with capture=true');
   }
 
   // Initial highlight
