@@ -13,10 +13,10 @@ class InventoryScene extends Phaser.Scene {
     super({ key: 'InventoryScene' });
     
     // ===== КОНФИГ L2 STYLE =====
-    // Все размеры вычисляются динамически в create()
+    // ВСЕ размеры в GAME PIXELS (display = game / 2)
     this.CFG = {
-      padding: 16,
-      gap: 8,
+      padding: 32,      // 16 display
+      gap: 16,          // 8 display
       gridCols: 6,
       gridRows: 4,
       
@@ -86,16 +86,17 @@ class InventoryScene extends Phaser.Scene {
     const H = this.scale.height;  // 1688
     const C = this.CFG;
     
-    // ===== ФИКСИРОВАННЫЕ РАЗМЕРЫ (как в превью) =====
-    // Хватит ебаться с динамикой — просто фикс значения
-    C.equipSlot = 75;
-    C.gridSlot = 60;
-    C.heroBoxW = 140;
-    C.heroBoxH = 180;
+    // ===== ФИКСИРОВАННЫЕ РАЗМЕРЫ =====
+    // Game pixels! Display = Game / 2
+    // Чтобы выглядело как 60px на экране, нужно 120 game px
+    C.equipSlot = 150;   // 75 display px
+    C.gridSlot = 120;    // 60 display px  
+    C.heroBoxW = 280;    // 140 display px
+    C.heroBoxH = 360;    // 180 display px
     C.gridVisibleRows = 2;
     
     console.log(`[INV] Screen: ${W}×${H}`);
-    console.log(`[INV] FIXED sizes: equipSlot=${C.equipSlot}, gridSlot=${C.gridSlot}, hero=${C.heroBoxW}×${C.heroBoxH}`);
+    console.log(`[INV] FIXED sizes (game px): equipSlot=${C.equipSlot}, gridSlot=${C.gridSlot}, hero=${C.heroBoxW}×${C.heroBoxH}`);
     
     // Контейнер для всего UI
     this.container = this.add.container(0, 0);
@@ -175,7 +176,7 @@ class InventoryScene extends Phaser.Scene {
   createHeader(W) {
     const C = this.CFG;
     const P = this.panelBounds;
-    const headerH = 60;
+    const headerH = 120;  // 60 display × 2
     
     // Фон хедера
     const headerBg = this.add.graphics();
@@ -183,32 +184,32 @@ class InventoryScene extends Phaser.Scene {
     headerBg.fillRect(P.x, P.y, P.w, headerH);
     
     // Линия снизу
-    headerBg.lineStyle(3, C.border, 1);
+    headerBg.lineStyle(6, C.border, 1);
     headerBg.lineBetween(P.x, P.y + headerH, P.x + P.w, P.y + headerH);
     this.container.add(headerBg);
     
     // Заголовок
-    const title = this.add.text(P.x + C.padding, P.y + 16, 'ИНВЕНТАРЬ', {
+    const title = this.add.text(P.x + C.padding, P.y + 28, 'ИНВЕНТАРЬ', {
       fontFamily: 'Verdana, Arial',
-      fontSize: '18px',
+      fontSize: '36px',
       fontStyle: 'bold',
       color: C.gold,
     });
-    title.setShadow(0, 2, '#000000', 4);
+    title.setShadow(0, 4, '#000000', 6);
     this.container.add(title);
     
     // Подзаголовок
-    const subtitle = this.add.text(P.x + C.padding, P.y + 38, 'Warrior • Lv.42', {
+    const subtitle = this.add.text(P.x + C.padding, P.y + 72, 'Warrior • Lv.42', {
       fontFamily: 'Verdana',
-      fontSize: '11px',
+      fontSize: '22px',
       color: C.textMuted,
     });
     this.container.add(subtitle);
     
     // Кнопка закрытия (PNG)
     if (this.textures.exists('btn_close')) {
-      const closeBtn = this.add.image(P.x + P.w - 28, P.y + 30, 'btn_close');
-      closeBtn.setDisplaySize(36, 36);
+      const closeBtn = this.add.image(P.x + P.w - 56, P.y + 60, 'btn_close');
+      closeBtn.setDisplaySize(72, 72);
       closeBtn.setInteractive({ useHandCursor: true });
       closeBtn.on('pointerdown', () => this.closeInventory());
       closeBtn.on('pointerover', () => closeBtn.setScale(1.1));
@@ -218,13 +219,13 @@ class InventoryScene extends Phaser.Scene {
       // Fallback — рисуем кнопку
       const closeBtn = this.add.graphics();
       closeBtn.fillStyle(0xdc2626, 1);
-      closeBtn.fillCircle(P.x + P.w - 28, P.y + 30, 16);
-      closeBtn.lineStyle(2, 0xef4444, 1);
-      closeBtn.strokeCircle(P.x + P.w - 28, P.y + 30, 16);
+      closeBtn.fillCircle(P.x + P.w - 56, P.y + 60, 32);
+      closeBtn.lineStyle(4, 0xef4444, 1);
+      closeBtn.strokeCircle(P.x + P.w - 56, P.y + 60, 32);
       this.container.add(closeBtn);
       
-      const closeX = this.add.text(P.x + P.w - 28, P.y + 30, '✕', {
-        fontSize: '16px',
+      const closeX = this.add.text(P.x + P.w - 56, P.y + 60, '✕', {
+        fontSize: '32px',
         color: '#ffffff',
       }).setOrigin(0.5);
       closeX.setInteractive({ useHandCursor: true });
@@ -241,14 +242,14 @@ class InventoryScene extends Phaser.Scene {
   createEquipmentZone(W) {
     const C = this.CFG;
     const P = this.panelBounds;
-    const startY = P.y + this.headerH + 10;
+    const startY = P.y + this.headerH + 20;
     
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
     
-    // Gap между слотами = 2px (компактно!)
-    const slotGap = 2;
-    const slotWithLabel = C.equipSlot + 16;  // слот + label
+    // Gap между слотами = 4px display = 8 game
+    const slotGap = 4;
+    const slotWithLabel = C.equipSlot + 32;  // слот + label (16 display)
     
     // Левая колонка
     const leftX = P.x + C.padding + C.equipSlot/2;
@@ -296,17 +297,17 @@ class InventoryScene extends Phaser.Scene {
       // Fallback — рисуем
       slotBg = this.add.graphics();
       slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, 1);
-      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 8);
-      slotBg.lineStyle(3, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
-      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 8);
+      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
+      slotBg.lineStyle(6, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
+      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
     }
     container.add(slotBg);
     
     // Glow для редкости
     if (item && C.rarity[item.rarity]?.glow) {
       const glow = this.add.graphics();
-      glow.lineStyle(2, C.rarity[item.rarity].glow, 0.6);
-      glow.strokeRoundedRect(-C.equipSlot/2 - 2, -C.equipSlot/2 - 2, C.equipSlot + 4, C.equipSlot + 4, 10);
+      glow.lineStyle(4, C.rarity[item.rarity].glow, 0.6);
+      glow.strokeRoundedRect(-C.equipSlot/2 - 4, -C.equipSlot/2 - 4, C.equipSlot + 8, C.equipSlot + 8, 20);
       container.add(glow);
     }
     
@@ -319,20 +320,20 @@ class InventoryScene extends Phaser.Scene {
     
     // Уровень предмета
     if (item) {
-      const lvl = this.add.text(C.equipSlot/2 - 8, C.equipSlot/2 - 12, item.level, {
+      const lvl = this.add.text(C.equipSlot/2 - 16, C.equipSlot/2 - 24, item.level, {
         fontFamily: 'Verdana',
-        fontSize: '11px',
+        fontSize: '22px',
         fontStyle: 'bold',
         color: C.gold,
       }).setOrigin(0.5);
-      lvl.setShadow(0, 1, '#000000', 3);
+      lvl.setShadow(0, 2, '#000000', 4);
       container.add(lvl);
     }
     
     // Подпись
-    const label = this.add.text(0, C.equipSlot/2 + 10, this.LABELS[type], {
+    const label = this.add.text(0, C.equipSlot/2 + 20, this.LABELS[type], {
       fontFamily: 'Verdana',
-      fontSize: '9px',
+      fontSize: '18px',
       color: C.textMuted,
     }).setOrigin(0.5);
     container.add(label);
@@ -362,22 +363,22 @@ class InventoryScene extends Phaser.Scene {
     // Фон
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x1e222a, 0x1e222a, 0x12151a, 0x12151a, 1);
-    bg.fillRoundedRect(x - boxW/2, y - boxH/2, boxW, boxH, 12);
-    bg.lineStyle(3, C.border, 1);
-    bg.strokeRoundedRect(x - boxW/2, y - boxH/2, boxW, boxH, 12);
+    bg.fillRoundedRect(x - boxW/2, y - boxH/2, boxW, boxH, 24);
+    bg.lineStyle(6, C.border, 1);
+    bg.strokeRoundedRect(x - boxW/2, y - boxH/2, boxW, boxH, 24);
     this.container.add(bg);
     
     // Подиум (тень под ногами)
     const pedestal = this.add.graphics();
     pedestal.fillStyle(0x000000, 0.5);
-    pedestal.fillEllipse(x, y + boxH/2 - 25, 50, 12);
+    pedestal.fillEllipse(x, y + boxH/2 - 50, 100, 25);
     this.container.add(pedestal);
     
     // Spine герой или emoji fallback
     if (this.game.cache?.custom?.spine?.has('hero') || this.cache?.custom?.spine?.get('hero')) {
       try {
-        this.heroSpine = this.add.spine(x, y + 15, 'hero', 'idle', true);
-        this.heroSpine.setScale(0.16);  // Фиксированный размер
+        this.heroSpine = this.add.spine(x, y + 30, 'hero', 'idle', true);
+        this.heroSpine.setScale(0.32);  // Удвоено
         this.container.add(this.heroSpine);
       } catch (e) {
         console.warn('[INV] Spine hero failed, using fallback');
@@ -388,25 +389,25 @@ class InventoryScene extends Phaser.Scene {
     }
     
     // Имя и уровень (внизу бокса)
-    const name = this.add.text(x, y + boxH/2 - 30, 'Warrior', {
+    const name = this.add.text(x, y + boxH/2 - 60, 'Warrior', {
       fontFamily: 'Verdana',
-      fontSize: '10px',
+      fontSize: '20px',
       fontStyle: 'bold',
       color: C.blue,
     }).setOrigin(0.5);
     this.container.add(name);
     
-    const level = this.add.text(x, y + boxH/2 - 18, 'Уровень 42', {
+    const level = this.add.text(x, y + boxH/2 - 36, 'Уровень 42', {
       fontFamily: 'Verdana',
-      fontSize: '8px',
+      fontSize: '16px',
       color: C.textMuted,
     }).setOrigin(0.5);
     this.container.add(level);
   }
   
   createHeroFallback(x, y) {
-    const emoji = this.add.text(x, y - 10, '🧙‍♂️', {
-      fontSize: '42px',
+    const emoji = this.add.text(x, y - 20, '🧙‍♂️', {
+      fontSize: '84px',
     }).setOrigin(0.5);
     this.container.add(emoji);
   }
@@ -417,14 +418,14 @@ class InventoryScene extends Phaser.Scene {
   createStatsBar(W) {
     const C = this.CFG;
     const P = this.panelBounds;
-    const barH = 50;
+    const barH = 100;  // 50 × 2
     const y = this.equipZoneEndY;
     
     // Фон
     const bg = this.add.graphics();
     bg.fillStyle(C.footerBg, 1);
     bg.fillRect(P.x, y, P.w, barH);
-    bg.lineStyle(1, 0x1f2937, 1);
+    bg.lineStyle(2, 0x1f2937, 1);
     bg.lineBetween(P.x, y, P.x + P.w, y);
     bg.lineBetween(P.x, y + barH, P.x + P.w, y + barH);
     this.container.add(bg);
@@ -442,18 +443,18 @@ class InventoryScene extends Phaser.Scene {
       const sx = P.x + statW * i + statW/2;
       const sy = y + barH/2;
       
-      const val = this.add.text(sx, sy - 6, `${stat.icon} ${stat.value}`, {
+      const val = this.add.text(sx, sy - 12, `${stat.icon} ${stat.value}`, {
         fontFamily: 'Verdana',
-        fontSize: '15px',
+        fontSize: '30px',
         fontStyle: 'bold',
         color: stat.color,
       }).setOrigin(0.5);
-      val.setShadow(0, 1, '#000000', 2);
+      val.setShadow(0, 2, '#000000', 4);
       this.container.add(val);
       
-      const lbl = this.add.text(sx, sy + 12, stat.label, {
+      const lbl = this.add.text(sx, sy + 24, stat.label, {
         fontFamily: 'Verdana',
-        fontSize: '9px',
+        fontSize: '18px',
         color: C.textMuted,
       }).setOrigin(0.5);
       this.container.add(lbl);
@@ -485,7 +486,7 @@ class InventoryScene extends Phaser.Scene {
     // Заголовок
     const title = this.add.text(P.x + C.padding, startY, 'Предметы', {
       fontFamily: 'Verdana',
-      fontSize: '14px',
+      fontSize: '28px',
       fontStyle: 'bold',
       color: C.textColor,
     });
@@ -494,17 +495,17 @@ class InventoryScene extends Phaser.Scene {
     const totalSlots = C.gridCols * C.gridRows;
     const count = this.add.text(P.x + P.w - C.padding, startY, `${this.items.length}/${totalSlots}`, {
       fontFamily: 'Verdana',
-      fontSize: '12px',
+      fontSize: '24px',
       color: C.textMuted,
     }).setOrigin(1, 0);
     this.container.add(count);
     this.gridCountText = count;
     
     // ===== СЕТКА =====
-    const gridStartY = startY + 25;
+    const gridStartY = startY + 50;
     const contentW = P.w - C.padding * 2;
     const gridSlot = C.gridSlot;
-    const gridGap = 6;  // Меньший gap для сетки
+    const gridGap = 12;  // 6 × 2
     
     // Центрируем сетку
     const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * gridGap;
@@ -552,35 +553,35 @@ class InventoryScene extends Phaser.Scene {
     } else {
       slotBg = this.add.graphics();
       slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, item ? 1 : 0.5);
-      slotBg.fillRoundedRect(-size/2, -size/2, size, size, 6);
-      slotBg.lineStyle(3, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
-      slotBg.strokeRoundedRect(-size/2, -size/2, size, size, 6);
+      slotBg.fillRoundedRect(-size/2, -size/2, size, size, 12);
+      slotBg.lineStyle(6, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
+      slotBg.strokeRoundedRect(-size/2, -size/2, size, size, 12);
     }
     container.add(slotBg);
     
     // Glow
     if (item && C.rarity[item.rarity]?.glow) {
       const glow = this.add.graphics();
-      glow.lineStyle(2, C.rarity[item.rarity].glow, 0.5);
-      glow.strokeRoundedRect(-size/2 - 1, -size/2 - 1, size + 2, size + 2, 7);
+      glow.lineStyle(4, C.rarity[item.rarity].glow, 0.5);
+      glow.strokeRoundedRect(-size/2 - 2, -size/2 - 2, size + 4, size + 4, 14);
       container.add(glow);
     }
     
     if (item) {
       // Иконка
-      const icon = this.add.text(0, -2, this.ICONS[item.type], {
+      const icon = this.add.text(0, -4, this.ICONS[item.type], {
         fontSize: `${Math.round(size * 0.4)}px`,
       }).setOrigin(0.5);
       container.add(icon);
       
       // Уровень
-      const lvl = this.add.text(size/2 - 6, size/2 - 8, item.level, {
+      const lvl = this.add.text(size/2 - 12, size/2 - 16, item.level, {
         fontFamily: 'Verdana',
-        fontSize: '10px',
+        fontSize: '20px',
         fontStyle: 'bold',
         color: C.gold,
       }).setOrigin(0.5);
-      lvl.setShadow(0, 1, '#000000', 2);
+      lvl.setShadow(0, 2, '#000000', 4);
       container.add(lvl);
       
       // Интерактив
@@ -818,4 +819,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] FINAL v8 loaded');
+console.log('[InventoryScene] v9 SCALE-FIX loaded (all sizes ×2)');
