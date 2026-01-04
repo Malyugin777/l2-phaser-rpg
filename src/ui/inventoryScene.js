@@ -15,8 +15,8 @@ class InventoryScene extends Phaser.Scene {
     // ===== КОНФИГ L2 STYLE =====
     // Все размеры вычисляются динамически в create()
     this.CFG = {
-      padding: 20,
-      gap: 10,
+      padding: 16,
+      gap: 8,
       gridCols: 6,
       gridRows: 4,
       
@@ -86,44 +86,16 @@ class InventoryScene extends Phaser.Scene {
     const H = this.scale.height;  // 1688
     const C = this.CFG;
     
-    // ===== ДИНАМИЧЕСКИЙ РАСЧЁТ РАЗМЕРОВ =====
-    const contentW = W - C.padding * 2;  // 740
-    
-    // СЕТКА: фиксируем размер слота и количество видимых рядов
-    const gridSlotSize = 80;  // Фиксированный размер слота сетки
-    const gridVisibleRows = 2;  // Показываем 2 ряда
-    const gridTitleH = 35;  // Заголовок "Предметы"
-    const gridH = gridTitleH + gridVisibleRows * gridSlotSize + (gridVisibleRows - 1) * C.gap + C.padding;
-    
-    // STATS: фиксированная высота
-    const statsH = 55;
-    
-    // HEADER: фиксированная высота
-    const headerH = 65;
-    
-    // EQUIPMENT ZONE: занимает всё остальное
-    const equipZoneH = H - headerH - statsH - gridH - C.padding;
-    
-    // Вычисляем размер equip слота чтобы 6 штук влезли в equipZoneH
-    // 6 слотов + 5 gaps + labels (~18px каждый)
-    const equipSlotWithLabel = (equipZoneH - 5 * 4) / 6;  // gap между слотами = 4
-    const equipSlot = Math.floor(equipSlotWithLabel - 18);  // минус место под label
-    C.equipSlot = Math.min(Math.max(equipSlot, 70), 100);  // Мин 70, макс 100
-    
-    // Герой — занимает центр
-    const heroMargin = C.gap * 2;
-    C.heroBoxW = contentW - C.equipSlot * 2 - heroMargin * 2;
-    C.heroBoxW = Math.min(C.heroBoxW, 200);
-    C.heroBoxH = Math.min(equipZoneH - C.padding * 2, C.heroBoxW * 1.4);
-    
-    // Grid slot
-    C.gridSlot = gridSlotSize;
-    C.gridVisibleRows = gridVisibleRows;
+    // ===== ФИКСИРОВАННЫЕ РАЗМЕРЫ (как в превью) =====
+    // Хватит ебаться с динамикой — просто фикс значения
+    C.equipSlot = 75;
+    C.gridSlot = 60;
+    C.heroBoxW = 140;
+    C.heroBoxH = 180;
+    C.gridVisibleRows = 2;
     
     console.log(`[INV] Screen: ${W}×${H}`);
-    console.log(`[INV] Layout: header=${headerH}, equipZone=${equipZoneH}, stats=${statsH}, grid=${gridH}`);
-    console.log(`[INV] EquipSlot: ${C.equipSlot}, GridSlot: ${C.gridSlot}`);
-    console.log(`[INV] HeroBox: ${C.heroBoxW}×${C.heroBoxH}`);
+    console.log(`[INV] FIXED sizes: equipSlot=${C.equipSlot}, gridSlot=${C.gridSlot}, hero=${C.heroBoxW}×${C.heroBoxH}`);
     
     // Контейнер для всего UI
     this.container = this.add.container(0, 0);
@@ -269,31 +241,36 @@ class InventoryScene extends Phaser.Scene {
   createEquipmentZone(W) {
     const C = this.CFG;
     const P = this.panelBounds;
-    const startY = P.y + this.headerH + C.padding;
+    const startY = P.y + this.headerH + 10;
     
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
     
+    // Gap между слотами = 2px (компактно!)
+    const slotGap = 2;
+    const slotWithLabel = C.equipSlot + 16;  // слот + label
+    
     // Левая колонка
     const leftX = P.x + C.padding + C.equipSlot/2;
     leftSlots.forEach((type, i) => {
-      const y = startY + i * (C.equipSlot + 4) + C.equipSlot/2;
+      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
       this.createEquipSlot(leftX, y, type);
     });
     
     // Правая колонка
     const rightX = P.x + P.w - C.padding - C.equipSlot/2;
     rightSlots.forEach((type, i) => {
-      const y = startY + i * (C.equipSlot + 4) + C.equipSlot/2;
+      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
       this.createEquipSlot(rightX, y, type);
     });
     
-    // Центр — герой
+    // Центр — герой (по центру между колонками)
     const centerX = P.x + P.w/2;
-    const centerY = startY + (6 * (C.equipSlot + 4)) / 2;
+    const equipColH = 6 * (slotWithLabel + slotGap);
+    const centerY = startY + equipColH / 2;
     this.createHeroPreview(centerX, centerY);
     
-    this.equipZoneEndY = startY + 6 * (C.equipSlot + 4) + C.padding;
+    this.equipZoneEndY = startY + equipColH + 10;
   }
 
   // ============================================================
@@ -393,16 +370,14 @@ class InventoryScene extends Phaser.Scene {
     // Подиум (тень под ногами)
     const pedestal = this.add.graphics();
     pedestal.fillStyle(0x000000, 0.5);
-    pedestal.fillEllipse(x, y + boxH/2 - 20, 60, 15);
+    pedestal.fillEllipse(x, y + boxH/2 - 25, 50, 12);
     this.container.add(pedestal);
     
     // Spine герой или emoji fallback
     if (this.game.cache?.custom?.spine?.has('hero') || this.cache?.custom?.spine?.get('hero')) {
       try {
-        this.heroSpine = this.add.spine(x, y + boxH * 0.2, 'hero', 'idle', true);
-        // Scale пропорционально размеру бокса (базовый 0.22 при boxH=170)
-        const spineScale = (boxH / 170) * 0.22;
-        this.heroSpine.setScale(spineScale);
+        this.heroSpine = this.add.spine(x, y + 15, 'hero', 'idle', true);
+        this.heroSpine.setScale(0.16);  // Фиксированный размер
         this.container.add(this.heroSpine);
       } catch (e) {
         console.warn('[INV] Spine hero failed, using fallback');
@@ -412,18 +387,18 @@ class InventoryScene extends Phaser.Scene {
       this.createHeroFallback(x, y);
     }
     
-    // Имя и уровень
-    const name = this.add.text(x, y + boxH/2 - 35, 'Warrior', {
+    // Имя и уровень (внизу бокса)
+    const name = this.add.text(x, y + boxH/2 - 30, 'Warrior', {
       fontFamily: 'Verdana',
-      fontSize: '11px',
+      fontSize: '10px',
       fontStyle: 'bold',
       color: C.blue,
     }).setOrigin(0.5);
     this.container.add(name);
     
-    const level = this.add.text(x, y + boxH/2 - 20, 'Уровень 42', {
+    const level = this.add.text(x, y + boxH/2 - 18, 'Уровень 42', {
       fontFamily: 'Verdana',
-      fontSize: '9px',
+      fontSize: '8px',
       color: C.textMuted,
     }).setOrigin(0.5);
     this.container.add(level);
@@ -431,7 +406,7 @@ class InventoryScene extends Phaser.Scene {
   
   createHeroFallback(x, y) {
     const emoji = this.add.text(x, y - 10, '🧙‍♂️', {
-      fontSize: '50px',
+      fontSize: '42px',
     }).setOrigin(0.5);
     this.container.add(emoji);
   }
@@ -526,12 +501,13 @@ class InventoryScene extends Phaser.Scene {
     this.gridCountText = count;
     
     // ===== СЕТКА =====
-    const gridStartY = startY + 30;
+    const gridStartY = startY + 25;
     const contentW = P.w - C.padding * 2;
     const gridSlot = C.gridSlot;
+    const gridGap = 6;  // Меньший gap для сетки
     
     // Центрируем сетку
-    const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * C.gap;
+    const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * gridGap;
     const gridOffsetX = (contentW - actualGridW) / 2;
     const gridStartX = P.x + C.padding + gridOffsetX + gridSlot / 2;
     
@@ -546,8 +522,8 @@ class InventoryScene extends Phaser.Scene {
     for (let row = 0; row < rowsToShow; row++) {
       for (let col = 0; col < C.gridCols; col++) {
         const i = row * C.gridCols + col;
-        const x = gridStartX + col * (gridSlot + C.gap);
-        const y = gridStartY + row * (gridSlot + C.gap) + gridSlot / 2;
+        const x = gridStartX + col * (gridSlot + gridGap);
+        const y = gridStartY + row * (gridSlot + gridGap) + gridSlot / 2;
         
         const item = this.items[i];
         this.createGridSlot(x, y, item, i, gridSlot);
