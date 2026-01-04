@@ -581,6 +581,116 @@ botScrim.setDepth(150);
 
 ---
 
+## 🔴 СЛОМАНО 04.01.2026 — НЕ ЗАКОММИЧЕНО
+
+### Что было сделано (и сломано):
+
+#### 1. ❌ config.js — СЛОМАЛ GPU (откатил)
+
+**Было (работало):**
+```javascript
+fps: { target: 60, forceSetTimeOut: true },
+render: { antialias: true, antialiasGL: true, pixelArt: false, roundPixels: false },
+resolution: RESOLUTION,
+```
+
+**Менял на (СЛОМАЛО GPU 100%):**
+```javascript
+fps: { limit: 60 },  // ← БЕЗ forceSetTimeOut = GPU на максимум
+render: { antialias: true, pixelArt: false },  // ← убрал antialiasGL
+// resolution убрал полностью
+```
+
+**Статус:** Откатил к оригиналу. GPU должен быть в норме.
+
+---
+
+#### 2. ⚠️ inventoryPanel.js — ПОЛНОСТЬЮ ПЕРЕПИСАЛ
+
+**Было:** Старая версия со stone-style текстурами (Invertory_header, slot_frame, btn_close)
+
+**Стало:** Новая v2 версия с v0-дизайном:
+- Zinc color palette (0x18181b, 0x27272a, etc.)
+- 12 equipment slots (6 слева + 6 справа)
+- Character preview в центре
+- Stats bar (кликабельный)
+- 6x4 inventory grid
+- Action buttons (Надеть/Продать)
+- Rounded corners через Graphics
+
+**Проблема:** Возможно ломает layout или размеры. Нужно тестировать.
+
+**Файл:** `src/ui/inventoryPanel.js` (+413 строк, -240 строк)
+
+---
+
+#### 3. ⚠️ game.js — Добавил SVG загрузку
+
+```javascript
+// Добавил в preload():
+this.load.svg('slot_helmet', 'assets/ui/slots/helmet.svg', { width: 48, height: 48 });
+this.load.svg('slot_chest', 'assets/ui/slots/chest.svg', { width: 48, height: 48 });
+// ... ещё 8 SVG иконок
+```
+
+**Статус:** Вероятно безопасно, но SVG файлов может не быть.
+
+---
+
+#### 4. ⚠️ tuneMode.js — Добавил TUNE2 режим
+
+Добавил режим `?tune2=1` для тюнинга inventory элементов.
+
+**Файл:** `src/ui/tuneMode.js` (+316 строк)
+
+---
+
+#### 5. ℹ️ index.html — Обновил версии
+
+```html
+config.js?v=2080
+inventoryPanel.js?v=2080
+game.js?v=2080
+bottomUI.js?v=2080
+playerHeader.js?v=2080
+tuneMode.js?v=2080
+```
+
+---
+
+#### 6. ℹ️ SVG файлы — Добавил иконки слотов
+
+Добавил `src/assets/ui/slots/`:
+- helmet.svg, chest.svg, pants.svg, gloves.svg, boots.svg
+- mainhand.svg, offhand.svg, necklace.svg, earring.svg, ring.svg
+
+Изменил `stroke="currentColor"` → `stroke="#ffffff"` для Phaser.
+
+---
+
+### 🔧 Как откатить ВСЁ:
+
+```bash
+cd "L2 Phaser RPG"
+git checkout HEAD -- src/core/config.js
+git checkout HEAD -- src/ui/inventoryPanel.js
+git checkout HEAD -- src/ui/tuneMode.js
+git checkout HEAD -- src/game.js
+git checkout HEAD -- src/index.html
+```
+
+### 🔧 Как откатить только проблемные файлы:
+
+```bash
+# Откатить inventory к рабочей версии
+git checkout HEAD -- src/ui/inventoryPanel.js
+
+# Откатить game.js (убрать SVG)
+git checkout HEAD -- src/game.js
+```
+
+---
+
 ## 🔴 ДРУГИЕ ИЗВЕСТНЫЕ ПРОБЛЕМЫ
 
 ### 1. Spine не поддерживает setTint()

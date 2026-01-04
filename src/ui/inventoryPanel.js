@@ -16,27 +16,30 @@ let inventoryOverlay = null;
 // ========== НАСТРОЙКИ (сохраняются в localStorage) ==========
 function getInvSettings() {
   const defaults = {
+    // Close button
+    closeBtnX: 320, closeBtnY: 10, closeBtnScale: 1,
+
     // Background stone
     bgX: 0, bgY: 0, bgScale: 1,
-    
+
     // Header
     headerX: 0, headerY: 0, headerScale: 1,
-    
+
     // Left column
     leftColX: 20, leftColY: 80,
-    
+
     // Right column
     rightColX: 280, rightColY: 80,
-    
+
     // Character preview
     charX: 150, charY: 200, charScale: 1,
-    
+
     // Stats bar
     statsX: 0, statsY: 460, statsScale: 1,
-    
+
     // Grid
     gridX: 0, gridY: 520,
-    
+
     // Slot sizes
     slotSize: 58,
     gridSlotSize: 52,
@@ -152,12 +155,14 @@ function createInventoryOverlay() {
     }
     
     #inv-close {
-      position:absolute; right:10px; top:10px;
-      width:36px; height:36px;
-      background:#dc2626; border:none; border-radius:50%;
-      color:#fff; font-size:18px; cursor:pointer;
+      position:absolute;
+      width:40px; height:40px;
+      background:url('assets/ui/btn_close.png') center/contain no-repeat;
+      border:none; cursor:pointer;
       z-index:100;
     }
+    #inv-close:hover { filter:brightness(1.2); }
+    #inv-close:active { transform:scale(0.95); }
     
     .inv-slot {
       width:${S.slotSize}px; height:${S.slotSize}px;
@@ -222,6 +227,8 @@ function createInventoryOverlay() {
       border-radius:5px;
       min-width:200px;
       cursor:move;
+      touch-action:none;
+      user-select:none;
     }
     #inv-tune-panel button {
       padding:4px 8px;
@@ -246,7 +253,7 @@ function createInventoryOverlay() {
   inventoryOverlay.id = 'inv-overlay';
   inventoryOverlay.innerHTML = `
     <div id="inv-panel">
-      <button id="inv-close">✕</button>
+      <button id="inv-close" class="inv-element"></button>
       
       <!-- Background (оригинальный размер) -->
       <img id="inv-bg" class="inv-element" src="assets/ui/phone_invertory_v2.png" draggable="false">
@@ -285,6 +292,7 @@ function createInventoryOverlay() {
 
   // Get element refs
   els = {
+    closeBtn: document.getElementById('inv-close'),
     bg: document.getElementById('inv-bg'),
     header: document.getElementById('inv-header'),
     leftCol: document.getElementById('inv-left'),
@@ -295,8 +303,14 @@ function createInventoryOverlay() {
     grid: document.getElementById('inv-grid'),
   };
 
-  // Events
-  document.getElementById('inv-close').onclick = hideInventoryPanel;
+  // Close button - only close if NOT in tune mode
+  document.getElementById('inv-close').onclick = (e) => {
+    if (INV_TUNE_ENABLED) {
+      e.stopPropagation();
+      return; // In tune mode, clicking selects but doesn't close
+    }
+    hideInventoryPanel();
+  };
 
   // Render content
   renderSlots();
@@ -330,6 +344,7 @@ function createTunePanel() {
       
       <!-- Element buttons -->
       <div style="display:flex;flex-wrap:wrap;gap:2px;">
+        <button class="inv-tune-btn" data-el="closeBtn">Close</button>
         <button class="inv-tune-btn active" data-el="bg">BG</button>
         <button class="inv-tune-btn" data-el="header">Header</button>
         <button class="inv-tune-btn" data-el="leftCol">Left</button>
@@ -417,7 +432,7 @@ function initInvTuneMode() {
       e.stopPropagation();
       const id = el.id.replace('inv-', '');
       const mappedId = {
-        'bg': 'bg', 'header': 'header', 'left': 'leftCol', 'right': 'rightCol',
+        'close': 'closeBtn', 'bg': 'bg', 'header': 'header', 'left': 'leftCol', 'right': 'rightCol',
         'char': 'char', 'stats': 'stats', 'grid-title': 'gridTitle', 'grid': 'grid'
       }[id] || id;
       
@@ -488,27 +503,33 @@ function initInvTuneMode() {
 
   // Make tune panel draggable
   const panel = document.getElementById('inv-tune-panel');
-  let panelDragging = false;
-  let panelStartX, panelStartY, panelOffsetX, panelOffsetY;
+  let tunePanelDrag = false;
+  let tunePanelOffsetX = 0, tunePanelOffsetY = 0;
 
-  panel.onpointerdown = (e) => {
-    if (e.target.tagName === 'BUTTON') return;
-    panelDragging = true;
-    panelStartX = e.clientX;
-    panelStartY = e.clientY;
+  panel.addEventListener('mousedown', (e) => {
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+    e.preventDefault();
+    tunePanelDrag = true;
     const rect = panel.getBoundingClientRect();
-    panelOffsetX = panelStartX - rect.left;
-    panelOffsetY = panelStartY - rect.top;
-  };
+    tunePanelOffsetX = e.clientX - rect.left;
+    tunePanelOffsetY = e.clientY - rect.top;
+    panel.style.cursor = 'grabbing';
+  });
 
-  document.addEventListener('pointermove', (e) => {
-    if (!panelDragging) return;
-    panel.style.left = (e.clientX - panelOffsetX) + 'px';
-    panel.style.top = (e.clientY - panelOffsetY) + 'px';
+  document.addEventListener('mousemove', (e) => {
+    if (!tunePanelDrag) return;
+    e.preventDefault();
+    panel.style.left = (e.clientX - tunePanelOffsetX) + 'px';
+    panel.style.top = (e.clientY - tunePanelOffsetY) + 'px';
     panel.style.right = 'auto';
   });
 
-  document.addEventListener('pointerup', () => { panelDragging = false; });
+  document.addEventListener('mouseup', () => {
+    if (tunePanelDrag) {
+      tunePanelDrag = false;
+      panel.style.cursor = 'move';
+    }
+  });
 
   // Initial highlight
   if (els.bg) els.bg.classList.add('selected');
@@ -584,7 +605,8 @@ function applyPositions() {
     el.style.top = (S[yKey] || 0) + 'px';
     if (S[scaleKey]) el.style.transform = `scale(${S[scaleKey]})`;
   };
-  
+
+  apply(els.closeBtn, 'closeBtnX', 'closeBtnY', 'closeBtnScale');
   apply(els.bg, 'bgX', 'bgY', 'bgScale');
   apply(els.header, 'headerX', 'headerY', 'headerScale');
   apply(els.leftCol, 'leftColX', 'leftColY');

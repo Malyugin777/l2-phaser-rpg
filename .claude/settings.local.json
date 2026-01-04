@@ -22,7 +22,10 @@
       "Bash(python3:*)",
       "Bash(powershell -Command \"Get-Content ''C:\\Users\\maliu\\OneDrive\\Desktop\\Projects\\L2 Phaser RPG\\src\\assets\\Spine main\\Boy_1.json'' | Select-String ''\"\"[a-z-]+\"\":\\s*\\{'' | ForEach-Object { $_Line }\")",
       "Bash(identify:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
