@@ -15,12 +15,18 @@ const INV_CONFIG = {
   slots: {
     columns: 5,
     rows: 4,
-    gap: 8,
-    scale: 1.0  // Adjust if slot frames need scaling
+    gap: 6,
+    targetSize: 64  // Target slot size in pixels
   },
-  bodyColor: 0x151515,
-  bodyPadding: 20,
-  dimmerAlpha: 0.7
+  header: {
+    targetWidth: 350  // Target header width
+  },
+  closeBtn: {
+    targetSize: 40  // Target close button size
+  },
+  bodyColor: 0x1a1a1a,
+  bodyPadding: 15,
+  dimmerAlpha: 0.75
 };
 
 /**
@@ -56,25 +62,41 @@ function createInventoryPanel(scene) {
   const slotTex = scene.textures.get('invertory_slot_frame');
   const closeTex = scene.textures.get('btn_close');
 
-  const headerW = headerTex.getSourceImage().width;
-  const headerH = headerTex.getSourceImage().height;
-  const slotW = slotTex.getSourceImage().width;
-  const slotH = slotTex.getSourceImage().height;
-  const closeW = closeTex.getSourceImage().width;
-  const closeH = closeTex.getSourceImage().height;
+  const headerTexW = headerTex.getSourceImage().width;
+  const headerTexH = headerTex.getSourceImage().height;
+  const slotTexW = slotTex.getSourceImage().width;
+  const slotTexH = slotTex.getSourceImage().height;
+  const closeTexW = closeTex.getSourceImage().width;
+  const closeTexH = closeTex.getSourceImage().height;
 
-  console.log('[INV] Texture sizes:',
-    'header:', headerW, 'x', headerH,
-    'slot:', slotW, 'x', slotH,
-    'close:', closeW, 'x', closeH
+  // Calculate scales to fit target sizes
+  const headerScale = INV_CONFIG.header.targetWidth / headerTexW;
+  const slotScale = INV_CONFIG.slots.targetSize / slotTexW;
+  const closeScale = INV_CONFIG.closeBtn.targetSize / closeTexW;
+
+  // Scaled dimensions
+  const headerW = headerTexW * headerScale;
+  const headerH = headerTexH * headerScale;
+  const slotW = slotTexW * slotScale;
+  const slotH = slotTexH * slotScale;
+  const closeW = closeTexW * closeScale;
+  const closeH = closeTexH * closeScale;
+
+  console.log('[INV] Texture sizes (original):',
+    'header:', headerTexW, 'x', headerTexH,
+    'slot:', slotTexW, 'x', slotTexH,
+    'close:', closeTexW, 'x', closeTexH
+  );
+  console.log('[INV] Scales:',
+    'header:', headerScale.toFixed(3),
+    'slot:', slotScale.toFixed(3),
+    'close:', closeScale.toFixed(3)
   );
 
   // Calculate body size based on slots grid
   const cfg = INV_CONFIG.slots;
-  const scaledSlotW = slotW * cfg.scale;
-  const scaledSlotH = slotH * cfg.scale;
-  const gridW = cfg.columns * scaledSlotW + (cfg.columns - 1) * cfg.gap;
-  const gridH = cfg.rows * scaledSlotH + (cfg.rows - 1) * cfg.gap;
+  const gridW = cfg.columns * slotW + (cfg.columns - 1) * cfg.gap;
+  const gridH = cfg.rows * slotH + (cfg.rows - 1) * cfg.gap;
   const bodyW = gridW + INV_CONFIG.bodyPadding * 2;
   const bodyH = gridH + INV_CONFIG.bodyPadding * 2;
 
@@ -95,6 +117,7 @@ function createInventoryPanel(scene) {
   // === 4. HEADER SPRITE ===
   const header = scene.add.image(0, 0, 'Invertory_header');
   header.setOrigin(0.5, 0.5);
+  header.setScale(headerScale);
   inventoryContainer.add(header);
 
   // === 5. HEADER TITLE TEXT ===
@@ -111,10 +134,11 @@ function createInventoryPanel(scene) {
 
   // === 6. CLOSE BUTTON ===
   const closeBtn = scene.add.image(
-    panelW / 2 - closeW / 2 - 10,  // Right side
-    -headerH / 2 + closeH / 2 + 10,  // Top
+    headerW / 2 - closeW / 2 - 5,  // Right side of header
+    -headerH / 2 + closeH / 2 + 5,  // Top of header
     'btn_close'
   );
+  closeBtn.setScale(closeScale);
   closeBtn.setInteractive({ useHandCursor: true });
   closeBtn.on('pointerdown', () => {
     hideInventoryPanel();
@@ -124,21 +148,21 @@ function createInventoryPanel(scene) {
   inventoryContainer.add(closeBtn);
 
   // === 7. INVENTORY SLOTS GRID ===
-  const slotsContainer = scene.add.container(0, headerH / 2 + INV_CONFIG.bodyPadding + scaledSlotH / 2);
+  const slotsContainer = scene.add.container(0, headerH / 2 + INV_CONFIG.bodyPadding + slotH / 2);
   inventoryContainer.add(slotsContainer);
 
   // Create slots
   const slots = [];
-  const startX = -(gridW / 2) + scaledSlotW / 2;
+  const startX = -(gridW / 2) + slotW / 2;
   const startY = 0;
 
   for (let row = 0; row < cfg.rows; row++) {
     for (let col = 0; col < cfg.columns; col++) {
-      const x = startX + col * (scaledSlotW + cfg.gap);
-      const y = startY + row * (scaledSlotH + cfg.gap);
+      const x = startX + col * (slotW + cfg.gap);
+      const y = startY + row * (slotH + cfg.gap);
 
       const slot = scene.add.image(x, y, 'invertory_slot_frame');
-      slot.setScale(cfg.scale);
+      slot.setScale(slotScale);
       slot.setInteractive({ useHandCursor: true });
 
       // Slot click handler
