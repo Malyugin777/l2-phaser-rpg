@@ -155,16 +155,33 @@ function initTuneMode(scene, cityBg, heroOffset) {
         </div>
       </div>
 
-      <!-- ELEMENT SELECTOR -->
+      <!-- ELEMENT SELECTOR - ALL ELEMENTS -->
       <div style="display:flex;flex-wrap:wrap;gap:2px;margin:8px 0;">
-        <button class="tune-el" data-el="hpanel" style="padding:4px 6px;font-size:10px;cursor:pointer">Panel</button>
+        <button class="tune-el" data-el="bg" style="padding:4px 6px;font-size:10px;cursor:pointer">BG</button>
+        <button class="tune-el" data-el="hero" style="padding:4px 6px;font-size:10px;cursor:pointer">Hero</button>
+        <button class="tune-el" data-el="panel" style="padding:4px 6px;font-size:10px;cursor:pointer">BotCont</button>
+        <button class="tune-el" data-el="btn" style="padding:4px 6px;font-size:10px;cursor:pointer">FightBtn</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px;margin:4px 0;">
+        <button class="tune-el" data-el="icon0" style="padding:4px 6px;font-size:10px;cursor:pointer">Icon0</button>
+        <button class="tune-el" data-el="icon1" style="padding:4px 6px;font-size:10px;cursor:pointer">Icon1</button>
+        <button class="tune-el" data-el="icon2" style="padding:4px 6px;font-size:10px;cursor:pointer">Icon2</button>
+        <button class="tune-el" data-el="icon3" style="padding:4px 6px;font-size:10px;cursor:pointer">Icon3</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px;margin:4px 0;">
+        <button class="tune-el" data-el="header" style="padding:4px 6px;font-size:10px;cursor:pointer">Header</button>
         <button class="tune-el" data-el="avatar" style="padding:4px 6px;font-size:10px;cursor:pointer">Avatar</button>
         <button class="tune-el" data-el="ring" style="padding:4px 6px;font-size:10px;cursor:pointer">Ring</button>
+        <button class="tune-el" data-el="hpanel" style="padding:4px 6px;font-size:10px;cursor:pointer">HPanel</button>
         <button class="tune-el" data-el="darkbg" style="padding:4px 6px;font-size:10px;cursor:pointer">DarkBG</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:2px;margin:4px 0;">
         <button class="tune-el" data-el="txtLevel" style="padding:4px 6px;font-size:10px;cursor:pointer">Lvl</button>
         <button class="tune-el" data-el="txtNickname" style="padding:4px 6px;font-size:10px;cursor:pointer">Nick</button>
-        <button class="tune-el" data-el="hero" style="padding:4px 6px;font-size:10px;cursor:pointer">Hero</button>
-        <button class="tune-el" data-el="bg" style="padding:4px 6px;font-size:10px;cursor:pointer">BG</button>
+        <button class="tune-el" data-el="txtEnergy" style="padding:4px 6px;font-size:10px;cursor:pointer">Energy</button>
+        <button class="tune-el" data-el="txtStars" style="padding:4px 6px;font-size:10px;cursor:pointer">Stars</button>
+        <button class="tune-el" data-el="txtGems" style="padding:4px 6px;font-size:10px;cursor:pointer">Gems</button>
+        <button class="tune-el" data-el="txtAdena" style="padding:4px 6px;font-size:10px;cursor:pointer">Adena</button>
       </div>
 
       <hr style="border-color:#333;margin:5px 0">
