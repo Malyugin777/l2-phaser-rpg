@@ -319,8 +319,9 @@ function createTunePanel() {
     <div id="inv-tune-panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <b>🎮 INV TUNE</b>
-        <button onclick="document.getElementById('inv-tune-panel').style.display='none'">✕</button>
+        <button onclick="toggleTuneCollapse()">➖</button>
       </div>
+      <div id="inv-tune-body">
       
       <div>Selected: <span id="inv-tune-sel" style="color:#ff0">bg</span></div>
       <div id="inv-tune-pos" style="color:#888;font-size:10px;">x:0 y:0 s:1</div>
@@ -355,15 +356,30 @@ function createTunePanel() {
       </div>
       
       <hr style="border-color:#333;margin:8px 0;">
-      
+
       <div style="display:flex;gap:4px;">
         <button onclick="printInvSettings()">📋 Print</button>
         <button onclick="resetInvSettings()">🔄 Reset</button>
         <button onclick="saveInvSettings()">💾 Save</button>
       </div>
+      </div>
     </div>
   `;
 }
+
+// Toggle collapse tune panel
+function toggleTuneCollapse() {
+  const body = document.getElementById('inv-tune-body');
+  const btn = document.querySelector('#inv-tune-panel > div:first-child > button');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    btn.textContent = '➖';
+  } else {
+    body.style.display = 'none';
+    btn.textContent = '➕';
+  }
+}
+window.toggleTuneCollapse = toggleTuneCollapse;
 
 // ============================================================
 //  INIT TUNE MODE
