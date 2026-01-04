@@ -1,8 +1,8 @@
 "use strict";
 
 // ============================================================
-//  INVENTORY SCENE v2 — Pure Phaser (МОНОЛИТНЫЙ LAYOUT)
-//  Жирно и богато, без бомжатины
+//  INVENTORY SCENE v3 — Dark Glass RPG (Code-Only UI)
+//  Программный UI без текстур, единая тёмная стеклянная панель
 // ============================================================
 
 class InventoryScene extends Phaser.Scene {
@@ -26,12 +26,7 @@ class InventoryScene extends Phaser.Scene {
   }
 
   preload() {
-    if (!this.textures.exists('inv_bg')) {
-      this.load.image('inv_bg', 'assets/ui/phone_invertory_v2.png');
-    }
-    if (!this.textures.exists('inv_header')) {
-      this.load.image('inv_header', 'assets/ui/Invertory_header.png');
-    }
+    // Only load slot frames and close button - background/header are code-drawn
     if (!this.textures.exists('inv_slot')) {
       this.load.image('inv_slot', 'assets/ui/invertory_slot_frame.png');
     }
@@ -96,14 +91,8 @@ class InventoryScene extends Phaser.Scene {
     // ========== 2. MAIN CONTAINER ==========
     this.mainContainer = this.add.container(0, 0);
 
-    // ========== 3. ТЕМНАЯ ПОДЛОЖКА ПОД GRID ==========
-    this.createGridBackground(W, H);
-
-    // ========== 4. КАМЕННЫЙ ФОН (на всю ширину) ==========
-    this.createStoneBackground(W, H);
-
-    // ========== 5. HEADER ==========
-    this.createHeader(W);
+    // ========== 3. DARK GLASS PANEL (единая панель) ==========
+    this.createDarkGlassPanel(W, H);
 
     // ========== 6. EQUIPMENT SLOTS ==========
     this.createEquipmentSlots(W);
@@ -124,81 +113,101 @@ class InventoryScene extends Phaser.Scene {
   }
 
   // ============================================================
-  //  GRID BACKGROUND (темная панель под сеткой)
+  //  DARK GLASS PANEL (Code-Only UI)
   // ============================================================
-  createGridBackground(W, H) {
-    const startY = this.CFG.statsBarY;
-    const height = H - startY;
-    
-    // Темная панель под сеткой предметов
-    const gridBg = this.add.rectangle(W/2, startY + height/2, W, height, 0x0a0a0f, 0.95);
-    this.mainContainer.add(gridBg);
-  }
+  createDarkGlassPanel(W, H) {
+    const panelW = W * 0.95;
+    const panelH = H * 0.85;
+    const panelX = W / 2;
+    const panelY = H / 2;
+    const radius = 20;
+    const headerHeight = 60;
 
-  // ============================================================
-  //  STONE BACKGROUND (каменная плита на всю ширину)
-  // ============================================================
-  createStoneBackground(W, H) {
-    const topY = this.CFG.headerHeight;
-    const height = this.CFG.equipZoneHeight;
-    
-    if (this.textures.exists('inv_bg')) {
-      this.stoneBg = this.add.image(W / 2, topY + height / 2, 'inv_bg');
-      // Растягиваем на ВСЮ ширину и нужную высоту
-      this.stoneBg.setDisplaySize(W, height);
-    } else {
-      // Fallback — тёмный градиент
-      this.stoneBg = this.add.rectangle(W/2, topY + height/2, W, height, 0x1a1a2e);
-    }
-    
-    this.mainContainer.add(this.stoneBg);
-  }
+    // Store panel bounds for layout calculations
+    this.panelBounds = {
+      x: panelX - panelW / 2,
+      y: panelY - panelH / 2,
+      w: panelW,
+      h: panelH,
+      headerHeight: headerHeight
+    };
 
-  // ============================================================
-  //  HEADER
-  // ============================================================
-  createHeader(W) {
-    const headerH = this.CFG.headerHeight;
-    
-    // Header background
-    if (this.textures.exists('inv_header')) {
-      this.header = this.add.image(W / 2, headerH / 2, 'inv_header');
-      this.header.setDisplaySize(W, headerH);
-    } else {
-      this.header = this.add.rectangle(W / 2, headerH / 2, W, headerH, 0x27272a);
-    }
-    this.mainContainer.add(this.header);
-    
-    // Title
-    this.title = this.add.text(W / 2, headerH / 2, 'Инвентарь', {
+    // ===== MAIN PANEL BACKGROUND =====
+    this.bg = this.add.graphics();
+
+    // Fill - deep black/blue with alpha
+    this.bg.fillStyle(0x101014, 0.95);
+    this.bg.fillRoundedRect(
+      panelX - panelW / 2,
+      panelY - panelH / 2,
+      panelW,
+      panelH,
+      radius
+    );
+
+    // Stroke - dark metallic gray
+    this.bg.lineStyle(2, 0x3f3f46, 1);
+    this.bg.strokeRoundedRect(
+      panelX - panelW / 2,
+      panelY - panelH / 2,
+      panelW,
+      panelH,
+      radius
+    );
+
+    this.mainContainer.add(this.bg);
+
+    // ===== HEADER SEPARATOR LINE =====
+    const lineY = this.panelBounds.y + headerHeight;
+    this.headerLine = this.add.graphics();
+    this.headerLine.lineStyle(1, 0x3f3f46, 1);
+    this.headerLine.lineBetween(
+      this.panelBounds.x + 15,
+      lineY,
+      this.panelBounds.x + panelW - 15,
+      lineY
+    );
+    this.mainContainer.add(this.headerLine);
+
+    // ===== HEADER TITLE =====
+    const titleY = this.panelBounds.y + headerHeight / 2;
+    this.title = this.add.text(panelX, titleY, 'ИНВЕНТАРЬ', {
       fontFamily: 'Verdana, Arial, sans-serif',
-      fontSize: '32px',
+      fontSize: '24px',
       fontStyle: 'bold',
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 4
+      color: '#f59e0b'  // Gold
     }).setOrigin(0.5);
     this.mainContainer.add(this.title);
-    
-    // Close button
-    const closeX = W - 55;
-    const closeY = headerH / 2;
-    
+
+    // ===== CLOSE BUTTON =====
+    const closeX = this.panelBounds.x + panelW - 40;
+    const closeY = titleY;
+
     if (this.textures.exists('inv_close')) {
       this.closeBtn = this.add.image(closeX, closeY, 'inv_close');
-      this.closeBtn.setDisplaySize(48, 48);
+      this.closeBtn.setDisplaySize(36, 36);
+      this.closeBtn.setTint(0xaaaaaa);  // Slightly dimmed to fit dark theme
     } else {
       this.closeBtn = this.add.text(closeX, closeY, '✕', {
-        fontSize: '36px',
-        color: '#ff6666',
+        fontSize: '28px',
+        color: '#71717a',
         fontStyle: 'bold'
       }).setOrigin(0.5);
     }
     this.closeBtn.setInteractive({ useHandCursor: true });
     this.closeBtn.on('pointerdown', () => this.closeInventory());
-    this.closeBtn.on('pointerover', () => this.closeBtn.setScale(1.15));
-    this.closeBtn.on('pointerout', () => this.closeBtn.setScale(1.0));
+    this.closeBtn.on('pointerover', () => {
+      this.closeBtn.setScale(1.15);
+      if (this.closeBtn.setTint) this.closeBtn.setTint(0xffffff);
+    });
+    this.closeBtn.on('pointerout', () => {
+      this.closeBtn.setScale(1.0);
+      if (this.closeBtn.setTint) this.closeBtn.setTint(0xaaaaaa);
+    });
     this.mainContainer.add(this.closeBtn);
+
+    // Update CFG to use panel-relative positions
+    this.CFG.headerHeight = this.panelBounds.y + headerHeight;
   }
 
   // ============================================================
@@ -251,12 +260,13 @@ class InventoryScene extends Phaser.Scene {
     if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
       slotBg.setDisplaySize(size, size);
+      slotBg.setTint(0x666666);  // Darken to fit dark glass theme
     } else {
-      slotBg = this.add.rectangle(0, 0, size, size, 0x27272a);
-      slotBg.setStrokeStyle(2, 0x4f4f56);
+      slotBg = this.add.rectangle(0, 0, size, size, 0x1a1a1f);
+      slotBg.setStrokeStyle(2, 0x3f3f46);
     }
     container.add(slotBg);
-    
+
     // Icon — КРУПНЕЕ
     const iconText = this.add.text(0, 0, icon, {
       fontSize: '36px'
@@ -274,11 +284,11 @@ class InventoryScene extends Phaser.Scene {
     // Interactive
     slotBg.setInteractive({ useHandCursor: true });
     slotBg.on('pointerover', () => {
-      slotBg.setTint(0x5a5a62);
+      slotBg.setTint(0x888888);  // Lighter on hover
       container.setScale(1.05);
     });
     slotBg.on('pointerout', () => {
-      slotBg.clearTint();
+      slotBg.setTint(0x666666);  // Back to dark
       container.setScale(1.0);
     });
     slotBg.on('pointerdown', () => this.onEquipSlotClick(type));
@@ -294,23 +304,23 @@ class InventoryScene extends Phaser.Scene {
   createCharPreview(W) {
     const cfg = this.CFG;
     const centerY = cfg.headerHeight + cfg.equipZoneHeight / 2;
-    const size = 160; // Крупнее!
-    
-    // Preview background
-    const previewBg = this.add.rectangle(W / 2, centerY, size, size, 0x12121a);
-    previewBg.setStrokeStyle(3, 0x3f3f46);
+    const size = 160;
+
+    // Preview background - darker, glass-like
+    const previewBg = this.add.rectangle(W / 2, centerY, size, size, 0x0a0a0f, 0.8);
+    previewBg.setStrokeStyle(2, 0x3f3f46);
     this.mainContainer.add(previewBg);
-    
-    // Character icon (placeholder) — КРУПНЕЕ
+
+    // Character icon (placeholder)
     const charIcon = this.add.text(W / 2, centerY, '🛡️', {
       fontSize: '72px'
-    }).setOrigin(0.5).setAlpha(0.7);
+    }).setOrigin(0.5).setAlpha(0.6);
     this.mainContainer.add(charIcon);
-    
+
     // Shadow under character
-    const shadow = this.add.ellipse(W / 2, centerY + 65, 80, 20, 0x000000, 0.4);
+    const shadow = this.add.ellipse(W / 2, centerY + 65, 80, 20, 0x000000, 0.3);
     this.mainContainer.add(shadow);
-    
+
     this.charPreview = { bg: previewBg, icon: charIcon, shadow };
   }
 
@@ -319,26 +329,26 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   createStatsBar(W) {
     const y = this.CFG.statsBarY + this.CFG.statsBarHeight / 2;
-    const barW = W - 30;
+    const barW = W * 0.9;
     const barH = this.CFG.statsBarHeight;
-    
-    // Background
-    const statsBg = this.add.rectangle(W / 2, y, barW, barH, 0x1f1f28, 0.95);
+
+    // Background - dark glass style
+    const statsBg = this.add.rectangle(W / 2, y, barW, barH, 0x0a0a0f, 0.9);
     statsBg.setStrokeStyle(1, 0x3f3f46);
     this.mainContainer.add(statsBg);
-    
+
     // Stats
     const stats = this.calculateStats();
-    
-    const statsText = this.add.text(W / 2, y, 
+
+    const statsText = this.add.text(W / 2, y,
       `❤️ ${stats.hp}      ⚔️ ${stats.atk}      🛡️ ${stats.def}`, {
       fontFamily: 'Verdana',
-      fontSize: '20px',
+      fontSize: '18px',
       fontStyle: 'bold',
-      color: '#ffffff'
+      color: '#e4e4e7'  // Slightly dimmed white
     }).setOrigin(0.5);
     this.mainContainer.add(statsText);
-    
+
     this.statsBar = { bg: statsBg, text: statsText };
   }
 
@@ -411,14 +421,15 @@ class InventoryScene extends Phaser.Scene {
   createGridSlot(x, y, index) {
     const size = this.CFG.gridSlotSize;
     const container = this.add.container(x, y);
-    
+
     // Slot background
     let slotBg;
     if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
       slotBg.setDisplaySize(size, size);
+      slotBg.setTint(0x666666);  // Darken to fit dark glass theme
     } else {
-      slotBg = this.add.rectangle(0, 0, size, size, 0x27272a);
+      slotBg = this.add.rectangle(0, 0, size, size, 0x1a1a1f);
       slotBg.setStrokeStyle(1, 0x3f3f46);
     }
     container.add(slotBg);
@@ -536,11 +547,11 @@ class InventoryScene extends Phaser.Scene {
   showPopup(x, y, item) {
     const popupW = 180;
     const popupH = 120;
-    
+
     this.popup = this.add.container(x, y);
-    
-    // Background
-    const bg = this.add.rectangle(0, 0, popupW, popupH, 0x18181b, 0.98);
+
+    // Background - dark glass style
+    const bg = this.add.rectangle(0, 0, popupW, popupH, 0x0a0a0f, 0.98);
     bg.setStrokeStyle(2, 0x3f3f46);
     this.popup.add(bg);
     
@@ -596,7 +607,7 @@ class InventoryScene extends Phaser.Scene {
     this.popup.add(sellText);
     
     // Arrow
-    const arrow = this.add.triangle(0, popupH/2 + 10, -10, 0, 10, 0, 0, 12, 0x18181b);
+    const arrow = this.add.triangle(0, popupH/2 + 10, -10, 0, 10, 0, 0, 12, 0x0a0a0f);
     this.popup.add(arrow);
     
     this.mainContainer.add(this.popup);
@@ -673,4 +684,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v2 Phaser scene loaded');
+console.log('[InventoryScene] v3 Dark Glass RPG loaded');

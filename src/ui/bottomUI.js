@@ -163,9 +163,11 @@ function onIconClick(scene, panelName) {
 
   switch (panelName) {
     case 'inventory':
-      // Use inventoryPanel v5 (DOM overlay with tune mode)
-      if (typeof toggleInventoryPanel === 'function') {
-        toggleInventoryPanel();
+      // Use InventoryScene v3 (Phaser native, Dark Glass RPG)
+      if (scene.scene.isActive('InventoryScene')) {
+        scene.scene.stop('InventoryScene');
+      } else {
+        scene.scene.launch('InventoryScene');
       }
       break;
 
