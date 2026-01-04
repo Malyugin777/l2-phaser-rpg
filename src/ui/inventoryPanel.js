@@ -8,7 +8,7 @@
 // ============================================================
 
 const INV_TUNE_ENABLED = new URLSearchParams(window.location.search).has('inv_tune');
-const INV_TUNE_VERSION = 'inv_v4';
+const INV_TUNE_VERSION = 'inv_v5_dark';
 
 let isInventoryOpen = false;
 let inventoryOverlay = null;
@@ -17,32 +17,32 @@ let inventoryOverlay = null;
 function getInvSettings() {
   const defaults = {
     // Close button
-    closeBtnX: 320, closeBtnY: 10, closeBtnScale: 1,
+    closeBtnX: 340, closeBtnY: 15, closeBtnScale: 1,
 
-    // Background stone (tuned)
-    bgX: -150, bgY: -65, bgScale: 1.15,
+    // Background (now dark, no image)
+    bgX: 0, bgY: 0, bgScale: 1,
 
-    // Header (tuned)
-    headerX: 0, headerY: 0, headerScale: 1.05,
+    // Header
+    headerX: 0, headerY: 0, headerScale: 1,
 
-    // Left column (tuned)
-    leftColX: 20, leftColY: 70,
+    // Left column - wide apart (80px from edge)
+    leftColX: 30, leftColY: 90,
 
-    // Right column (tuned)
-    rightColX: 280, rightColY: 70,
+    // Right column - wide apart
+    rightColX: 310, rightColY: 90,
 
-    // Character preview
-    charX: 150, charY: 200, charScale: 1,
+    // Character preview - centered, larger
+    charX: 170, charY: 220, charScale: 1.2,
 
     // Stats bar
-    statsX: 0, statsY: 460, statsScale: 1,
+    statsX: 20, statsY: 480, statsScale: 1,
 
     // Grid
-    gridX: 0, gridY: 520,
+    gridX: 50, gridY: 550,
 
     // Slot sizes
-    slotSize: 58,
-    gridSlotSize: 52,
+    slotSize: 60,
+    gridSlotSize: 54,
   };
 
   const savedVersion = localStorage.getItem('INV_TUNE_VERSION');
@@ -119,7 +119,7 @@ function createInventoryOverlay() {
   style.textContent = `
     #inv-overlay {
       position:fixed; inset:0;
-      background:rgba(0,0,0,0.9);
+      background:rgba(0,0,0,0.95);
       display:none; z-index:9999;
       font-family:Verdana,sans-serif;
     }
@@ -129,6 +129,7 @@ function createInventoryOverlay() {
       position:relative;
       width:100%; height:100%;
       overflow:hidden;
+      background: linear-gradient(180deg, #1a1a1f 0%, #0d0d12 100%);
     }
     
     .inv-element {
@@ -171,28 +172,34 @@ function createInventoryOverlay() {
       display:flex; align-items:center; justify-content:center;
       font-size:${Math.round(S.slotSize * 0.45)}px;
       margin-bottom:8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 0 10px rgba(255,215,0,0.1);
+    }
+    .inv-slot:hover {
+      box-shadow: 0 2px 12px rgba(255,215,0,0.3), inset 0 0 15px rgba(255,215,0,0.2);
     }
     .inv-slot-label {
       font-size:9px; color:#888; text-align:center;
     }
     
     #inv-char {
-      width:120px; height:120px;
-      background:rgba(0,0,0,0.6);
-      border:2px solid #3f3f46;
+      width:140px; height:180px;
+      background: radial-gradient(ellipse at center, rgba(30,30,40,0.8) 0%, rgba(10,10,15,0.9) 100%);
+      border:2px solid #4a4a5a;
       border-radius:12px;
       display:flex; align-items:center; justify-content:center;
-      font-size:50px;
+      font-size:60px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.4);
     }
     
     #inv-stats {
       width:90%;
-      height:44px;
-      background:rgba(30,30,40,0.9);
-      border:1px solid #3f3f46;
+      height:48px;
+      background: linear-gradient(180deg, rgba(25,25,35,0.95) 0%, rgba(15,15,20,0.98) 100%);
+      border:1px solid #3a3a4a;
       border-radius:8px;
       display:flex; align-items:center; justify-content:space-around;
       color:#fff; font-size:14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
     }
     
     #inv-grid {
@@ -207,8 +214,14 @@ function createInventoryOverlay() {
       display:flex; align-items:center; justify-content:center;
       position:relative;
       font-size:${Math.round(S.gridSlotSize * 0.4)}px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      transition: transform 0.1s, box-shadow 0.1s;
     }
-    .inv-grid-slot.empty { opacity:0.4; }
+    .inv-grid-slot:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(255,215,0,0.2);
+    }
+    .inv-grid-slot.empty { opacity:0.35; }
     .inv-grid-slot .lvl {
       position:absolute; top:1px; right:2px;
       background:rgba(0,0,0,0.85);
@@ -254,9 +267,14 @@ function createInventoryOverlay() {
   inventoryOverlay.innerHTML = `
     <div id="inv-panel">
       <button id="inv-close" class="inv-element"></button>
-      
-      <!-- Background (оригинальный размер) -->
-      <img id="inv-bg" class="inv-element" src="assets/ui/phone_invertory_v2.png" draggable="false">
+
+      <!-- Dark background with gold border -->
+      <div id="inv-bg" class="inv-element" style="
+        position:absolute; top:60px; left:0; right:0; bottom:0;
+        background: linear-gradient(180deg, #1a1a1f 0%, #121215 50%, #0a0a0d 100%);
+        border-top: 2px solid #4a4a4a;
+        box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+      "></div>
       
       <!-- Header -->
       <div id="inv-header" class="inv-element">Инвентарь</div>
