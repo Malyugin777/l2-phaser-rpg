@@ -6,32 +6,23 @@
 // ============================================================
 
 const PLAYER_HEADER_CONFIG = {
-  // Container position - FROM SAVED TUNE
-  container: {
-    x: 387,        // FROM SAVED TUNE
-    y: 272,        // FROM SAVED TUNE (was 374)
-    offsetX: 0,
-    offsetY: 0
-  },
-
   // Panel settings
   panel: {
     scale: 0.8,
-    offsetX: 1,
-    offsetY: 1
+    y: -50           // Small offset to show panel top decoration
   },
 
-  // Avatar settings (bottom layer)
+  // Avatar settings - positioned relative to visible top
   avatar: {
-    x: 8,
-    y: 74,         // -5 more
+    x: -312,         // Left side
+    y: 45,           // From top of visible area
     scale: 0.82
   },
 
-  // EXP ring settings (middle layer)
+  // EXP ring settings - around avatar
   expRing: {
-    x: -319,
-    y: 74,           // -5 more
+    x: -312,         // Same as avatar
+    y: 45,           // Same as avatar
     radius: 52,
     thickness: 8,
     color: 0xFFD700,
@@ -39,34 +30,32 @@ const PLAYER_HEADER_CONFIG = {
     bgAlpha: 0.3
   },
 
-  // Dark background behind header - height matches header bottom
+  // Dark background behind header
   darkBg: {
-    x: -10,
-    y: 0,
     width: 900,
-    height: 130,     // reduced to match header bottom
+    height: 120,
     alpha: 0.92
   },
 
-  // Resource texts
+  // Resource texts - right side of header
   resources: {
-    energy: { x: -18, y: 72, fontSize: 18 },   // -5 more
-    stars:  { x: 95,  y: 71, fontSize: 18 },
-    gems:   { x: 200, y: 71, fontSize: 18 },
-    adena:  { x: 313, y: 71, fontSize: 18 }
+    energy: { x: -10, y: 42, fontSize: 18 },
+    stars:  { x: 95,  y: 42, fontSize: 18 },
+    gems:   { x: 200, y: 42, fontSize: 18 },
+    adena:  { x: 305, y: 42, fontSize: 18 }
   },
 
-  // Level text position
+  // Level text - below avatar
   level: {
-    x: -271,
-    y: 113,          // -5 more
+    x: -312,
+    y: 85,
     fontSize: 12
   },
 
-  // Nickname text position
+  // Nickname text - next to avatar
   nickname: {
     x: -244,
-    y: 73,           // -5 more
+    y: 45,
     fontSize: 24
   },
 
@@ -99,22 +88,20 @@ function createPlayerHeader(scene) {
   console.log('  ui_avatar_placeholder:', scene.textures.exists('ui_avatar_placeholder'));
   console.log('  ui_top_panel:', scene.textures.exists('ui_top_panel'));
 
-  // === ALL DIRECT ON SCENE with scrollFactor=0 ===
+  // === ADAPTIVE POSITIONING based on cropTop ===
   const cropTop = window.ENVELOP_CROP_TOP || 0;
-  const safeTop = window.SAFE_ZONE_TOP || 0;
-  const baseY = cropTop + safeTop;
 
-  console.log('[PLAYER_HEADER] cropTop=' + cropTop + ', safeTop=' + safeTop + ', baseY=' + baseY);
+  console.log('[PLAYER_HEADER] cropTop=' + cropTop + ' (adaptive positioning)');
 
-  // Dark background from screen edge (moved up 20px)
-  const headerBg = scene.add.rectangle(w/2, cropTop - 20, cfg.darkBg.width, cfg.darkBg.height, 0x3a3a4a, 0.92);
+  // Dark background - starts at cropTop (top of visible area)
+  const headerBg = scene.add.rectangle(w/2, cropTop, cfg.darkBg.width, cfg.darkBg.height, 0x3a3a4a, cfg.darkBg.alpha);
   headerBg.setOrigin(0.5, 0);
   headerBg.setScrollFactor(0);
   headerBg.setDepth(299);
   window.playerHeaderDarkBg = headerBg;
 
-  // Container at baseY for other elements
-  const headerContainer = scene.add.container(w/2, baseY);
+  // Container at cropTop - all elements relative to visible top
+  const headerContainer = scene.add.container(w/2, cropTop);
   headerContainer.setDepth(300);
   headerContainer.setScrollFactor(0);
 
@@ -163,8 +150,7 @@ function createPlayerHeader(scene) {
   console.log('[PLAYER_HEADER] Ring drawn with Graphics at', ringConfig.x, ringConfig.y);
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
-  // Panel Y offset for proper positioning
-  const panel = scene.add.image(0, -155, 'ui_top_panel');
+  const panel = scene.add.image(0, cfg.panel.y, 'ui_top_panel');
   panel.setScale(cfg.panel.scale);
   panel.setOrigin(0.5, 0);  // Top-center origin
   headerContainer.add(panel);
