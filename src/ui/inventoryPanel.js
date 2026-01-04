@@ -68,7 +68,9 @@ function createInventoryOverlay() {
       height: 100%;
       max-width: 100vw;
       max-height: 100vh;
-      background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+      background-image: url('assets/ui/phone_invertory_v2.png');
+      background-size: 100% 100%;
+      background-color: #18181b;
       overflow-y: auto;
       overflow-x: hidden;
       position: relative;
