@@ -24,14 +24,14 @@ const PLAYER_HEADER_CONFIG = {
   // Avatar settings (bottom layer)
   avatar: {
     x: 8,
-    y: 79,         // -30 more for iPhone
+    y: 74,         // -5 more
     scale: 0.82
   },
 
   // EXP ring settings (middle layer)
   expRing: {
     x: -319,
-    y: 79,           // -30 more
+    y: 74,           // -5 more
     radius: 52,
     thickness: 8,
     color: 0xFFD700,
@@ -39,34 +39,34 @@ const PLAYER_HEADER_CONFIG = {
     bgAlpha: 0.3
   },
 
-  // Dark background behind header
+  // Dark background behind header - height matches header bottom
   darkBg: {
     x: -10,
     y: 0,
     width: 900,
-    height: 180,
+    height: 130,     // reduced to match header bottom
     alpha: 0.92
   },
 
   // Resource texts
   resources: {
-    energy: { x: -18, y: 77, fontSize: 18 },   // -30 more
-    stars:  { x: 95,  y: 76, fontSize: 18 },
-    gems:   { x: 200, y: 76, fontSize: 18 },
-    adena:  { x: 313, y: 76, fontSize: 18 }
+    energy: { x: -18, y: 72, fontSize: 18 },   // -5 more
+    stars:  { x: 95,  y: 71, fontSize: 18 },
+    gems:   { x: 200, y: 71, fontSize: 18 },
+    adena:  { x: 313, y: 71, fontSize: 18 }
   },
 
   // Level text position
   level: {
     x: -271,
-    y: 118,          // -30 more
+    y: 113,          // -5 more
     fontSize: 12
   },
 
   // Nickname text position
   nickname: {
     x: -244,
-    y: 78,           // -30 more
+    y: 73,           // -5 more
     fontSize: 24
   },
 
@@ -164,7 +164,7 @@ function createPlayerHeader(scene) {
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
   // Panel Y offset for proper positioning
-  const panel = scene.add.image(0, -150, 'ui_top_panel');
+  const panel = scene.add.image(0, -155, 'ui_top_panel');
   panel.setScale(cfg.panel.scale);
   panel.setOrigin(0.5, 0);  // Top-center origin
   headerContainer.add(panel);
