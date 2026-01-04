@@ -18,7 +18,7 @@ class InventoryScene extends Phaser.Scene {
       padding: 32,      // 16 display
       gap: 16,          // 8 display
       gridCols: 6,
-      gridRows: 4,
+      gridRows: 6,      // Увеличил для скролла
       
       // Цвета L2 Dark Fantasy (hex для Phaser)
       bgTop: 0x232730,
@@ -268,18 +268,18 @@ class InventoryScene extends Phaser.Scene {
     const slotGap = 4;
     const slotWithLabel = C.equipSlot + 32;  // слот + label (16 display)
     
-    // Левая колонка — с PNG рамкой (затемнённая)
+    // Левая колонка — светлые PNG рамки
     const leftX = P.x + C.padding + C.equipSlot/2;
     leftSlots.forEach((type, i) => {
       const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(leftX, y, type, true, true);  // useFrame=true, darken=true
+      this.createEquipSlot(leftX, y, type);
     });
     
-    // Правая колонка — с PNG БЕЗ затемнения (как оригинал)
+    // Правая колонка — светлые PNG рамки
     const rightX = P.x + P.w - C.padding - C.equipSlot/2;
     rightSlots.forEach((type, i) => {
       const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(rightX, y, type, true, false);  // useFrame=true, darken=false
+      this.createEquipSlot(rightX, y, type);
     });
     
     // Центр — герой (по центру между колонками)
@@ -294,67 +294,49 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   //  EQUIP SLOT — PNG с tint
   // ============================================================
-  createEquipSlot(x, y, type, useFrame = false, darken = true) {
+  createEquipSlot(x, y, type) {
     const C = this.CFG;
     const item = this.equipped[type];
     
     // Контейнер слота
     const container = this.add.container(x, y);
     
-    // Проверяем какие текстуры доступны
-    const hasSlotFrame = this.textures.exists('inv_slot_frame') || this.textures.exists('invertory_slot_frame');
-    const slotFrameKey = this.textures.exists('inv_slot_frame') ? 'inv_slot_frame' : 'invertory_slot_frame';
+    // 1. ЧЕРНАЯ ПОДЛОЖКА (эффект глубины)
+    const depth = this.add.graphics();
+    depth.fillStyle(0x000000, 1);
+    depth.fillRoundedRect(-C.equipSlot/2 + 8, -C.equipSlot/2 + 8, C.equipSlot - 16, C.equipSlot - 16, 8);
+    container.add(depth);
     
+    // 2. PNG РАМКА
+    const hasSlotFrame = this.textures.exists('inv_slot_frame');
     let slotBg;
     
-    // Используем PNG рамку если есть и запрошена
-    if (useFrame && hasSlotFrame) {
-      slotBg = this.add.image(0, 0, slotFrameKey);
+    if (hasSlotFrame) {
+      slotBg = this.add.image(0, 0, 'inv_slot_frame');
       slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
-      console.log(`[INV] Using PNG frame for ${type}, darken=${darken}`);
-      // Затемняем пустые слоты ТОЛЬКО если darken=true
-      if (!item && darken) {
-        slotBg.setTint(0x888888);
-        slotBg.setAlpha(0.7);
+      
+      // Цветная рамка ТОЛЬКО для редких предметов
+      if (item && item.rarity !== 'common' && C.rarity[item.rarity]?.color) {
+        slotBg.setTint(C.rarity[item.rarity].color);
       }
-      // Если darken=false — оставляем оригинальный светлый цвет
-    } else if (useFrame && !hasSlotFrame) {
-      console.warn(`[INV] PNG frame requested but not loaded for ${type}!`);
-      // Fallback to graphics
-      slotBg = this.add.graphics();
-      slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, 1);
-      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
-      slotBg.lineStyle(6, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
-      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
-    } else if (this.textures.exists('inv_slot')) {
-      slotBg = this.add.image(0, 0, 'inv_slot');
-      slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
-      if (!item) {
-        slotBg.setTint(C.slotTintEmpty);
-      }
+      // Иначе — светлый камень (без tint)
     } else {
       // Fallback — рисуем
       slotBg = this.add.graphics();
-      slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, 1);
+      const borderColor = (item && item.rarity !== 'common') ? C.rarity[item.rarity]?.color || C.border : C.border;
+      slotBg.fillStyle(0x2a2a35, 1);
       slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
-      slotBg.lineStyle(6, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
+      slotBg.lineStyle(6, borderColor, 1);
       slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
     }
     container.add(slotBg);
     
-    // Glow для редкости
-    if (item && C.rarity[item.rarity]?.glow) {
-      const glow = this.add.graphics();
-      glow.lineStyle(4, C.rarity[item.rarity].glow, 0.6);
-      glow.strokeRoundedRect(-C.equipSlot/2 - 4, -C.equipSlot/2 - 4, C.equipSlot + 8, C.equipSlot + 8, 20);
-      container.add(glow);
-    }
-    
-    // Иконка
+    // 3. ИКОНКА
     const icon = this.add.text(0, -4, this.ICONS[type], {
       fontSize: `${Math.round(C.equipSlot * 0.4)}px`,
     }).setOrigin(0.5);
-    icon.setAlpha(item ? 1 : 0.35);
+    // Пустой слот — еле видная иконка
+    icon.setAlpha(item ? 1 : 0.15);
     container.add(icon);
     
     // Уровень предмета
@@ -518,35 +500,94 @@ class InventoryScene extends Phaser.Scene {
     this.container.add(count);
     this.gridCountText = count;
     
-    // ===== СЕТКА =====
+    // ===== СКРОЛЛ СЕТКА =====
     const gridStartY = startY + 50;
-    const contentW = P.w - C.padding * 2;
     const gridSlot = C.gridSlot;
-    const gridGap = 8;  // Было 12, уменьшил
+    const gridGap = 8;
     
-    // Центрируем сетку
+    // Видимая область (от gridStartY до низа экрана)
+    const visibleH = H - gridStartY - 20;
+    const visibleRows = Math.floor(visibleH / (gridSlot + gridGap));
+    
+    // Всего рядов для отрисовки (минимум 6)
+    const totalRows = Math.max(6, Math.ceil(totalSlots / C.gridCols));
+    const contentH = totalRows * (gridSlot + gridGap);
+    
+    // Центрируем сетку по X
+    const contentW = P.w - C.padding * 2;
     const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * gridGap;
     const gridOffsetX = (contentW - actualGridW) / 2;
     const gridStartX = P.x + C.padding + gridOffsetX + gridSlot / 2;
     
-    // Количество видимых рядов
-    const rowsToShow = C.gridVisibleRows || 2;
+    console.log(`[INV] Grid: slot=${gridSlot}, totalRows=${totalRows}, visibleH=${visibleH}, contentH=${contentH}`);
     
-    console.log(`[INV] Grid: slot=${gridSlot}, rows=${rowsToShow}, width=${actualGridW}`);
+    // КОНТЕЙНЕР для скролла
+    this.gridContainer = this.add.container(0, gridStartY);
     
     this.gridSlots = [];
     
-    // Рисуем видимые ряды
-    for (let row = 0; row < rowsToShow; row++) {
+    // Рисуем ВСЕ ряды
+    for (let row = 0; row < totalRows; row++) {
       for (let col = 0; col < C.gridCols; col++) {
         const i = row * C.gridCols + col;
         const x = gridStartX + col * (gridSlot + gridGap);
-        const y = gridStartY + row * (gridSlot + gridGap) + gridSlot / 2;
+        const y = row * (gridSlot + gridGap) + gridSlot / 2;
         
-        const item = this.items[i];
+        const item = this.items[i] || null;
         this.createGridSlot(x, y, item, i, gridSlot);
       }
     }
+    
+    // МАСКА (видимая область)
+    const maskShape = this.add.graphics();
+    maskShape.fillStyle(0xffffff);
+    maskShape.fillRect(P.x, gridStartY, P.w, visibleH);
+    const mask = maskShape.createGeometryMask();
+    this.gridContainer.setMask(mask);
+    
+    this.container.add(this.gridContainer);
+    
+    // ЗОНА для touch/drag скролла
+    const scrollZone = this.add.zone(P.x + P.w/2, gridStartY + visibleH/2, P.w, visibleH);
+    scrollZone.setInteractive();
+    this.container.add(scrollZone);
+    
+    // Лимиты скролла
+    const minY = gridStartY - (contentH - visibleH); // Максимум вверх
+    const maxY = gridStartY; // Начальная позиция
+    
+    // Переменные для drag
+    let isDragging = false;
+    let dragStartY = 0;
+    let containerStartY = 0;
+    
+    scrollZone.on('pointerdown', (pointer) => {
+      isDragging = true;
+      dragStartY = pointer.y;
+      containerStartY = this.gridContainer.y;
+    });
+    
+    this.input.on('pointermove', (pointer) => {
+      if (!isDragging) return;
+      
+      const deltaY = pointer.y - dragStartY;
+      let newY = containerStartY + deltaY;
+      
+      // Clamp
+      newY = Phaser.Math.Clamp(newY, minY, maxY);
+      this.gridContainer.y = newY;
+    });
+    
+    this.input.on('pointerup', () => {
+      isDragging = false;
+    });
+    
+    // Mouse wheel для ПК
+    this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
+      let newY = this.gridContainer.y - deltaY * 0.5;
+      newY = Phaser.Math.Clamp(newY, minY, maxY);
+      this.gridContainer.y = newY;
+    });
   }
 
   // ============================================================
@@ -558,40 +599,43 @@ class InventoryScene extends Phaser.Scene {
     
     const container = this.add.container(x, y);
     
-    // PNG слот или fallback
+    // 1. ЧЕРНАЯ ПОДЛОЖКА (эффект глубины)
+    const depth = this.add.graphics();
+    depth.fillStyle(0x000000, 1);
+    depth.fillRoundedRect(-size/2 + 6, -size/2 + 6, size - 12, size - 12, 6);
+    container.add(depth);
+    
+    // 2. PNG РАМКА
+    const hasSlotFrame = this.textures.exists('inv_slot_frame');
     let slotBg;
-    if (this.textures.exists('inv_slot')) {
-      slotBg = this.add.image(0, 0, 'inv_slot');
+    
+    if (hasSlotFrame) {
+      slotBg = this.add.image(0, 0, 'inv_slot_frame');
       slotBg.setDisplaySize(size, size);
-      if (!item) {
-        slotBg.setTint(C.slotTintEmpty);
-        slotBg.setAlpha(0.5);
+      
+      // Цветная рамка ТОЛЬКО для редких предметов
+      if (item && item.rarity !== 'common' && C.rarity[item.rarity]?.color) {
+        slotBg.setTint(C.rarity[item.rarity].color);
       }
     } else {
+      // Fallback
       slotBg = this.add.graphics();
-      slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, item ? 1 : 0.5);
+      const borderColor = (item && item.rarity !== 'common') ? C.rarity[item.rarity]?.color || C.border : C.border;
+      slotBg.fillStyle(0x2a2a35, 1);
       slotBg.fillRoundedRect(-size/2, -size/2, size, size, 12);
-      slotBg.lineStyle(6, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
+      slotBg.lineStyle(4, borderColor, 1);
       slotBg.strokeRoundedRect(-size/2, -size/2, size, size, 12);
     }
     container.add(slotBg);
     
-    // Glow
-    if (item && C.rarity[item.rarity]?.glow) {
-      const glow = this.add.graphics();
-      glow.lineStyle(4, C.rarity[item.rarity].glow, 0.5);
-      glow.strokeRoundedRect(-size/2 - 2, -size/2 - 2, size + 4, size + 4, 14);
-      container.add(glow);
-    }
-    
     if (item) {
-      // Иконка
+      // 3. ИКОНКА предмета
       const icon = this.add.text(0, -4, this.ICONS[item.type], {
         fontSize: `${Math.round(size * 0.4)}px`,
       }).setOrigin(0.5);
       container.add(icon);
       
-      // Уровень
+      // 4. Уровень
       const lvl = this.add.text(size/2 - 12, size/2 - 16, item.level, {
         fontFamily: 'Verdana',
         fontSize: '20px',
@@ -601,7 +645,7 @@ class InventoryScene extends Phaser.Scene {
       lvl.setShadow(0, 2, '#000000', 4);
       container.add(lvl);
       
-      // Интерактив
+      // 5. Интерактив
       const hitArea = this.add.rectangle(0, 0, size, size, 0xffffff, 0);
       hitArea.setInteractive({ useHandCursor: true });
       hitArea.on('pointerdown', () => this.showPopup(item, 'equip'));
@@ -610,7 +654,8 @@ class InventoryScene extends Phaser.Scene {
       container.add(hitArea);
     }
     
-    this.container.add(container);
+    // Добавляем в gridContainer (для скролла)
+    this.gridContainer.add(container);
     this.gridSlots.push({ container, slotBg, index });
   }
 
@@ -828,6 +873,15 @@ class InventoryScene extends Phaser.Scene {
       { id: "6", type: "ring1", rarity: "legendary", level: 20, name: "Кольцо Феникса", atk: 30, hp: 200 },
       { id: "7", type: "gloves", rarity: "common", level: 4, name: "Перчатки воина", def: 5 },
       { id: "8", type: "necklace", rarity: "rare", level: 12, name: "Амулет мудрости", hp: 80 },
+      // Дополнительные для скролла
+      { id: "9", type: "offHand", rarity: "uncommon", level: 7, name: "Щит стража", def: 25 },
+      { id: "10", type: "earring1", rarity: "rare", level: 10, name: "Серьга удачи", atk: 8 },
+      { id: "11", type: "mainHand", rarity: "epic", level: 18, name: "Меч бури", atk: 55 },
+      { id: "12", type: "helmet", rarity: "common", level: 2, name: "Кожаный шлем", def: 5 },
+      { id: "13", type: "boots", rarity: "legendary", level: 25, name: "Сапоги ветра", def: 20, atk: 15 },
+      { id: "14", type: "chest", rarity: "uncommon", level: 9, name: "Кольчуга", def: 30 },
+      { id: "15", type: "gloves", rarity: "rare", level: 11, name: "Перчатки вора", atk: 12 },
+      { id: "16", type: "ring2", rarity: "epic", level: 16, name: "Кольцо силы", atk: 25 },
     ];
   }
 }
@@ -837,4 +891,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v13 PNG-TEST loaded');
+console.log('[InventoryScene] v14 SCROLL+PNG loaded');
