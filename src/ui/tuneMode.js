@@ -134,20 +134,46 @@ function initTuneMode(scene, cityBg, heroOffset) {
   });
   overlay.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;">
-      <b>🎮 TUNE MODE</b>
+      <b>🎮 TUNE</b>
       <button id="tune-toggle" style="padding:2px 6px;cursor:pointer;background:#333;color:#0f0;border:1px solid #0f0;border-radius:3px;">−</button>
     </div>
     <div id="tune-content">
       <div>[<span id="tune-sel" style="color:#ff0">bg</span>]</div>
       <hr style="border-color:#333;margin:5px 0">
-      <div id="tune-values" style="line-height:1.4"></div>
+
+      <!-- TOUCH ARROW CONTROLS -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin:8px 0;">
+        <button id="tune-up" style="width:50px;height:35px;font-size:18px;cursor:pointer">⬆</button>
+        <div style="display:flex;gap:2px;">
+          <button id="tune-left" style="width:50px;height:35px;font-size:18px;cursor:pointer">⬅</button>
+          <button id="tune-down" style="width:50px;height:35px;font-size:18px;cursor:pointer">⬇</button>
+          <button id="tune-right" style="width:50px;height:35px;font-size:18px;cursor:pointer">➡</button>
+        </div>
+        <div style="display:flex;gap:2px;margin-top:4px;">
+          <button id="tune-size-down" style="width:50px;height:30px;cursor:pointer">➖</button>
+          <button id="tune-size-up" style="width:50px;height:30px;cursor:pointer">➕</button>
+        </div>
+      </div>
+
+      <!-- ELEMENT SELECTOR -->
+      <div style="display:flex;flex-wrap:wrap;gap:2px;margin:8px 0;">
+        <button class="tune-el" data-el="hpanel" style="padding:4px 6px;font-size:10px;cursor:pointer">Panel</button>
+        <button class="tune-el" data-el="avatar" style="padding:4px 6px;font-size:10px;cursor:pointer">Avatar</button>
+        <button class="tune-el" data-el="ring" style="padding:4px 6px;font-size:10px;cursor:pointer">Ring</button>
+        <button class="tune-el" data-el="darkbg" style="padding:4px 6px;font-size:10px;cursor:pointer">DarkBG</button>
+        <button class="tune-el" data-el="txtLevel" style="padding:4px 6px;font-size:10px;cursor:pointer">Lvl</button>
+        <button class="tune-el" data-el="txtNickname" style="padding:4px 6px;font-size:10px;cursor:pointer">Nick</button>
+        <button class="tune-el" data-el="hero" style="padding:4px 6px;font-size:10px;cursor:pointer">Hero</button>
+        <button class="tune-el" data-el="bg" style="padding:4px 6px;font-size:10px;cursor:pointer">BG</button>
+      </div>
+
       <hr style="border-color:#333;margin:5px 0">
-      <small>↑↓←→: Move 1px | Q/E: Resize | Drag: Move | Click: Teleport</small><br>
-      <small>L,N,R,S,G,A: Texts | -: Ring | B: DarkBG</small>
-      <div style="margin-top:10px;display:flex;gap:5px;">
-        <button id="tune-save" style="flex:1;padding:5px;cursor:pointer">💾 SAVE</button>
-        <button id="tune-reset" style="padding:5px;cursor:pointer">🔄</button>
-        <button id="tune-copy" style="padding:5px;cursor:pointer">📋</button>
+      <div id="tune-values" style="line-height:1.4;font-size:10px;max-height:150px;overflow-y:auto;"></div>
+      <hr style="border-color:#333;margin:5px 0">
+      <div style="margin-top:5px;display:flex;gap:5px;">
+        <button id="tune-save" style="flex:1;padding:8px;cursor:pointer;font-size:14px">💾 SAVE</button>
+        <button id="tune-reset" style="padding:8px;cursor:pointer">🔄</button>
+        <button id="tune-copy" style="padding:8px;cursor:pointer">📋</button>
       </div>
     </div>
   `;
@@ -629,6 +655,31 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-S', () => { selectedElement = 'txtStars'; updateOverlay(); });
   scene.input.keyboard.on('keydown-G', () => { selectedElement = 'txtGems'; updateOverlay(); });
   scene.input.keyboard.on('keydown-A', () => { selectedElement = 'txtAdena'; updateOverlay(); });
+
+  // === TOUCH ARROW CONTROLS (for mobile/iPhone) ===
+  const TOUCH_STEP = 5; // pixels per tap (larger for touch)
+  const TOUCH_SCALE_STEP = 0.05; // scale step for touch
+
+  // Arrow buttons - movement
+  document.getElementById('tune-up').onclick = () => { moveSelected(0, -TOUCH_STEP); };
+  document.getElementById('tune-down').onclick = () => { moveSelected(0, TOUCH_STEP); };
+  document.getElementById('tune-left').onclick = () => { moveSelected(-TOUCH_STEP, 0); };
+  document.getElementById('tune-right').onclick = () => { moveSelected(TOUCH_STEP, 0); };
+
+  // Size buttons
+  document.getElementById('tune-size-up').onclick = () => { scaleSelected(TOUCH_SCALE_STEP); };
+  document.getElementById('tune-size-down').onclick = () => { scaleSelected(-TOUCH_SCALE_STEP); };
+
+  // Element selector buttons
+  document.querySelectorAll('.tune-el').forEach(btn => {
+    btn.onclick = () => {
+      selectedElement = btn.dataset.el;
+      updateOverlay();
+      // Highlight selected button
+      document.querySelectorAll('.tune-el').forEach(b => b.style.background = '');
+      btn.style.background = '#0a0';
+    };
+  });
 
   // Initial update
   setTimeout(updateOverlay, 500);
