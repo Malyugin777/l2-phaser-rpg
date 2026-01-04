@@ -21,17 +21,17 @@ const PLAYER_HEADER_CONFIG = {
     offsetY: 1
   },
 
-  // Avatar settings (bottom layer) - ADJUSTED for safeTop=0
+  // Avatar settings (bottom layer)
   avatar: {
     x: 8,
-    y: 109,        // was 121, -12 more for iPhone
+    y: 79,         // -30 more for iPhone
     scale: 0.82
   },
 
-  // EXP ring settings (middle layer) - ADJUSTED for safeTop=0
+  // EXP ring settings (middle layer)
   expRing: {
     x: -319,
-    y: 109,          // was 121, -12 more
+    y: 79,           // -30 more
     radius: 52,
     thickness: 8,
     color: 0xFFD700,
@@ -42,31 +42,31 @@ const PLAYER_HEADER_CONFIG = {
   // Dark background behind header
   darkBg: {
     x: -10,
-    y: 0,            // starts at top of visible area
+    y: 0,
     width: 900,
     height: 180,
     alpha: 0.92
   },
 
-  // Resource texts - ADJUSTED for safeTop=0
+  // Resource texts
   resources: {
-    energy: { x: -18, y: 107, fontSize: 18 },   // was 119, -12
-    stars:  { x: 95,  y: 106, fontSize: 18 },   // was 118, -12
-    gems:   { x: 200, y: 106, fontSize: 18 },   // was 118, -12
-    adena:  { x: 313, y: 106, fontSize: 18 }    // was 118, -12
+    energy: { x: -18, y: 77, fontSize: 18 },   // -30 more
+    stars:  { x: 95,  y: 76, fontSize: 18 },
+    gems:   { x: 200, y: 76, fontSize: 18 },
+    adena:  { x: 313, y: 76, fontSize: 18 }
   },
 
-  // Level text position - ADJUSTED for safeTop=0
+  // Level text position
   level: {
     x: -271,
-    y: 148,          // was 160, -12
+    y: 118,          // -30 more
     fontSize: 12
   },
 
-  // Nickname text position - ADJUSTED for safeTop=0
+  // Nickname text position
   nickname: {
     x: -244,
-    y: 108,          // was 120, -12
+    y: 78,           // -30 more
     fontSize: 24
   },
 
@@ -163,8 +163,8 @@ function createPlayerHeader(scene) {
   console.log('[PLAYER_HEADER] Ring drawn with Graphics at', ringConfig.x, ringConfig.y);
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
-  // Panel moved up to match text adjustment (was -108, now -120 for iPhone)
-  const panel = scene.add.image(0, -120, 'ui_top_panel');
+  // Panel Y offset for proper positioning
+  const panel = scene.add.image(0, -150, 'ui_top_panel');
   panel.setScale(cfg.panel.scale);
   panel.setOrigin(0.5, 0);  // Top-center origin
   headerContainer.add(panel);

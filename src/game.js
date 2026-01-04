@@ -479,7 +479,7 @@ function setupCleanMode(scene) {
   }
 
   // Version text at bottom-left (account for ENVELOP crop)
-  const BUILD_VERSION = 'v2051';
+  const BUILD_VERSION = 'v2052';
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const versionY = h - cropTop - 150;  // above bottom panel
   const versionText = scene.add.text(cropTop + 10, versionY, BUILD_VERSION, {
@@ -560,7 +560,7 @@ function applyFinalPositions(scene) {
   // Hero position (from tune mode)
   if (window.spineHero) {
     window.spineHero.x = 328;
-    window.spineHero.y = 1453;
+    window.spineHero.y = 1353;  // moved up 100px for iPhone
     window.spineHero.setScale(0.37);
     window.spineHero.setVisible(true);  // Now show hero
   }
