@@ -163,7 +163,7 @@ let arenaPanel, arenaText, arenaFightButton, arenaFightButtonText;
 let arenaBackButton, arenaBackButtonText;
 let dungeonPanel, dungeonPanelText, dungeonStartButton, dungeonStartButtonText;
 
-// Panel states (isInventoryOpen is in inventoryPanel.js)
+// Panel states (inventory now uses InventoryScene)
 let isStatsOpen = false;
 let isForgeOpen = false;
 let isQuestsOpen = false;
@@ -216,6 +216,36 @@ game.events.once("ready", () => {
     console.log('[GAME] InventoryScene added');
   }
 });
+
+// Global stubs for legacy inventory panel calls
+window.hideInventoryPanel = function() {
+  if (game && game.scene) {
+    const mainScene = game.scene.getScene('MainScene');
+    if (mainScene && mainScene.scene.isActive('InventoryScene')) {
+      mainScene.scene.stop('InventoryScene');
+    }
+  }
+};
+window.showInventoryPanel = function() {
+  if (game && game.scene) {
+    const mainScene = game.scene.getScene('MainScene');
+    if (mainScene) {
+      mainScene.scene.launch('InventoryScene');
+    }
+  }
+};
+window.toggleInventoryPanel = function() {
+  if (game && game.scene) {
+    const mainScene = game.scene.getScene('MainScene');
+    if (mainScene) {
+      if (mainScene.scene.isActive('InventoryScene')) {
+        mainScene.scene.stop('InventoryScene');
+      } else {
+        mainScene.scene.launch('InventoryScene');
+      }
+    }
+  }
+};
 
 // ============================================================
 //  HELPER FUNCTIONS
@@ -585,7 +615,7 @@ function fixHeroVisibility(scene) {
 
 function initPanelVariables() {
   // Initialize all panel states
-  isInventoryOpen = false;
+  // isInventoryOpen removed - now handled by InventoryScene
   isStatsOpen = false;
   isForgeOpen = false;
   isQuestsOpen = false;
@@ -765,7 +795,12 @@ function setupNewUIHandlers(scene) {
       if (item.action === "openStats") {
         isStatsOpen ? hideStatsPanel() : (hideAllPanels(), showStatsPanel());
       } else if (item.action === "openInventory") {
-        isInventoryOpen ? hideInventoryPanel() : (hideAllPanels(), showInventoryPanel());
+        // Use InventoryScene instead of old panel
+        if (scene.scene.isActive('InventoryScene')) {
+          scene.scene.stop('InventoryScene');
+        } else {
+          scene.scene.launch('InventoryScene');
+        }
       } else if (item.action === "openQuests") {
         isQuestsOpen ? hideQuestsPanel() : (hideAllPanels(), showQuestsPanel());
       }
