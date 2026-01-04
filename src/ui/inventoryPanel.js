@@ -506,49 +506,47 @@ function initInvTuneMode() {
     }
   });
 
-  // Make tune panel draggable via header - use window level global
-  window._tuneDrag = { active: false, startX: 0, startY: 0, panelX: 10, panelY: 10 };
-
+  // Make tune panel draggable - SIMPLE VERSION
   const tunePanel = document.getElementById('inv-tune-panel');
-  const tuneHeader = document.getElementById('inv-tune-header');
-
-  console.log('[TUNE] Panel found:', !!tunePanel, 'Header found:', !!tuneHeader);
-
-  if (tunePanel && tuneHeader) {
-    // Remove pointer-events block
-    tuneHeader.style.pointerEvents = 'auto';
-    tunePanel.style.pointerEvents = 'auto';
-
-    tuneHeader.addEventListener('mousedown', function(e) {
-      if (e.target.tagName === 'BUTTON') return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      window._tuneDrag.active = true;
-      window._tuneDrag.startX = e.clientX - window._tuneDrag.panelX;
-      window._tuneDrag.startY = e.clientY - window._tuneDrag.panelY;
-      tuneHeader.style.cursor = 'grabbing';
-      console.log('[TUNE] mousedown at', e.clientX, e.clientY);
-    }, true);
-
-    window.addEventListener('mousemove', function(e) {
-      if (!window._tuneDrag.active) return;
-      window._tuneDrag.panelX = e.clientX - window._tuneDrag.startX;
-      window._tuneDrag.panelY = e.clientY - window._tuneDrag.startY;
-      tunePanel.style.left = window._tuneDrag.panelX + 'px';
-      tunePanel.style.top = window._tuneDrag.panelY + 'px';
-    }, true);
-
-    window.addEventListener('mouseup', function() {
-      if (window._tuneDrag.active) {
-        window._tuneDrag.active = false;
-        tuneHeader.style.cursor = 'grab';
-        console.log('[TUNE] mouseup');
-      }
-    }, true);
-
-    console.log('[TUNE] Drag handlers attached with capture=true');
+  if (!tunePanel) {
+    console.error('[TUNE] Panel NOT FOUND!');
+    return;
   }
+
+  let dragActive = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  // Drag на всей панели кроме кнопок
+  tunePanel.onmousedown = function(e) {
+    if (e.target.tagName === 'BUTTON') return;
+    dragActive = true;
+    dragOffsetX = e.clientX - tunePanel.offsetLeft;
+    dragOffsetY = e.clientY - tunePanel.offsetTop;
+    tunePanel.style.cursor = 'grabbing';
+    console.log('[TUNE] DRAG START', e.clientX, e.clientY);
+  };
+
+  document.body.onmousemove = function(e) {
+    if (!dragActive) return;
+    tunePanel.style.left = (e.clientX - dragOffsetX) + 'px';
+    tunePanel.style.top = (e.clientY - dragOffsetY) + 'px';
+  };
+
+  document.body.onmouseup = function() {
+    if (dragActive) {
+      dragActive = false;
+      tunePanel.style.cursor = 'move';
+      console.log('[TUNE] DRAG END');
+    }
+  };
+
+  // Тест: клик на панели
+  tunePanel.onclick = function(e) {
+    console.log('[TUNE] CLICK on panel, target:', e.target.tagName);
+  };
+
+  console.log('[TUNE] Simple drag attached to panel');
 
   // Initial highlight
   if (els.bg) els.bg.classList.add('selected');
