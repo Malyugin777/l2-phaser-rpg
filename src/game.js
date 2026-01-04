@@ -479,7 +479,7 @@ function setupCleanMode(scene) {
   }
 
   // Version text at bottom-left (account for ENVELOP crop)
-  const BUILD_VERSION = 'v2050';
+  const BUILD_VERSION = 'v2051';
   const cropTop = window.ENVELOP_CROP_TOP || 0;
   const versionY = h - cropTop - 150;  // above bottom panel
   const versionText = scene.add.text(cropTop + 10, versionY, BUILD_VERSION, {
@@ -553,7 +553,7 @@ function applyFinalPositions(scene) {
   // Background position
   if (window.cityBg) {
     window.cityBg.x = w / 2;
-    window.cityBg.y = h / 2 + 144;  // ~988 on 1688h screen (offset from center)
+    window.cityBg.y = h / 2 + 100;  // moved up ~44px from previous
     window.cityBg.setScale(0.412);
   }
 

@@ -24,14 +24,14 @@ const PLAYER_HEADER_CONFIG = {
   // Avatar settings (bottom layer) - ADJUSTED for safeTop=0
   avatar: {
     x: 8,
-    y: 121,        // was 229, adjusted -108 for safeTop change
+    y: 109,        // was 121, -12 more for iPhone
     scale: 0.82
   },
 
   // EXP ring settings (middle layer) - ADJUSTED for safeTop=0
   expRing: {
     x: -319,
-    y: 121,          // was 229, adjusted -108
+    y: 109,          // was 121, -12 more
     radius: 52,
     thickness: 8,
     color: 0xFFD700,
@@ -44,29 +44,29 @@ const PLAYER_HEADER_CONFIG = {
     x: -10,
     y: 0,            // starts at top of visible area
     width: 900,
-    height: 180,     // reduced height
+    height: 180,
     alpha: 0.92
   },
 
   // Resource texts - ADJUSTED for safeTop=0
   resources: {
-    energy: { x: -18, y: 119, fontSize: 18 },   // was 227, -108
-    stars:  { x: 95,  y: 118, fontSize: 18 },   // was 226, -108
-    gems:   { x: 200, y: 118, fontSize: 18 },   // was 226, -108
-    adena:  { x: 313, y: 118, fontSize: 18 }    // was 226, -108
+    energy: { x: -18, y: 107, fontSize: 18 },   // was 119, -12
+    stars:  { x: 95,  y: 106, fontSize: 18 },   // was 118, -12
+    gems:   { x: 200, y: 106, fontSize: 18 },   // was 118, -12
+    adena:  { x: 313, y: 106, fontSize: 18 }    // was 118, -12
   },
 
   // Level text position - ADJUSTED for safeTop=0
   level: {
     x: -271,
-    y: 160,          // was 268, -108
+    y: 148,          // was 160, -12
     fontSize: 12
   },
 
   // Nickname text position - ADJUSTED for safeTop=0
   nickname: {
     x: -244,
-    y: 120,          // was 228, -108
+    y: 108,          // was 120, -12
     fontSize: 24
   },
 
@@ -163,8 +163,8 @@ function createPlayerHeader(scene) {
   console.log('[PLAYER_HEADER] Ring drawn with Graphics at', ringConfig.x, ringConfig.y);
 
   // === LAYER 3: PANEL (Top - drawn last, covers edges) ===
-  // Panel moved up by 108 to match text adjustment
-  const panel = scene.add.image(0, -108, 'ui_top_panel');
+  // Panel moved up to match text adjustment (was -108, now -120 for iPhone)
+  const panel = scene.add.image(0, -120, 'ui_top_panel');
   panel.setScale(cfg.panel.scale);
   panel.setOrigin(0.5, 0);  // Top-center origin
   headerContainer.add(panel);
