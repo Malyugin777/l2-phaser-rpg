@@ -58,20 +58,19 @@ function createInventoryOverlay() {
       top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.85);
       display: none;
-      justify-content: center;
-      align-items: center;
       z-index: 9999;
       font-family: Verdana, Arial, sans-serif;
     }
-    .inv-overlay.open { display: flex; }
+    .inv-overlay.open { display: block; }
     
     .inv-panel {
-      width: 380px;
-      max-height: 90vh;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: 100vh;
       background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
-      border-radius: 12px;
-      border: 1px solid #27272a;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       position: relative;
     }
     
@@ -79,8 +78,11 @@ function createInventoryOverlay() {
       padding: 12px 16px 20px;
       background-image: url('assets/ui/Invertory_header.png');
       background-size: 100% 100%;
+      background-color: #18181b;
       border-bottom: 1px solid #27272a;
-      position: relative;
+      position: sticky;
+      top: 0;
+      z-index: 10;
       text-align: center;
     }
     
@@ -172,7 +174,7 @@ function createInventoryOverlay() {
     .inv-grid-title span:last-child { color: #71717a; font-size: 12px; }
     
     .inv-grid {
-      padding: 0 16px 16px;
+      padding: 0 16px 100px;
       display: grid;
       grid-template-columns: repeat(6, 1fr);
       gap: 6px;
