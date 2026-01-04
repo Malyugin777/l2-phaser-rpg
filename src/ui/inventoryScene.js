@@ -89,26 +89,40 @@ class InventoryScene extends Phaser.Scene {
     // ===== ДИНАМИЧЕСКИЙ РАСЧЁТ РАЗМЕРОВ =====
     const contentW = W - C.padding * 2;  // 740
     
-    // Сетка: 6 колонок, подгоняем слот под ширину
-    // gridW = gridCols * gridSlot + (gridCols-1) * gap
-    // gridSlot = (contentW - (gridCols-1) * gap) / gridCols
-    C.gridSlot = Math.floor((contentW - (C.gridCols - 1) * C.gap) / C.gridCols);
-    // 740 - 50 = 690 / 6 = 115 — слишком большие, ограничим
-    C.gridSlot = Math.min(C.gridSlot, 90);  // Макс 90px
+    // СЕТКА: фиксируем размер слота и количество видимых рядов
+    const gridSlotSize = 80;  // Фиксированный размер слота сетки
+    const gridVisibleRows = 2;  // Показываем 2 ряда
+    const gridTitleH = 35;  // Заголовок "Предметы"
+    const gridH = gridTitleH + gridVisibleRows * gridSlotSize + (gridVisibleRows - 1) * C.gap + C.padding;
     
-    // Экип слоты чуть больше
-    C.equipSlot = Math.floor(C.gridSlot * 1.1);  // ~99px, но ограничим
-    C.equipSlot = Math.min(C.equipSlot, 88);
+    // STATS: фиксированная высота
+    const statsH = 55;
     
-    // Герой — занимает центр между колонками
-    // heroBoxW = contentW - 2*equipSlot - 2*gap
-    C.heroBoxW = contentW - C.equipSlot * 2 - C.gap * 4;
-    C.heroBoxW = Math.min(C.heroBoxW, 180);  // Макс 180
-    C.heroBoxH = Math.floor(C.heroBoxW * 1.3);  // Пропорция
+    // HEADER: фиксированная высота
+    const headerH = 65;
+    
+    // EQUIPMENT ZONE: занимает всё остальное
+    const equipZoneH = H - headerH - statsH - gridH - C.padding;
+    
+    // Вычисляем размер equip слота чтобы 6 штук влезли в equipZoneH
+    // 6 слотов + 5 gaps + labels (~18px каждый)
+    const equipSlotWithLabel = (equipZoneH - 5 * 4) / 6;  // gap между слотами = 4
+    const equipSlot = Math.floor(equipSlotWithLabel - 18);  // минус место под label
+    C.equipSlot = Math.min(Math.max(equipSlot, 70), 100);  // Мин 70, макс 100
+    
+    // Герой — занимает центр
+    const heroMargin = C.gap * 2;
+    C.heroBoxW = contentW - C.equipSlot * 2 - heroMargin * 2;
+    C.heroBoxW = Math.min(C.heroBoxW, 200);
+    C.heroBoxH = Math.min(equipZoneH - C.padding * 2, C.heroBoxW * 1.4);
+    
+    // Grid slot
+    C.gridSlot = gridSlotSize;
+    C.gridVisibleRows = gridVisibleRows;
     
     console.log(`[INV] Screen: ${W}×${H}`);
-    console.log(`[INV] ContentW: ${contentW}`);
-    console.log(`[INV] GridSlot: ${C.gridSlot}, EquipSlot: ${C.equipSlot}`);
+    console.log(`[INV] Layout: header=${headerH}, equipZone=${equipZoneH}, stats=${statsH}, grid=${gridH}`);
+    console.log(`[INV] EquipSlot: ${C.equipSlot}, GridSlot: ${C.gridSlot}`);
     console.log(`[INV] HeroBox: ${C.heroBoxW}×${C.heroBoxH}`);
     
     // Контейнер для всего UI
@@ -511,27 +525,33 @@ class InventoryScene extends Phaser.Scene {
     this.container.add(count);
     this.gridCountText = count;
     
-    // ===== СЕТКА — вычисляем чтобы влезла в contentW =====
+    // ===== СЕТКА =====
     const gridStartY = startY + 30;
     const contentW = P.w - C.padding * 2;
+    const gridSlot = C.gridSlot;
     
-    // Пересчитываем gridSlot чтобы точно влез
-    const gridSlot = Math.floor((contentW - (C.gridCols - 1) * C.gap) / C.gridCols);
+    // Центрируем сетку
     const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * C.gap;
-    const gridStartX = P.x + C.padding + gridSlot / 2;
+    const gridOffsetX = (contentW - actualGridW) / 2;
+    const gridStartX = P.x + C.padding + gridOffsetX + gridSlot / 2;
     
-    console.log(`[INV] Grid: slot=${gridSlot}, totalW=${actualGridW}, contentW=${contentW}`);
+    // Количество видимых рядов
+    const rowsToShow = C.gridVisibleRows || 2;
+    
+    console.log(`[INV] Grid: slot=${gridSlot}, rows=${rowsToShow}, width=${actualGridW}`);
     
     this.gridSlots = [];
     
-    for (let i = 0; i < totalSlots; i++) {
-      const col = i % C.gridCols;
-      const row = Math.floor(i / C.gridCols);
-      const x = gridStartX + col * (gridSlot + C.gap);
-      const y = gridStartY + row * (gridSlot + C.gap) + gridSlot / 2;
-      
-      const item = this.items[i];
-      this.createGridSlot(x, y, item, i, gridSlot);
+    // Рисуем видимые ряды
+    for (let row = 0; row < rowsToShow; row++) {
+      for (let col = 0; col < C.gridCols; col++) {
+        const i = row * C.gridCols + col;
+        const x = gridStartX + col * (gridSlot + C.gap);
+        const y = gridStartY + row * (gridSlot + C.gap) + gridSlot / 2;
+        
+        const item = this.items[i];
+        this.createGridSlot(x, y, item, i, gridSlot);
+      }
     }
   }
 
