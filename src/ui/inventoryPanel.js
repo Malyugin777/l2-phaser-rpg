@@ -527,19 +527,22 @@ function initInvTuneMode() {
     console.log('[TUNE] DRAG START', e.clientX, e.clientY);
   };
 
-  document.body.onmousemove = function(e) {
+  document.addEventListener('mousemove', function(e) {
     if (!dragActive) return;
-    tunePanel.style.left = (e.clientX - dragOffsetX) + 'px';
-    tunePanel.style.top = (e.clientY - dragOffsetY) + 'px';
-  };
+    const newX = e.clientX - dragOffsetX;
+    const newY = e.clientY - dragOffsetY;
+    tunePanel.style.left = newX + 'px';
+    tunePanel.style.top = newY + 'px';
+    console.log('[TUNE] MOVE', newX, newY);
+  });
 
-  document.body.onmouseup = function() {
+  document.addEventListener('mouseup', function() {
     if (dragActive) {
       dragActive = false;
       tunePanel.style.cursor = 'move';
       console.log('[TUNE] DRAG END');
     }
-  };
+  });
 
   // Тест: клик на панели
   tunePanel.onclick = function(e) {
