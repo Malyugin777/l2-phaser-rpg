@@ -1,810 +1,797 @@
 "use strict";
 
 // ============================================================
-//  INVENTORY SCENE v4 — Visual RPG (Textures + Spine Hero)
-//  Phaser Scene с текстурами хедера и Spine-персонажем
+//  INVENTORY SCENE — FINAL v8
+//  Phaser Native | L2 Dark Fantasy | PNG Slots | Spine Hero
+//  
+//  Запуск: scene.launch('InventoryScene')
+//  Закрытие: scene.stop('InventoryScene')
 // ============================================================
 
 class InventoryScene extends Phaser.Scene {
   constructor() {
     super({ key: 'InventoryScene' });
-
-    this.equippedItems = {};
-    this.inventoryItems = [
-      { id: "1", name: "Iron Sword", type: "mainHand", rarity: "common", level: 5, attack: 25 },
-      { id: "2", name: "Mystic Helm", type: "helmet", rarity: "rare", level: 8, defense: 15, hp: 50 },
-      { id: "3", name: "Leather Boots", type: "boots", rarity: "uncommon", level: 3, defense: 8 },
-      { id: "4", name: "Dragon Blade", type: "mainHand", rarity: "epic", level: 15, attack: 85 },
-      { id: "5", name: "Steel Plate", type: "chest", rarity: "uncommon", level: 6, defense: 30 },
-      { id: "6", name: "Magic Ring", type: "ring1", rarity: "rare", level: 10, hp: 100 },
-      { id: "7", name: "Warrior Gloves", type: "gloves", rarity: "common", level: 4, defense: 5 },
-      { id: "8", name: "Phoenix Armor", type: "chest", rarity: "epic", level: 20, defense: 65, hp: 200 },
-    ];
-
+    
+    // ===== КОНФИГ L2 STYLE =====
+    this.CFG = {
+      // Размеры слотов
+      equipSlot: 72,
+      gridSlot: 56,
+      gridCols: 6,
+      gridRows: 4,
+      gap: 8,
+      padding: 16,
+      
+      // Цвета L2 Dark Fantasy (hex для Phaser)
+      bgTop: 0x232730,
+      bgBottom: 0x0f1116,
+      panelBg: 0x1a1d24,
+      footerBg: 0x111318,
+      border: 0x4b5563,
+      borderLight: 0x6b7280,
+      
+      // Текст
+      textColor: '#e2e8f0',
+      textMuted: '#64748b',
+      gold: '#D6B36A',
+      blue: '#4FA3FF',
+      red: '#E05252',
+      
+      // Tint для слотов
+      slotTintEmpty: 0x667788,
+      slotTintFilled: 0xffffff,
+      
+      // Редкость
+      rarity: {
+        common:    { color: 0x4b5563, glow: null },
+        uncommon:  { color: 0x22c55e, glow: 0x22c55e },
+        rare:      { color: 0x3b82f6, glow: 0x3b82f6 },
+        epic:      { color: 0xa855f7, glow: 0xa855f7 },
+        legendary: { color: 0xD6B36A, glow: 0xD6B36A },
+      }
+    };
+    
+    // Данные
+    this.ICONS = {
+      helmet: "⛑️", chest: "🎽", pants: "👖", gloves: "🧤",
+      boots: "👢", mainHand: "🗡️", offHand: "🛡️", necklace: "📿",
+      earring1: "💎", earring2: "💎", ring1: "💍", ring2: "💍"
+    };
+    
+    this.LABELS = {
+      helmet: "Шлем", chest: "Броня", pants: "Штаны", gloves: "Перчатки",
+      boots: "Ботинки", mainHand: "Оружие", offHand: "Щит", necklace: "Ожерелье",
+      earring1: "Серьга", earring2: "Серьга", ring1: "Кольцо", ring2: "Кольцо"
+    };
+    
+    // Состояние
+    this.items = [];
+    this.equipped = {};
+    this.slotSprites = {};
+    this.gridSlots = [];
     this.selectedItem = null;
-    this.popup = null;
-
-    // Tune mode (press T to toggle)
-    this.tuneMode = false;
-    this.tunableElements = [];
-    this.selectedElement = null;
   }
 
-  preload() {
-    // Load textures
-    if (!this.textures.exists('inv_slot')) {
-      this.load.image('inv_slot', 'assets/ui/invertory_slot_frame.png');
-    }
-    if (!this.textures.exists('inv_close')) {
-      this.load.image('inv_close', 'assets/ui/btn_close.png');
-    }
-    if (!this.textures.exists('inv_header')) {
-      this.load.image('inv_header', 'assets/ui/Invertory_header.png');
-    }
+  // ============================================================
+  //  INIT — получаем данные извне
+  // ============================================================
+  init(data) {
+    this.items = data?.items || this.getTestItems();
+    this.equipped = data?.equipped || {};
   }
 
+  // ============================================================
+  //  CREATE — строим UI
+  // ============================================================
   create() {
     const W = this.scale.width;
     const H = this.scale.height;
-
-    console.log('[INV_SCENE] Creating v4 Visual, size:', W, 'x', H);
-
-    // ========== CONFIG ==========
-    this.CFG = {
-      dimmerAlpha: 0.85,
-
-      rarityColors: {
-        common:   { color: 0x9ca3af },
-        uncommon: { color: 0x22c55e },
-        rare:     { color: 0x3b82f6 },
-        epic:     { color: 0xa855f7 },
-        legendary:{ color: 0xf59e0b }
-      },
-
-      // Layout
-      panelPadding: 20,
-      headerHeight: 100,
-      equipZoneHeight: 520,
-      statsBarHeight: 50,
-
-      // Slots
-      equipSlotSize: 80,
-      equipSlotGap: 12,
-      gridSlotSize: 72,
-      gridCols: 6,
-      gridRows: 4,
-      gridGap: 8,
-
-      // Positions
-      leftColX: W * 0.15,
-      rightColX: W * 0.85,
-      centerX: W / 2,
-    };
-
-    // Panel bounds
-    const panelW = W - 40;
-    const panelH = H * 0.88;
-    const panelX = W / 2;
-    const panelY = H / 2;
-
-    this.panelBounds = {
-      x: panelX - panelW / 2,
-      y: panelY - panelH / 2,
-      w: panelW,
-      h: panelH
-    };
-
-    // Derived positions
-    this.CFG.headerY = this.panelBounds.y;
-    this.CFG.equipZoneY = this.panelBounds.y + this.CFG.headerHeight;
-    this.CFG.statsBarY = this.CFG.equipZoneY + this.CFG.equipZoneHeight;
-    this.CFG.gridStartY = this.CFG.statsBarY + this.CFG.statsBarHeight + 30;
-
-    // ========== 1. DIMMER ==========
-    this.dimmer = this.add.rectangle(W/2, H/2, W, H, 0x000000, this.CFG.dimmerAlpha);
-    this.dimmer.setInteractive();
-    this.dimmer.on('pointerdown', (ptr) => {
-      if (ptr.y > this.CFG.gridStartY + 350) {
-        this.closeInventory();
-      }
-    });
-
-    // ========== 2. MAIN CONTAINER ==========
-    this.mainContainer = this.add.container(0, 0);
-
-    // ========== 3. VISUAL PANEL ==========
-    this.createVisualPanel(W, H);
-
-    // ========== 4. EQUIPMENT SLOTS ==========
-    this.createEquipmentSlots(W);
-
-    // ========== 5. HERO PREVIEW ==========
-    this.createHeroPreview(W);
-
-    // ========== 6. STATS BAR ==========
+    const C = this.CFG;
+    
+    // Контейнер для всего UI
+    this.container = this.add.container(0, 0);
+    
+    // 1. Затемнение фона
+    this.createDimmer(W, H);
+    
+    // 2. Основная панель с градиентом
+    this.createMainPanel(W, H);
+    
+    // 3. Header
+    this.createHeader(W);
+    
+    // 4. Зона экипировки + герой
+    this.createEquipmentZone(W);
+    
+    // 5. Статы
     this.createStatsBar(W);
-
-    // ========== 7. INVENTORY GRID ==========
-    this.createInventoryGrid(W, H);
-
-    // ========== 8. INPUT ==========
-    this.setupInput();
-
-    // ========== 9. TUNE MODE ==========
-    if (this.tuneMode) {
-      this.setupTuneMode();
-    }
-
-    console.log('[INV_SCENE] v4 Created successfully');
+    
+    // 6. Сетка предметов
+    this.createGrid(W, H);
+    
+    // 7. Popup (скрыт по умолчанию)
+    this.createPopup(W, H);
+    
+    // Кнопка закрытия по Escape
+    this.input.keyboard.on('keydown-ESC', () => this.closeInventory());
+    
+    console.log('[InventoryScene] Created');
   }
 
   // ============================================================
-  //  VISUAL PANEL (with textures)
+  //  DIMMER — затемнение
   // ============================================================
-  createVisualPanel(W, H) {
-    const pb = this.panelBounds;
+  createDimmer(W, H) {
+    this.dimmer = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85);
+    this.dimmer.setInteractive();
+    this.dimmer.on('pointerdown', () => this.closeInventory());
+    this.container.add(this.dimmer);
+  }
 
-    // ===== MAIN BACKGROUND =====
-    this.panelBg = this.add.graphics();
+  // ============================================================
+  //  MAIN PANEL — градиентный фон
+  // ============================================================
+  createMainPanel(W, H) {
+    const C = this.CFG;
+    const panelW = Math.min(W * 0.94, 400);
+    const panelH = H * 0.88;
+    const panelX = (W - panelW) / 2;
+    const panelY = (H - panelH) / 2;
+    
+    this.panelBounds = { x: panelX, y: panelY, w: panelW, h: panelH };
+    
+    // Фон с градиентом
+    const bg = this.add.graphics();
+    
+    // Градиент сверху вниз
+    bg.fillGradientStyle(C.bgTop, C.bgTop, C.bgBottom, C.bgBottom, 1);
+    bg.fillRoundedRect(panelX, panelY, panelW, panelH, 16);
+    
+    // Рамка
+    bg.lineStyle(4, C.border, 1);
+    bg.strokeRoundedRect(panelX, panelY, panelW, panelH, 16);
+    
+    // Внутренний блик сверху
+    bg.lineStyle(1, 0xffffff, 0.05);
+    bg.strokeRoundedRect(panelX + 2, panelY + 2, panelW - 4, panelH - 4, 14);
+    
+    this.container.add(bg);
+    this.panelBg = bg;
+    
+    // Блокируем клики на панели (чтобы не закрывалось)
+    const blocker = this.add.rectangle(panelX + panelW/2, panelY + panelH/2, panelW, panelH, 0x000000, 0);
+    blocker.setInteractive();
+    this.container.add(blocker);
+  }
 
-    // Dark fill with rounded corners
-    this.panelBg.fillStyle(0x0d0d12, 0.95);
-    this.panelBg.fillRoundedRect(pb.x, pb.y, pb.w, pb.h, 16);
-
-    // Gold/bronze stroke
-    this.panelBg.lineStyle(3, 0x8b7355, 1);
-    this.panelBg.strokeRoundedRect(pb.x, pb.y, pb.w, pb.h, 16);
-
-    // Inner glow line
-    this.panelBg.lineStyle(1, 0x3f3f46, 0.5);
-    this.panelBg.strokeRoundedRect(pb.x + 4, pb.y + 4, pb.w - 8, pb.h - 8, 12);
-
-    this.mainContainer.add(this.panelBg);
-
-    // ===== HEADER IMAGE =====
-    if (this.textures.exists('inv_header')) {
-      this.header = this.add.image(W / 2, pb.y + 50, 'inv_header');
-      this.header.setDisplaySize(pb.w - 20, this.CFG.headerHeight);
-      this.mainContainer.add(this.header);
-      this.registerTunable(this.header, 'header');
-    }
-
-    // ===== TITLE TEXT (over header) =====
-    this.title = this.add.text(W / 2, pb.y + 50, 'ИНВЕНТАРЬ', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '28px',
+  // ============================================================
+  //  HEADER
+  // ============================================================
+  createHeader(W) {
+    const C = this.CFG;
+    const P = this.panelBounds;
+    const headerH = 60;
+    
+    // Фон хедера
+    const headerBg = this.add.graphics();
+    headerBg.fillGradientStyle(0x2a2f3a, 0x2a2f3a, C.panelBg, C.panelBg, 1);
+    headerBg.fillRoundedRect(P.x, P.y, P.w, headerH, { tl: 16, tr: 16, bl: 0, br: 0 });
+    
+    // Линия снизу
+    headerBg.lineStyle(3, C.border, 1);
+    headerBg.lineBetween(P.x, P.y + headerH, P.x + P.w, P.y + headerH);
+    this.container.add(headerBg);
+    
+    // Заголовок
+    const title = this.add.text(P.x + C.padding, P.y + 16, 'ИНВЕНТАРЬ', {
+      fontFamily: 'Verdana, Arial',
+      fontSize: '18px',
       fontStyle: 'bold',
-      color: '#ffd700',
-      stroke: '#000000',
-      strokeThickness: 4,
-      shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 4, fill: true }
-    }).setOrigin(0.5);
-    this.mainContainer.add(this.title);
-    this.registerTunable(this.title, 'title');
-
-    // ===== CLOSE BUTTON =====
-    const closeX = pb.x + pb.w - 45;
-    const closeY = pb.y + 50;
-
-    if (this.textures.exists('inv_close')) {
-      this.closeBtn = this.add.image(closeX, closeY, 'inv_close');
-      this.closeBtn.setDisplaySize(40, 40);
+      color: C.gold,
+    });
+    title.setShadow(0, 2, '#000000', 4);
+    this.container.add(title);
+    
+    // Подзаголовок
+    const subtitle = this.add.text(P.x + C.padding, P.y + 38, 'Warrior • Lv.42', {
+      fontFamily: 'Verdana',
+      fontSize: '11px',
+      color: C.textMuted,
+    });
+    this.container.add(subtitle);
+    
+    // Кнопка закрытия (PNG)
+    if (this.textures.exists('btn_close')) {
+      const closeBtn = this.add.image(P.x + P.w - 28, P.y + 30, 'btn_close');
+      closeBtn.setDisplaySize(36, 36);
+      closeBtn.setInteractive({ useHandCursor: true });
+      closeBtn.on('pointerdown', () => this.closeInventory());
+      closeBtn.on('pointerover', () => closeBtn.setScale(1.1));
+      closeBtn.on('pointerout', () => closeBtn.setScale(1));
+      this.container.add(closeBtn);
     } else {
-      this.closeBtn = this.add.text(closeX, closeY, '✕', {
-        fontSize: '32px',
-        color: '#ff6b6b',
-        fontStyle: 'bold'
+      // Fallback — рисуем кнопку
+      const closeBtn = this.add.graphics();
+      closeBtn.fillStyle(0xdc2626, 1);
+      closeBtn.fillCircle(P.x + P.w - 28, P.y + 30, 16);
+      closeBtn.lineStyle(2, 0xef4444, 1);
+      closeBtn.strokeCircle(P.x + P.w - 28, P.y + 30, 16);
+      this.container.add(closeBtn);
+      
+      const closeX = this.add.text(P.x + P.w - 28, P.y + 30, '✕', {
+        fontSize: '16px',
+        color: '#ffffff',
       }).setOrigin(0.5);
+      closeX.setInteractive({ useHandCursor: true });
+      closeX.on('pointerdown', () => this.closeInventory());
+      this.container.add(closeX);
     }
-
-    this.closeBtn.setInteractive({ useHandCursor: true });
-    this.closeBtn.on('pointerdown', () => this.closeInventory());
-    this.closeBtn.on('pointerover', () => this.closeBtn.setScale(1.2));
-    this.closeBtn.on('pointerout', () => this.closeBtn.setScale(1.0));
-    this.mainContainer.add(this.closeBtn);
-
-    // ===== SEPARATOR LINE =====
-    const sepY = this.CFG.equipZoneY;
-    this.separator = this.add.graphics();
-    this.separator.lineStyle(2, 0x5a4a3a, 0.8);
-    this.separator.lineBetween(pb.x + 30, sepY, pb.x + pb.w - 30, sepY);
-    this.mainContainer.add(this.separator);
+    
+    this.headerH = headerH;
   }
 
   // ============================================================
-  //  EQUIPMENT SLOTS
+  //  EQUIPMENT ZONE — слоты + герой
   // ============================================================
-  createEquipmentSlots(W) {
-    const cfg = this.CFG;
-    const startY = cfg.equipZoneY + 30;
-    const slotSize = cfg.equipSlotSize;
-    const gap = cfg.equipSlotGap;
-
+  createEquipmentZone(W) {
+    const C = this.CFG;
+    const P = this.panelBounds;
+    const startY = P.y + this.headerH + C.padding;
+    
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
-
-    const labels = {
-      helmet: 'Шлем', chest: 'Броня', pants: 'Штаны', gloves: 'Перчатки',
-      boots: 'Ботинки', mainHand: 'Оружие', offHand: 'Щит', necklace: 'Ожерелье',
-      earring1: 'Серьга', earring2: 'Серьга', ring1: 'Кольцо', ring2: 'Кольцо'
-    };
-
-    const icons = {
-      helmet: '🪖', chest: '🛡️', pants: '👖', gloves: '🧤',
-      boots: '👢', mainHand: '⚔️', offHand: '🛡️', necklace: '📿',
-      earring1: '💎', earring2: '💎', ring1: '💍', ring2: '💍'
-    };
-
-    this.equipSlots = {};
-
-    // Left column
+    
+    // Левая колонка
+    const leftX = P.x + C.padding + C.equipSlot/2;
     leftSlots.forEach((type, i) => {
-      const x = cfg.leftColX;
-      const y = startY + i * (slotSize + gap);
-      this.equipSlots[type] = this.createEquipSlot(x, y, type, labels[type], icons[type]);
+      const y = startY + i * (C.equipSlot + 4) + C.equipSlot/2;
+      this.createEquipSlot(leftX, y, type);
     });
-
-    // Right column
+    
+    // Правая колонка
+    const rightX = P.x + P.w - C.padding - C.equipSlot/2;
     rightSlots.forEach((type, i) => {
-      const x = cfg.rightColX;
-      const y = startY + i * (slotSize + gap);
-      this.equipSlots[type] = this.createEquipSlot(x, y, type, labels[type], icons[type]);
+      const y = startY + i * (C.equipSlot + 4) + C.equipSlot/2;
+      this.createEquipSlot(rightX, y, type);
     });
+    
+    // Центр — герой
+    const centerX = P.x + P.w/2;
+    const centerY = startY + (6 * (C.equipSlot + 4)) / 2;
+    this.createHeroPreview(centerX, centerY);
+    
+    this.equipZoneEndY = startY + 6 * (C.equipSlot + 4) + C.padding;
   }
 
-  createEquipSlot(x, y, type, label, icon) {
-    const size = this.CFG.equipSlotSize;
+  // ============================================================
+  //  EQUIP SLOT — PNG с tint
+  // ============================================================
+  createEquipSlot(x, y, type) {
+    const C = this.CFG;
+    const item = this.equipped[type];
+    
+    // Контейнер слота
     const container = this.add.container(x, y);
-
-    // Slot background - NO tint, original texture
+    
+    // PNG слот или fallback
     let slotBg;
     if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
-      slotBg.setDisplaySize(size, size);
-      // Light tint for visibility on dark bg
-      slotBg.setTint(0xbbbbbb);
+      slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
+      // Тонируем пустые слоты
+      if (!item) {
+        slotBg.setTint(C.slotTintEmpty);
+      }
     } else {
-      slotBg = this.add.rectangle(0, 0, size, size, 0x2a2a35);
-      slotBg.setStrokeStyle(2, 0x5a5a6a);
+      // Fallback — рисуем
+      slotBg = this.add.graphics();
+      slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, 1);
+      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 8);
+      slotBg.lineStyle(3, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
+      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 8);
     }
     container.add(slotBg);
-
-    // Icon
-    const iconText = this.add.text(0, 0, icon, {
-      fontSize: '32px'
-    }).setOrigin(0.5).setAlpha(0.4);
-    container.add(iconText);
-
-    // Label
-    const labelText = this.add.text(0, size / 2 + 12, label, {
-      fontFamily: 'Verdana',
-      fontSize: '11px',
-      color: '#a0a0a0'
+    
+    // Glow для редкости
+    if (item && C.rarity[item.rarity]?.glow) {
+      const glow = this.add.graphics();
+      glow.lineStyle(2, C.rarity[item.rarity].glow, 0.6);
+      glow.strokeRoundedRect(-C.equipSlot/2 - 2, -C.equipSlot/2 - 2, C.equipSlot + 4, C.equipSlot + 4, 10);
+      container.add(glow);
+    }
+    
+    // Иконка
+    const icon = this.add.text(0, -4, this.ICONS[type], {
+      fontSize: `${Math.round(C.equipSlot * 0.4)}px`,
     }).setOrigin(0.5);
-    container.add(labelText);
-
-    // Interactive
-    slotBg.setInteractive({ useHandCursor: true });
-    slotBg.on('pointerover', () => {
-      slotBg.setTint(0xffffff);
-      container.setScale(1.08);
+    icon.setAlpha(item ? 1 : 0.35);
+    container.add(icon);
+    
+    // Уровень предмета
+    if (item) {
+      const lvl = this.add.text(C.equipSlot/2 - 8, C.equipSlot/2 - 12, item.level, {
+        fontFamily: 'Verdana',
+        fontSize: '11px',
+        fontStyle: 'bold',
+        color: C.gold,
+      }).setOrigin(0.5);
+      lvl.setShadow(0, 1, '#000000', 3);
+      container.add(lvl);
+    }
+    
+    // Подпись
+    const label = this.add.text(0, C.equipSlot/2 + 10, this.LABELS[type], {
+      fontFamily: 'Verdana',
+      fontSize: '9px',
+      color: C.textMuted,
+    }).setOrigin(0.5);
+    container.add(label);
+    
+    // Интерактив
+    const hitArea = this.add.rectangle(0, 0, C.equipSlot, C.equipSlot, 0xffffff, 0);
+    hitArea.setInteractive({ useHandCursor: true });
+    hitArea.on('pointerdown', () => {
+      if (item) this.showPopup(item, 'unequip');
     });
-    slotBg.on('pointerout', () => {
-      slotBg.setTint(0xbbbbbb);
-      container.setScale(1.0);
-    });
-    slotBg.on('pointerdown', () => this.onEquipSlotClick(type));
-
-    this.mainContainer.add(container);
-    this.registerTunable(container, `slot_${type}`);
-
-    return { container, bg: slotBg, icon: iconText, label: labelText, type, item: null };
+    hitArea.on('pointerover', () => container.setScale(1.05));
+    hitArea.on('pointerout', () => container.setScale(1));
+    container.add(hitArea);
+    
+    this.container.add(container);
+    this.slotSprites[type] = { container, slotBg, icon };
   }
 
   // ============================================================
-  //  HERO PREVIEW (Spine)
+  //  HERO PREVIEW — Spine или fallback
   // ============================================================
-  createHeroPreview(W) {
-    const cfg = this.CFG;
-    const centerY = cfg.equipZoneY + cfg.equipZoneHeight / 2 + 20;
-
-    // Background frame
-    const frameW = 180;
-    const frameH = 320;
-
-    this.heroFrame = this.add.graphics();
-    this.heroFrame.fillStyle(0x0a0a10, 0.6);
-    this.heroFrame.fillRoundedRect(W/2 - frameW/2, centerY - frameH/2, frameW, frameH, 12);
-    this.heroFrame.lineStyle(2, 0x4a4a5a, 0.8);
-    this.heroFrame.strokeRoundedRect(W/2 - frameW/2, centerY - frameH/2, frameW, frameH, 12);
-    this.mainContainer.add(this.heroFrame);
-
-    // Shadow under hero
-    const shadow = this.add.ellipse(W / 2, centerY + 130, 100, 25, 0x000000, 0.5);
-    this.mainContainer.add(shadow);
-
-    // Try to add Spine hero
-    try {
-      if (this.cache.custom && this.cache.custom.spine && this.cache.custom.spine.has('hero')) {
-        this.heroSpine = this.add.spine(W / 2, centerY + 80, 'hero', 'idle', true);
-        this.heroSpine.setScale(0.7);
-        this.mainContainer.add(this.heroSpine);
-        this.registerTunable(this.heroSpine, 'heroSpine');
-        console.log('[INV] Spine hero added');
-      } else {
-        // Fallback - text placeholder
-        this.heroPlaceholder = this.add.text(W / 2, centerY, '⚔️', {
-          fontSize: '80px'
-        }).setOrigin(0.5).setAlpha(0.5);
-        this.mainContainer.add(this.heroPlaceholder);
-        console.log('[INV] Spine not available, using placeholder');
+  createHeroPreview(x, y) {
+    const C = this.CFG;
+    const boxW = 110;
+    const boxH = 140;
+    
+    // Фон
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(0x1e222a, 0x1e222a, 0x12151a, 0x12151a, 1);
+    bg.fillRoundedRect(x - boxW/2, y - boxH/2, boxW, boxH, 12);
+    bg.lineStyle(3, C.border, 1);
+    bg.strokeRoundedRect(x - boxW/2, y - boxH/2, boxW, boxH, 12);
+    this.container.add(bg);
+    
+    // Подиум (тень под ногами)
+    const pedestal = this.add.graphics();
+    pedestal.fillStyle(0x000000, 0.5);
+    pedestal.fillEllipse(x, y + boxH/2 - 20, 60, 15);
+    this.container.add(pedestal);
+    
+    // Spine герой или emoji fallback
+    if (this.game.cache?.custom?.spine?.has('hero') || this.cache?.custom?.spine?.get('hero')) {
+      try {
+        this.heroSpine = this.add.spine(x, y + 30, 'hero', 'idle', true);
+        this.heroSpine.setScale(0.18);
+        this.container.add(this.heroSpine);
+      } catch (e) {
+        console.warn('[INV] Spine hero failed, using fallback');
+        this.createHeroFallback(x, y);
       }
-    } catch (e) {
-      console.log('[INV] Spine error:', e.message);
-      this.heroPlaceholder = this.add.text(W / 2, centerY, '🛡️', {
-        fontSize: '80px'
-      }).setOrigin(0.5).setAlpha(0.5);
-      this.mainContainer.add(this.heroPlaceholder);
+    } else {
+      this.createHeroFallback(x, y);
     }
-
-    this.charPreview = { frame: this.heroFrame, shadow };
+    
+    // Имя и уровень
+    const name = this.add.text(x, y + boxH/2 - 35, 'Warrior', {
+      fontFamily: 'Verdana',
+      fontSize: '11px',
+      fontStyle: 'bold',
+      color: C.blue,
+    }).setOrigin(0.5);
+    this.container.add(name);
+    
+    const level = this.add.text(x, y + boxH/2 - 20, 'Уровень 42', {
+      fontFamily: 'Verdana',
+      fontSize: '9px',
+      color: C.textMuted,
+    }).setOrigin(0.5);
+    this.container.add(level);
+  }
+  
+  createHeroFallback(x, y) {
+    const emoji = this.add.text(x, y - 10, '🧙‍♂️', {
+      fontSize: '50px',
+    }).setOrigin(0.5);
+    this.container.add(emoji);
   }
 
   // ============================================================
   //  STATS BAR
   // ============================================================
   createStatsBar(W) {
-    const y = this.CFG.statsBarY + this.CFG.statsBarHeight / 2;
-    const barW = this.panelBounds.w - 60;
-    const barH = this.CFG.statsBarHeight;
-
-    // Background
-    const statsBg = this.add.rectangle(W / 2, y, barW, barH, 0x1a1a22, 0.9);
-    statsBg.setStrokeStyle(1, 0x4a4a5a);
-    this.mainContainer.add(statsBg);
-
-    // Stats
+    const C = this.CFG;
+    const P = this.panelBounds;
+    const barH = 50;
+    const y = this.equipZoneEndY;
+    
+    // Фон
+    const bg = this.add.graphics();
+    bg.fillStyle(C.footerBg, 1);
+    bg.fillRect(P.x, y, P.w, barH);
+    bg.lineStyle(1, 0x1f2937, 1);
+    bg.lineBetween(P.x, y, P.x + P.w, y);
+    bg.lineBetween(P.x, y + barH, P.x + P.w, y + barH);
+    this.container.add(bg);
+    
+    // Статы
     const stats = this.calculateStats();
-
-    const statsText = this.add.text(W / 2, y,
-      `❤️ ${stats.hp}      ⚔️ ${stats.atk}      🛡️ ${stats.def}`, {
-      fontFamily: 'Verdana',
-      fontSize: '18px',
-      fontStyle: 'bold',
-      color: '#e8e8e8'
-    }).setOrigin(0.5);
-    this.mainContainer.add(statsText);
-
-    this.statsBar = { bg: statsBg, text: statsText };
+    const statsData = [
+      { icon: '❤️', value: stats.hp, label: 'HP', color: C.red },
+      { icon: '⚔️', value: stats.atk, label: 'ATK', color: C.gold },
+      { icon: '🛡️', value: stats.def, label: 'DEF', color: C.blue },
+    ];
+    
+    const statW = P.w / 3;
+    statsData.forEach((stat, i) => {
+      const sx = P.x + statW * i + statW/2;
+      const sy = y + barH/2;
+      
+      const val = this.add.text(sx, sy - 6, `${stat.icon} ${stat.value}`, {
+        fontFamily: 'Verdana',
+        fontSize: '15px',
+        fontStyle: 'bold',
+        color: stat.color,
+      }).setOrigin(0.5);
+      val.setShadow(0, 1, '#000000', 2);
+      this.container.add(val);
+      
+      const lbl = this.add.text(sx, sy + 12, stat.label, {
+        fontFamily: 'Verdana',
+        fontSize: '9px',
+        color: C.textMuted,
+      }).setOrigin(0.5);
+      this.container.add(lbl);
+    });
+    
+    this.statsBarEndY = y + barH;
   }
-
+  
   calculateStats() {
     let hp = 850, atk = 120, def = 75;
-    Object.values(this.equippedItems).forEach(item => {
+    Object.values(this.equipped).forEach(item => {
       if (item) {
         hp += item.hp || 0;
-        atk += item.attack || 0;
-        def += item.defense || 0;
+        atk += item.atk || 0;
+        def += item.def || 0;
       }
     });
     return { hp, atk, def };
   }
 
-  updateStatsDisplay() {
-    const stats = this.calculateStats();
-    this.statsBar.text.setText(`❤️ ${stats.hp}      ⚔️ ${stats.atk}      🛡️ ${stats.def}`);
-  }
-
   // ============================================================
-  //  INVENTORY GRID
+  //  GRID — сетка предметов
   // ============================================================
-  createInventoryGrid(W, H) {
-    const cfg = this.CFG;
-    const startY = cfg.gridStartY;
-    const slotSize = cfg.gridSlotSize;
-    const gap = cfg.gridGap;
-    const cols = cfg.gridCols;
-    const rows = cfg.gridRows;
-
-    const gridW = cols * slotSize + (cols - 1) * gap;
-    const startX = (W - gridW) / 2 + slotSize / 2;
-
-    // Title
-    const titleY = startY - 30;
-    const gridTitle = this.add.text(this.panelBounds.x + 30, titleY, 'Предметы', {
-      fontFamily: 'Georgia',
-      fontSize: '18px',
-      fontStyle: 'bold',
-      color: '#d4af37'
-    });
-    this.mainContainer.add(gridTitle);
-
-    const countText = this.add.text(this.panelBounds.x + this.panelBounds.w - 30, titleY,
-      `${this.inventoryItems.length} шт`, {
+  createGrid(W, H) {
+    const C = this.CFG;
+    const P = this.panelBounds;
+    const startY = this.statsBarEndY + C.padding;
+    
+    // Заголовок
+    const title = this.add.text(P.x + C.padding, startY, 'Предметы', {
       fontFamily: 'Verdana',
       fontSize: '13px',
-      color: '#808080'
+      fontStyle: 'bold',
+      color: C.textColor,
+    });
+    this.container.add(title);
+    
+    const count = this.add.text(P.x + P.w - C.padding, startY, `${this.items.length}/24`, {
+      fontFamily: 'Verdana',
+      fontSize: '11px',
+      color: C.textMuted,
     }).setOrigin(1, 0);
-    this.mainContainer.add(countText);
-    this.gridCountText = countText;
-
-    // Grid slots
+    this.container.add(count);
+    this.gridCountText = count;
+    
+    // Сетка
+    const gridStartY = startY + 28;
+    const totalSlots = C.gridCols * C.gridRows;
+    const gridW = C.gridCols * C.gridSlot + (C.gridCols - 1) * C.gap;
+    const gridStartX = P.x + (P.w - gridW) / 2 + C.gridSlot/2;
+    
     this.gridSlots = [];
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const x = startX + col * (slotSize + gap);
-        const y = startY + row * (slotSize + gap);
-        const idx = row * cols + col;
-
-        const slot = this.createGridSlot(x, y, idx);
-        this.gridSlots.push(slot);
-      }
+    
+    for (let i = 0; i < totalSlots; i++) {
+      const col = i % C.gridCols;
+      const row = Math.floor(i / C.gridCols);
+      const x = gridStartX + col * (C.gridSlot + C.gap);
+      const y = gridStartY + row * (C.gridSlot + C.gap) + C.gridSlot/2;
+      
+      const item = this.items[i];
+      this.createGridSlot(x, y, item, i);
     }
-
-    this.refreshGrid();
   }
 
-  createGridSlot(x, y, index) {
-    const size = this.CFG.gridSlotSize;
+  // ============================================================
+  //  GRID SLOT
+  // ============================================================
+  createGridSlot(x, y, item, index) {
+    const C = this.CFG;
+    
     const container = this.add.container(x, y);
-
-    // Slot background - lighter tint
+    
+    // PNG слот или fallback
     let slotBg;
     if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
-      slotBg.setDisplaySize(size, size);
-      slotBg.setTint(0xaaaaaa);
+      slotBg.setDisplaySize(C.gridSlot, C.gridSlot);
+      if (!item) {
+        slotBg.setTint(C.slotTintEmpty);
+        slotBg.setAlpha(0.5);
+      }
     } else {
-      slotBg = this.add.rectangle(0, 0, size, size, 0x2a2a35);
-      slotBg.setStrokeStyle(1, 0x4a4a5a);
+      slotBg = this.add.graphics();
+      slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, item ? 1 : 0.5);
+      slotBg.fillRoundedRect(-C.gridSlot/2, -C.gridSlot/2, C.gridSlot, C.gridSlot, 6);
+      slotBg.lineStyle(3, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
+      slotBg.strokeRoundedRect(-C.gridSlot/2, -C.gridSlot/2, C.gridSlot, C.gridSlot, 6);
     }
     container.add(slotBg);
-
-    // Item icon
-    const itemIcon = this.add.text(0, 0, '', {
-      fontSize: '26px'
-    }).setOrigin(0.5).setVisible(false);
-    container.add(itemIcon);
-
-    // Level badge
-    const levelBadge = this.add.text(size/2 - 4, -size/2 + 4, '', {
-      fontFamily: 'Verdana',
-      fontSize: '10px',
-      fontStyle: 'bold',
-      color: '#ffd700',
-      backgroundColor: '#000000cc',
-      padding: { x: 3, y: 2 }
-    }).setOrigin(1, 0).setVisible(false);
-    container.add(levelBadge);
-
-    // Interactive
-    slotBg.setInteractive({ useHandCursor: true });
-    slotBg.on('pointerover', () => {
-      container.setScale(1.1);
-      slotBg.setTint(0xffffff);
-    });
-    slotBg.on('pointerout', () => {
-      if (this.selectedItem?.id !== this.gridSlots[index]?.item?.id) {
-        container.setScale(1.0);
-        slotBg.setTint(0xaaaaaa);
-      }
-    });
-    slotBg.on('pointerdown', () => this.onGridSlotClick(index));
-
-    this.mainContainer.add(container);
-
-    return {
-      container, bg: slotBg, icon: itemIcon, level: levelBadge,
-      index, item: null, x, y
-    };
-  }
-
-  refreshGrid() {
-    const icons = {
-      helmet: '🪖', chest: '🛡️', pants: '👖', gloves: '🧤',
-      boots: '👢', mainHand: '⚔️', offHand: '🛡️', necklace: '📿',
-      earring1: '💎', earring2: '💎', ring1: '💍', ring2: '💍'
-    };
-
-    this.gridSlots.forEach((slot, i) => {
-      const item = this.inventoryItems[i];
-      slot.item = item || null;
-
-      if (item) {
-        slot.icon.setText(icons[item.type] || '📦');
-        slot.icon.setVisible(true);
-        slot.level.setText(item.level);
-        slot.level.setVisible(true);
-
-        // Rarity border
-        const rarity = this.CFG.rarityColors[item.rarity] || this.CFG.rarityColors.common;
-        slot.bg.setTint(rarity.color);
-
-        slot.container.setAlpha(1);
-      } else {
-        slot.icon.setVisible(false);
-        slot.level.setVisible(false);
-        slot.bg.setTint(0x666666);
-        slot.container.setAlpha(0.5);
-      }
-    });
-
-    if (this.gridCountText) {
-      this.gridCountText.setText(`${this.inventoryItems.length} шт`);
+    
+    // Glow
+    if (item && C.rarity[item.rarity]?.glow) {
+      const glow = this.add.graphics();
+      glow.lineStyle(2, C.rarity[item.rarity].glow, 0.5);
+      glow.strokeRoundedRect(-C.gridSlot/2 - 1, -C.gridSlot/2 - 1, C.gridSlot + 2, C.gridSlot + 2, 7);
+      container.add(glow);
     }
-  }
-
-  // ============================================================
-  //  INPUT
-  // ============================================================
-  setupInput() {
-    this.input.keyboard.on('keydown-ESC', () => this.closeInventory());
-    this.input.keyboard.on('keydown-I', () => this.closeInventory());
-    this.input.keyboard.on('keydown-T', () => this.toggleTuneMode());
-  }
-
-  toggleTuneMode() {
-    this.tuneMode = !this.tuneMode;
-    if (this.tuneMode) {
-      this.setupTuneMode();
-      console.log('[INV] Tune mode ON');
-    } else {
-      if (this.tuneLabel) {
-        this.tuneLabel.destroy();
-        this.tuneLabel = null;
-      }
-      this.selectedElement = null;
-      console.log('[INV] Tune mode OFF');
+    
+    if (item) {
+      // Иконка
+      const icon = this.add.text(0, -2, this.ICONS[item.type], {
+        fontSize: `${Math.round(C.gridSlot * 0.4)}px`,
+      }).setOrigin(0.5);
+      container.add(icon);
+      
+      // Уровень
+      const lvl = this.add.text(C.gridSlot/2 - 6, C.gridSlot/2 - 8, item.level, {
+        fontFamily: 'Verdana',
+        fontSize: '9px',
+        fontStyle: 'bold',
+        color: C.gold,
+      }).setOrigin(0.5);
+      lvl.setShadow(0, 1, '#000000', 2);
+      container.add(lvl);
+      
+      // Интерактив
+      const hitArea = this.add.rectangle(0, 0, C.gridSlot, C.gridSlot, 0xffffff, 0);
+      hitArea.setInteractive({ useHandCursor: true });
+      hitArea.on('pointerdown', () => this.showPopup(item, 'equip'));
+      hitArea.on('pointerover', () => container.setScale(1.08));
+      hitArea.on('pointerout', () => container.setScale(1));
+      container.add(hitArea);
     }
-  }
-
-  // ============================================================
-  //  TUNE MODE
-  // ============================================================
-  registerTunable(element, name) {
-    if (!this.tuneMode) return;
-    this.tunableElements.push({ element, name, originalX: element.x, originalY: element.y });
-  }
-
-  setupTuneMode() {
-    console.log('[INV_TUNE] ===== TUNE MODE ENABLED =====');
-    console.log('[INV_TUNE] Arrow keys = move, Q/E = scale, P = print');
-
-    // Tune label
-    this.tuneLabel = this.add.text(10, 10, '🔧 TUNE MODE', {
-      fontSize: '14px',
-      color: '#00ff00',
-      backgroundColor: '#000000aa',
-      padding: { x: 6, y: 4 }
-    }).setScrollFactor(0).setDepth(1000);
-
-    this.input.keyboard.on('keydown-LEFT', () => this.moveSelected(-5, 0));
-    this.input.keyboard.on('keydown-RIGHT', () => this.moveSelected(5, 0));
-    this.input.keyboard.on('keydown-UP', () => this.moveSelected(0, -5));
-    this.input.keyboard.on('keydown-DOWN', () => this.moveSelected(0, 5));
-    this.input.keyboard.on('keydown-Q', () => this.scaleSelected(-0.05));
-    this.input.keyboard.on('keydown-E', () => this.scaleSelected(0.05));
-    this.input.keyboard.on('keydown-P', () => this.printTuneData());
-
-    // Click to select
-    this.input.on('pointerdown', (ptr) => {
-      this.tunableElements.forEach(t => {
-        const bounds = t.element.getBounds ? t.element.getBounds() :
-          { x: t.element.x - 50, y: t.element.y - 50, width: 100, height: 100 };
-        if (ptr.x >= bounds.x && ptr.x <= bounds.x + bounds.width &&
-            ptr.y >= bounds.y && ptr.y <= bounds.y + bounds.height) {
-          this.selectedElement = t;
-          console.log('[TUNE] Selected:', t.name);
-        }
-      });
-    });
-  }
-
-  moveSelected(dx, dy) {
-    if (!this.selectedElement) return;
-    this.selectedElement.element.x += dx;
-    this.selectedElement.element.y += dy;
-  }
-
-  scaleSelected(ds) {
-    if (!this.selectedElement) return;
-    const el = this.selectedElement.element;
-    const newScale = (el.scaleX || 1) + ds;
-    el.setScale(Math.max(0.1, newScale));
-  }
-
-  printTuneData() {
-    console.log('[TUNE] ===== POSITIONS =====');
-    this.tunableElements.forEach(t => {
-      const el = t.element;
-      console.log(`${t.name}: x=${Math.round(el.x)}, y=${Math.round(el.y)}, scale=${(el.scaleX || 1).toFixed(2)}`);
-    });
-  }
-
-  // ============================================================
-  //  SLOT CLICKS
-  // ============================================================
-  onEquipSlotClick(type) {
-    console.log('[INV] Equip slot clicked:', type);
-    const slot = this.equipSlots[type];
-    if (slot.item) {
-      // Unequip
-      this.inventoryItems.push(slot.item);
-      slot.item = null;
-      slot.icon.setAlpha(0.4);
-      slot.bg.setTint(0xbbbbbb);
-      delete this.equippedItems[type];
-      this.refreshGrid();
-      this.updateStatsDisplay();
-    }
-  }
-
-  onGridSlotClick(index) {
-    const slot = this.gridSlots[index];
-    if (!slot.item) return;
-
-    console.log('[INV] Grid slot clicked:', index, slot.item.name);
-
-    this.closePopup();
-
-    this.selectedItem = slot.item;
-    slot.container.setScale(0.95);
-
-    this.showPopup(slot.x, slot.y - 90, slot.item);
+    
+    this.container.add(container);
+    this.gridSlots.push({ container, slotBg, index });
   }
 
   // ============================================================
   //  POPUP
   // ============================================================
-  showPopup(x, y, item) {
-    const popupW = 190;
-    const popupH = 130;
-
-    this.popup = this.add.container(x, y);
-
-    // Background
-    const bg = this.add.rectangle(0, 0, popupW, popupH, 0x12121a, 0.98);
-    bg.setStrokeStyle(2, 0x5a4a3a);
-    this.popup.add(bg);
-
-    // Item name
-    const rarity = this.CFG.rarityColors[item.rarity] || this.CFG.rarityColors.common;
-    const nameText = this.add.text(0, -42, item.name, {
-      fontFamily: 'Georgia',
+  createPopup(W, H) {
+    this.popupContainer = this.add.container(W/2, H/2);
+    this.popupContainer.setVisible(false);
+    this.popupContainer.setDepth(100);
+    
+    // Создадим при показе
+  }
+  
+  showPopup(item, action) {
+    const C = this.CFG;
+    const W = this.scale.width;
+    const H = this.scale.height;
+    
+    // Очищаем старый попап
+    if (this.popupContainer) this.popupContainer.destroy();
+    
+    this.popupContainer = this.add.container(0, 0);
+    this.popupContainer.setDepth(100);
+    
+    // Затемнение
+    const dim = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.6);
+    dim.setInteractive();
+    dim.on('pointerdown', () => this.hidePopup());
+    this.popupContainer.add(dim);
+    
+    // Панель попапа
+    const popupW = Math.min(W * 0.9, 340);
+    const popupH = 160;
+    const popupX = (W - popupW) / 2;
+    const popupY = H - popupH - 30;
+    
+    const rarity = C.rarity[item.rarity] || C.rarity.common;
+    
+    // Фон
+    const bg = this.add.graphics();
+    bg.fillGradientStyle(0x252a33, 0x252a33, C.panelBg, C.panelBg, 1);
+    bg.fillRoundedRect(popupX, popupY, popupW, popupH, 14);
+    bg.lineStyle(3, rarity.color, 1);
+    bg.strokeRoundedRect(popupX, popupY, popupW, popupH, 14);
+    this.popupContainer.add(bg);
+    
+    // Иконка предмета
+    const iconBg = this.add.graphics();
+    iconBg.fillStyle(0x1a1d24, 1);
+    iconBg.fillRoundedRect(popupX + 16, popupY + 16, 56, 56, 8);
+    iconBg.lineStyle(2, rarity.color, 1);
+    iconBg.strokeRoundedRect(popupX + 16, popupY + 16, 56, 56, 8);
+    this.popupContainer.add(iconBg);
+    
+    const icon = this.add.text(popupX + 44, popupY + 44, this.ICONS[item.type], {
+      fontSize: '28px',
+    }).setOrigin(0.5);
+    this.popupContainer.add(icon);
+    
+    // Название
+    const name = this.add.text(popupX + 84, popupY + 20, item.name, {
+      fontFamily: 'Verdana',
       fontSize: '15px',
       fontStyle: 'bold',
-      color: '#' + rarity.color.toString(16).padStart(6, '0')
-    }).setOrigin(0.5);
-    this.popup.add(nameText);
-
-    // Level info
-    const infoText = this.add.text(0, -22, `Уровень ${item.level}`, {
-      fontFamily: 'Verdana',
-      fontSize: '11px',
-      color: '#a0a0a0'
-    }).setOrigin(0.5);
-    this.popup.add(infoText);
-
-    // Equip button
-    const equipBtn = this.add.rectangle(0, 12, 150, 34, 0x2563eb);
-    equipBtn.setStrokeStyle(1, 0x3b82f6);
-    equipBtn.setInteractive({ useHandCursor: true });
-    equipBtn.on('pointerdown', () => this.equipItem(item));
-    equipBtn.on('pointerover', () => equipBtn.setFillStyle(0x3b82f6));
-    equipBtn.on('pointerout', () => equipBtn.setFillStyle(0x2563eb));
-    this.popup.add(equipBtn);
-
-    const equipText = this.add.text(0, 12, '✨ Надеть', {
-      fontFamily: 'Verdana',
-      fontSize: '14px',
-      fontStyle: 'bold',
-      color: '#ffffff'
-    }).setOrigin(0.5);
-    this.popup.add(equipText);
-
-    // Sell button
-    const sellBtn = this.add.rectangle(0, 50, 150, 34, 0x000000, 0);
-    sellBtn.setStrokeStyle(2, 0xd4af37);
-    sellBtn.setInteractive({ useHandCursor: true });
-    sellBtn.on('pointerdown', () => this.sellItem(item));
-    sellBtn.on('pointerover', () => sellBtn.setFillStyle(0xd4af37, 0.2));
-    sellBtn.on('pointerout', () => sellBtn.setFillStyle(0x000000, 0));
-    this.popup.add(sellBtn);
-
-    const sellText = this.add.text(0, 50, '💰 Продать', {
-      fontFamily: 'Verdana',
-      fontSize: '14px',
-      fontStyle: 'bold',
-      color: '#d4af37'
-    }).setOrigin(0.5);
-    this.popup.add(sellText);
-
-    // Arrow
-    const arrow = this.add.triangle(0, popupH/2 + 8, -12, 0, 12, 0, 0, 14, 0x12121a);
-    this.popup.add(arrow);
-
-    this.mainContainer.add(this.popup);
-  }
-
-  closePopup() {
-    if (this.popup) {
-      this.popup.destroy();
-      this.popup = null;
-    }
-
-    this.gridSlots.forEach(slot => {
-      slot.container.setScale(1);
-      if (slot.item) {
-        const rarity = this.CFG.rarityColors[slot.item.rarity];
-        slot.bg.setTint(rarity.color);
-      }
+      color: `#${rarity.color.toString(16).padStart(6, '0')}`,
     });
-    this.selectedItem = null;
+    name.setShadow(0, 1, '#000000', 2);
+    this.popupContainer.add(name);
+    
+    // Мета
+    const rarityNames = { common: 'Обычный', uncommon: 'Необычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
+    const meta = this.add.text(popupX + 84, popupY + 42, `${rarityNames[item.rarity]} • ${this.LABELS[item.type]} • Ур.${item.level}`, {
+      fontFamily: 'Verdana',
+      fontSize: '10px',
+      color: C.textMuted,
+    });
+    this.popupContainer.add(meta);
+    
+    // Статы предмета
+    let statsStr = '';
+    if (item.atk) statsStr += `⚔️+${item.atk}  `;
+    if (item.def) statsStr += `🛡️+${item.def}  `;
+    if (item.hp) statsStr += `❤️+${item.hp}`;
+    
+    if (statsStr) {
+      const stats = this.add.text(popupX + 84, popupY + 60, statsStr.trim(), {
+        fontFamily: 'Verdana',
+        fontSize: '12px',
+        color: C.textColor,
+      });
+      this.popupContainer.add(stats);
+    }
+    
+    // Кнопки
+    const btnY = popupY + popupH - 50;
+    const btnW = (popupW - 48) / 2;
+    
+    // Кнопка действия (Надеть/Снять)
+    this.createButton(
+      popupX + 16, btnY, btnW, 38,
+      action === 'equip' ? '✨ Надеть' : '📤 Снять',
+      0x2d6a4f, 0x40916c,
+      () => action === 'equip' ? this.equipItem(item) : this.unequipItem(item)
+    );
+    
+    // Кнопка продать
+    this.createButton(
+      popupX + 16 + btnW + 16, btnY, btnW, 38,
+      '💰 Продать',
+      0x1a1d24, 0xD6B36A,
+      () => this.sellItem(item),
+      true
+    );
+  }
+  
+  createButton(x, y, w, h, text, bgColor, borderColor, callback, outline = false) {
+    const btn = this.add.graphics();
+    
+    if (outline) {
+      btn.fillStyle(0x000000, 0);
+      btn.lineStyle(2, borderColor, 1);
+      btn.strokeRoundedRect(x, y, w, h, 8);
+    } else {
+      btn.fillStyle(bgColor, 1);
+      btn.fillRoundedRect(x, y, w, h, 8);
+      btn.lineStyle(2, borderColor, 1);
+      btn.strokeRoundedRect(x, y, w, h, 8);
+    }
+    this.popupContainer.add(btn);
+    
+    const label = this.add.text(x + w/2, y + h/2, text, {
+      fontFamily: 'Verdana',
+      fontSize: '13px',
+      fontStyle: 'bold',
+      color: outline ? `#${borderColor.toString(16).padStart(6, '0')}` : '#ffffff',
+    }).setOrigin(0.5);
+    this.popupContainer.add(label);
+    
+    const hitArea = this.add.rectangle(x + w/2, y + h/2, w, h, 0xffffff, 0);
+    hitArea.setInteractive({ useHandCursor: true });
+    hitArea.on('pointerdown', callback);
+    this.popupContainer.add(hitArea);
+  }
+  
+  hidePopup() {
+    if (this.popupContainer) {
+      this.popupContainer.destroy();
+      this.popupContainer = null;
+    }
   }
 
   // ============================================================
   //  ACTIONS
   // ============================================================
   equipItem(item) {
-    console.log('[INV] Equipping:', item.name);
-
-    // If slot occupied, swap
-    if (this.equippedItems[item.type]) {
-      this.inventoryItems.push(this.equippedItems[item.type]);
+    // Если что-то надето — в инвентарь
+    if (this.equipped[item.type]) {
+      this.items.push(this.equipped[item.type]);
     }
-
-    this.equippedItems[item.type] = item;
-    this.inventoryItems = this.inventoryItems.filter(i => i.id !== item.id);
-
-    this.closePopup();
-    this.refreshGrid();
-    this.updateStatsDisplay();
-    this.updateEquipSlot(item.type);
+    this.equipped[item.type] = item;
+    this.items = this.items.filter(i => i.id !== item.id);
+    
+    this.hidePopup();
+    this.refreshUI();
+    console.log('[INV] Equipped:', item.name);
   }
-
+  
+  unequipItem(item) {
+    delete this.equipped[item.type];
+    this.items.push(item);
+    
+    this.hidePopup();
+    this.refreshUI();
+    console.log('[INV] Unequipped:', item.name);
+  }
+  
   sellItem(item) {
-    console.log('[INV] Selling:', item.name);
-
-    this.inventoryItems = this.inventoryItems.filter(i => i.id !== item.id);
-
-    this.closePopup();
-    this.refreshGrid();
+    this.items = this.items.filter(i => i.id !== item.id);
+    Object.keys(this.equipped).forEach(type => {
+      if (this.equipped[type]?.id === item.id) delete this.equipped[type];
+    });
+    
+    this.hidePopup();
+    this.refreshUI();
+    console.log('[INV] Sold:', item.name);
   }
-
-  updateEquipSlot(type) {
-    const slot = this.equipSlots[type];
-    const item = this.equippedItems[type];
-
-    if (item) {
-      const icons = {
-        helmet: '🪖', chest: '🛡️', pants: '👖', gloves: '🧤',
-        boots: '👢', mainHand: '⚔️', offHand: '🛡️', necklace: '📿',
-        earring1: '💎', earring2: '💎', ring1: '💍', ring2: '💍'
-      };
-
-      slot.icon.setText(icons[type]);
-      slot.icon.setAlpha(1);
-      slot.item = item;
-
-      const rarity = this.CFG.rarityColors[item.rarity];
-      slot.bg.setTint(rarity.color);
-    }
+  
+  refreshUI() {
+    // Пересоздаём UI
+    this.container.destroy();
+    this.create();
   }
 
   // ============================================================
   //  CLOSE
   // ============================================================
   closeInventory() {
-    console.log('[INV_SCENE] Closing');
-    this.closePopup();
-    this.scene.stop('InventoryScene');
+    this.hidePopup();
+    this.scene.stop();
+    console.log('[INV] Closed');
+  }
+
+  // ============================================================
+  //  TEST DATA
+  // ============================================================
+  getTestItems() {
+    return [
+      { id: "1", type: "mainHand", rarity: "common", level: 5, name: "Железный меч", atk: 15 },
+      { id: "2", type: "helmet", rarity: "rare", level: 8, name: "Шлем мага", def: 12, hp: 50 },
+      { id: "3", type: "boots", rarity: "uncommon", level: 3, name: "Сапоги следопыта", def: 8 },
+      { id: "4", type: "chest", rarity: "epic", level: 15, name: "Доспех дракона", def: 45, hp: 120 },
+      { id: "5", type: "pants", rarity: "uncommon", level: 6, name: "Стальные поножи", def: 18 },
+      { id: "6", type: "ring1", rarity: "legendary", level: 20, name: "Кольцо Феникса", atk: 30, hp: 200 },
+      { id: "7", type: "gloves", rarity: "common", level: 4, name: "Перчатки воина", def: 5 },
+      { id: "8", type: "necklace", rarity: "rare", level: 12, name: "Амулет мудрости", hp: 80 },
+    ];
   }
 }
 
 // ============================================================
-//  EXPORTS
+//  EXPORT
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v4 Visual RPG loaded');
+console.log('[InventoryScene] FINAL v8 loaded');
