@@ -163,12 +163,9 @@ function onIconClick(scene, panelName) {
 
   switch (panelName) {
     case 'inventory':
-      // Use new InventoryScene (Phaser overlay)
-      if (scene.scene.isActive('InventoryScene')) {
-        scene.scene.stop('InventoryScene');
-      } else {
-        if (typeof hideAllPanels === 'function') hideAllPanels();
-        scene.scene.launch('InventoryScene');
+      // Use inventoryPanel v5 (DOM overlay with tune mode)
+      if (typeof toggleInventoryPanel === 'function') {
+        toggleInventoryPanel();
       }
       break;
 
