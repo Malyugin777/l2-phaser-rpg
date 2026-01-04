@@ -163,7 +163,8 @@ let arenaPanel, arenaText, arenaFightButton, arenaFightButtonText;
 let arenaBackButton, arenaBackButtonText;
 let dungeonPanel, dungeonPanelText, dungeonStartButton, dungeonStartButtonText;
 
-// Panel states (isInventoryOpen is now in inventoryPanel.js)
+// Panel states
+let isInventoryOpen = false;
 let isStatsOpen = false;
 let isForgeOpen = false;
 let isQuestsOpen = false;
@@ -284,11 +285,6 @@ function preload() {
   this.load.image('ui_top_panel', 'assets/ui/top_ui.png');
   this.load.image('ui_exp_ring_full', 'assets/ui/ui_exp_ring_full.png');
   this.load.image('ui_avatar_placeholder', 'assets/ui/avatar_placeholder.png');
-
-  // Inventory UI (Stone style)
-  this.load.image('Invertory_header', 'assets/ui/Invertory_header.png');
-  this.load.image('invertory_slot_frame', 'assets/ui/invertory_slot_frame.png');
-  this.load.image('btn_close', 'assets/ui/btn_close.png');
 
   // Spine hero (Boy_1)
   this.load.spine('hero', 'assets/spine-main/Boy_1.json', 'assets/spine-main/Boy_1.atlas');
@@ -524,10 +520,6 @@ function setupCleanMode(scene) {
   if (typeof applyTuneSettings === "function") {
     applyTuneSettings(scene, cityBg, HERO_OFFSET);
   }
-  // TUNE2 mode (inventory elements)
-  if (typeof initTune2Mode === "function") {
-    initTune2Mode(scene);
-  }
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
@@ -588,7 +580,7 @@ function fixHeroVisibility(scene) {
 
 function initPanelVariables() {
   // Initialize all panel states
-  // isInventoryOpen is handled by inventoryPanel.js
+  isInventoryOpen = false;
   isStatsOpen = false;
   isForgeOpen = false;
   isQuestsOpen = false;

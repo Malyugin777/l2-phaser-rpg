@@ -1,317 +1,505 @@
 "use strict";
 
 // ============================================================
-//  INVENTORY PANEL — Phaser-based UI (Stone style)
-//  Assets: Invertory_header, invertory_slot_frame, btn_close
+//  INVENTORY PANEL v3 — DOM Overlay (красивый UI)
 // ============================================================
 
 let isInventoryOpen = false;
-let inventoryContainer = null;
-let inventoryDimmer = null;
-let inventoryScene = null;
+let inventoryOverlay = null;
 
-// Individual element refs for TuneMode
-let invElements = {
-  header: null,
-  body: null,
-  title: null,
-  closeBtn: null,
-  slotsContainer: null
+// Данные
+const RARITY_COLORS = {
+  common: { border: "#52525b", glow: "none", text: "#a1a1aa" },
+  uncommon: { border: "#22c55e", glow: "0 0 10px rgba(34,197,94,0.4)", text: "#22c55e" },
+  rare: { border: "#3b82f6", glow: "0 0 10px rgba(59,130,246,0.4)", text: "#3b82f6" },
+  epic: { border: "#a855f7", glow: "0 0 12px rgba(168,85,247,0.5)", text: "#a855f7" }
 };
 
-// Inventory config
-const INV_CONFIG = {
-  slots: {
-    columns: 5,
-    rows: 4,
-    gap: 8,
-    targetSize: 90  // Target slot size in pixels
-  },
-  header: {
-    targetWidth: 650  // Target header width (almost full screen)
-  },
-  closeBtn: {
-    targetSize: 50  // Target close button size
-  },
-  bodyColor: 0x1a1a1a,
-  bodyPadding: 20,
-  dimmerAlpha: 0.75
+const SLOT_ICONS = {
+  helmet: "🪖", chest: "🛡️", pants: "👖", gloves: "🧤",
+  boots: "👢", mainHand: "⚔️", offHand: "🛡️", necklace: "📿",
+  earring1: "💎", earring2: "💎", ring1: "💍", ring2: "💍"
 };
 
-/**
- * Create inventory panel (called once from game.js)
- */
-function createInventoryPanel(scene) {
-  inventoryScene = scene;
-  const w = scene.scale.width;
-  const h = scene.scale.height;
+const SLOT_LABELS = {
+  helmet: "Шлем", chest: "Броня", pants: "Штаны", gloves: "Перчатки",
+  boots: "Ботинки", mainHand: "Оружие", offHand: "Щит", necklace: "Ожерелье",
+  earring1: "Серьга", earring2: "Серьга", ring1: "Кольцо", ring2: "Кольцо"
+};
 
-  console.log('[INV] Creating Phaser-based inventory panel...');
+// Тестовые предметы (потом заменишь на реальные из heroState)
+let inventoryItems = [
+  { id: "1", name: "Iron Sword", type: "mainHand", rarity: "common", level: 5, attack: 25 },
+  { id: "2", name: "Mystic Helm", type: "helmet", rarity: "rare", level: 8, defense: 15, hp: 50 },
+  { id: "3", name: "Leather Boots", type: "boots", rarity: "uncommon", level: 3, defense: 8 },
+  { id: "4", name: "Dragon Blade", type: "mainHand", rarity: "epic", level: 15, attack: 85 },
+  { id: "5", name: "Steel Plate", type: "chest", rarity: "uncommon", level: 6, defense: 30 },
+  { id: "6", name: "Magic Ring", type: "ring1", rarity: "rare", level: 10, hp: 100 },
+  { id: "7", name: "Warrior Gloves", type: "gloves", rarity: "common", level: 4, defense: 5 },
+  { id: "8", name: "Phoenix Armor", type: "chest", rarity: "epic", level: 20, defense: 65, hp: 200 },
+];
 
-  // === 1. DIMMER (Full screen dark overlay) ===
-  inventoryDimmer = scene.add.rectangle(w/2, h/2, w, h, 0x000000, INV_CONFIG.dimmerAlpha);
-  inventoryDimmer.setScrollFactor(0);
-  inventoryDimmer.setDepth(999);
-  inventoryDimmer.setInteractive();
-  inventoryDimmer.setVisible(false);
+let equippedItems = {};
+let selectedItem = null;
+let popupElement = null;
 
-  // Click on dimmer to close (unless in tune2 mode)
-  inventoryDimmer.on('pointerdown', () => {
-    if (!window.TUNE2_MODE) hideInventoryPanel();
-  });
+// ============================================================
+//  СОЗДАНИЕ OVERLAY
+// ============================================================
 
-  // === 2. CONTAINER (Holds all inventory elements) ===
-  inventoryContainer = scene.add.container(w/2, h/2);
-  inventoryContainer.setScrollFactor(0);
-  inventoryContainer.setDepth(1000);
-  inventoryContainer.setVisible(false);
+function createInventoryOverlay() {
+  if (inventoryOverlay) return;
 
-  // Get texture sizes
-  const headerTex = scene.textures.get('Invertory_header');
-  const slotTex = scene.textures.get('invertory_slot_frame');
-  const closeTex = scene.textures.get('btn_close');
+  // Стили
+  const style = document.createElement('style');
+  style.textContent = `
+    .inv-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      font-family: Verdana, Arial, sans-serif;
+    }
+    .inv-overlay.open { display: flex; }
+    
+    .inv-panel {
+      width: 380px;
+      max-height: 90vh;
+      background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+      border-radius: 12px;
+      border: 1px solid #27272a;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .inv-header {
+      padding: 12px 16px 20px;
+      background-image: url('assets/ui/Invertory_header.png');
+      background-size: 100% 100%;
+      border-bottom: 1px solid #27272a;
+      position: relative;
+      text-align: center;
+    }
+    
+    .inv-close {
+      position: absolute;
+      top: 14px; right: 12px;
+      width: 32px; height: 32px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+    .inv-close img { width: 100%; height: 100%; }
+    
+    .inv-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    .inv-equipment {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    
+    .inv-equip-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .inv-equip-slot {
+      width: 56px; height: 56px;
+      background-image: url('assets/ui/invertory_slot_frame.png');
+      background-size: cover;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .inv-equip-slot:hover { transform: scale(1.05); }
+    .inv-equip-slot .icon { font-size: 24px; opacity: 0.6; }
+    .inv-equip-label { font-size: 10px; color: #71717a; }
+    
+    .inv-char-preview {
+      width: 100px; height: 100px;
+      background: linear-gradient(135deg, #27272a 0%, #18181b 100%);
+      border: 2px solid #3f3f46;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
+    }
+    .inv-char-preview .icon { font-size: 40px; opacity: 0.4; }
+    
+    .inv-stats {
+      margin: 0 16px 12px;
+      background: rgba(39,39,42,0.5);
+      border: 1px solid #3f3f46;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-around;
+    }
+    .inv-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .inv-stat svg { width: 16px; height: 16px; }
+    
+    .inv-grid-title {
+      padding: 0 16px 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .inv-grid-title span:first-child { color: #fff; font-size: 14px; font-weight: bold; }
+    .inv-grid-title span:last-child { color: #71717a; font-size: 12px; }
+    
+    .inv-grid {
+      padding: 0 16px 16px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+    
+    .inv-slot {
+      width: 52px; height: 52px;
+      background-image: url('assets/ui/invertory_slot_frame.png');
+      background-size: cover;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s;
+    }
+    .inv-slot.empty { opacity: 0.5; cursor: default; }
+    .inv-slot:not(.empty):hover { transform: scale(1.05); }
+    .inv-slot.selected { transform: scale(0.92); }
+    .inv-slot .icon { font-size: 20px; }
+    .inv-slot .level {
+      position: absolute;
+      top: 1px; right: 1px;
+      background: rgba(0,0,0,0.85);
+      border-radius: 2px;
+      padding: 0 3px;
+      font-size: 9px;
+      color: #fbbf24;
+      font-weight: bold;
+    }
+    
+    .inv-popup {
+      position: fixed;
+      transform: translate(-50%, -100%);
+      background: linear-gradient(180deg, rgba(24,24,27,0.98) 0%, rgba(9,9,11,0.98) 100%);
+      border: 1px solid #3f3f46;
+      border-radius: 12px;
+      padding: 16px;
+      z-index: 10000;
+      min-width: 180px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+    }
+    .inv-popup::after {
+      content: '';
+      position: absolute;
+      bottom: -8px; left: 50%;
+      transform: translateX(-50%);
+      border: 8px solid transparent;
+      border-top-color: #3f3f46;
+    }
+    .inv-popup-name {
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .inv-popup-info {
+      text-align: center;
+      color: #71717a;
+      font-size: 11px;
+      margin-bottom: 14px;
+    }
+    .inv-popup-btns { display: flex; flex-direction: column; gap: 8px; }
+    
+    .inv-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-family: Verdana;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+    }
+    .inv-btn-equip {
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.4);
+    }
+    .inv-btn-sell {
+      background: transparent;
+      color: #f59e0b;
+      border: 2px solid #f59e0b;
+    }
+  `;
+  document.head.appendChild(style);
 
-  const headerTexW = headerTex.getSourceImage().width;
-  const headerTexH = headerTex.getSourceImage().height;
-  const slotTexW = slotTex.getSourceImage().width;
-  const slotTexH = slotTex.getSourceImage().height;
-  const closeTexW = closeTex.getSourceImage().width;
-  const closeTexH = closeTex.getSourceImage().height;
+  // HTML
+  inventoryOverlay = document.createElement('div');
+  inventoryOverlay.className = 'inv-overlay';
+  inventoryOverlay.innerHTML = `
+    <div class="inv-panel">
+      <div class="inv-header">
+        <button class="inv-close"><img src="assets/ui/btn_close.png" alt="Close"></button>
+        <h1 class="inv-title">Инвентарь</h1>
+      </div>
+      
+      <div class="inv-equipment">
+        <div class="inv-equip-col" id="inv-equip-left"></div>
+        <div class="inv-char-preview"><span class="icon">🛡️</span></div>
+        <div class="inv-equip-col" id="inv-equip-right"></div>
+      </div>
+      
+      <div class="inv-stats">
+        <div class="inv-stat"><svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg><span id="inv-hp">850</span></div>
+        <div class="inv-stat"><svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><path d="m14.5 17.5 3 3 3-3"/><path d="M3.5 3.5 7 7l3-3"/><path d="m7 3.5 10 10"/><path d="m3.5 7 10 10"/><path d="m14.5 21 3-3 3 3"/></svg><span id="inv-atk">120</span></div>
+        <div class="inv-stat"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg><span id="inv-def">75</span></div>
+      </div>
+      
+      <div class="inv-grid-title">
+        <span>Предметы</span>
+        <span id="inv-count">0 шт</span>
+      </div>
+      
+      <div class="inv-grid" id="inv-grid"></div>
+    </div>
+  `;
+  document.body.appendChild(inventoryOverlay);
 
-  // Calculate scales to fit target sizes
-  const headerScale = INV_CONFIG.header.targetWidth / headerTexW;
-  const slotScale = INV_CONFIG.slots.targetSize / slotTexW;
-  const closeScale = INV_CONFIG.closeBtn.targetSize / closeTexW;
+  // Events
+  inventoryOverlay.querySelector('.inv-close').onclick = hideInventoryPanel;
+  inventoryOverlay.onclick = (e) => {
+    if (e.target === inventoryOverlay) hideInventoryPanel();
+  };
 
-  // Scaled dimensions
-  const headerW = headerTexW * headerScale;
-  const headerH = headerTexH * headerScale;
-  const slotW = slotTexW * slotScale;
-  const slotH = slotTexH * slotScale;
-  const closeW = closeTexW * closeScale;
-  const closeH = closeTexH * closeScale;
+  renderEquipment();
+  renderGrid();
+  updateStats();
 
-  console.log('[INV] Texture sizes (original):',
-    'header:', headerTexW, 'x', headerTexH,
-    'slot:', slotTexW, 'x', slotTexH,
-    'close:', closeTexW, 'x', closeTexH
-  );
-  console.log('[INV] Scales:',
-    'header:', headerScale.toFixed(3),
-    'slot:', slotScale.toFixed(3),
-    'close:', closeScale.toFixed(3)
-  );
+  console.log('[InventoryPanel] DOM overlay created');
+}
 
-  // Calculate body size based on slots grid
-  const cfg = INV_CONFIG.slots;
-  const gridW = cfg.columns * slotW + (cfg.columns - 1) * cfg.gap;
-  const gridH = cfg.rows * slotH + (cfg.rows - 1) * cfg.gap;
-  const bodyW = gridW + INV_CONFIG.bodyPadding * 2;
-  const bodyH = gridH + INV_CONFIG.bodyPadding * 2;
+// ============================================================
+//  РЕНДЕР
+// ============================================================
 
-  // Use header width if wider than body
-  const panelW = Math.max(headerW, bodyW);
+function renderEquipment() {
+  const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
+  const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
 
-  // === 3. BODY BACKGROUND (Dark rectangle under slots) ===
-  const bodyBg = scene.add.rectangle(
-    0,
-    headerH / 2 + bodyH / 2,  // Below header
-    panelW,
-    bodyH,
-    INV_CONFIG.bodyColor
-  );
-  bodyBg.setOrigin(0.5);
-  inventoryContainer.add(bodyBg);
-  invElements.body = bodyBg;
+  const leftCol = document.getElementById('inv-equip-left');
+  const rightCol = document.getElementById('inv-equip-right');
 
-  // === 4. HEADER SPRITE ===
-  const header = scene.add.image(0, 0, 'Invertory_header');
-  header.setOrigin(0.5, 0.5);
-  header.setScale(headerScale);
-  inventoryContainer.add(header);
-  invElements.header = header;
+  leftCol.innerHTML = leftSlots.map(type => createEquipSlotHTML(type)).join('');
+  rightCol.innerHTML = rightSlots.map(type => createEquipSlotHTML(type)).join('');
+}
 
-  // === 5. HEADER TITLE TEXT ===
-  const titleText = scene.add.text(0, -5, 'INVENTORY', {
-    fontFamily: 'Georgia, serif',
-    fontSize: '24px',
-    color: '#d4a855',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 3
-  });
-  titleText.setOrigin(0.5);
-  inventoryContainer.add(titleText);
-  invElements.title = titleText;
+function createEquipSlotHTML(type) {
+  const item = equippedItems[type];
+  const rarity = item ? RARITY_COLORS[item.rarity] : null;
+  const borderStyle = item ? `border: 2px solid ${rarity.border}; box-shadow: ${rarity.glow};` : '';
+  
+  return `
+    <div>
+      <div class="inv-equip-slot" data-type="${type}" style="${borderStyle}">
+        <span class="icon">${SLOT_ICONS[type]}</span>
+      </div>
+      <div class="inv-equip-label">${SLOT_LABELS[type]}</div>
+    </div>
+  `;
+}
 
-  // === 6. CLOSE BUTTON ===
-  const closeBtn = scene.add.image(
-    headerW / 2 - closeW / 2 - 5,  // Right side of header
-    -headerH / 2 + closeH / 2 + 5,  // Top of header
-    'btn_close'
-  );
-  closeBtn.setScale(closeScale);
-  closeBtn.setInteractive({ useHandCursor: true });
-  closeBtn.on('pointerdown', () => {
-    // Don't close in tune2 mode
-    if (!window.TUNE2_MODE) hideInventoryPanel();
-  });
-  closeBtn.on('pointerover', () => closeBtn.setTint(0xcccccc));
-  closeBtn.on('pointerout', () => closeBtn.clearTint());
-  inventoryContainer.add(closeBtn);
-  invElements.closeBtn = closeBtn;
+function renderGrid() {
+  const grid = document.getElementById('inv-grid');
+  let html = '';
 
-  // === 7. INVENTORY SLOTS GRID ===
-  const slotsContainer = scene.add.container(0, headerH / 2 + INV_CONFIG.bodyPadding + slotH / 2);
-  inventoryContainer.add(slotsContainer);
-  invElements.slotsContainer = slotsContainer;
-
-  // Create slots
-  const slots = [];
-  const startX = -(gridW / 2) + slotW / 2;
-  const startY = 0;
-
-  for (let row = 0; row < cfg.rows; row++) {
-    for (let col = 0; col < cfg.columns; col++) {
-      const x = startX + col * (slotW + cfg.gap);
-      const y = startY + row * (slotH + cfg.gap);
-
-      const slot = scene.add.image(x, y, 'invertory_slot_frame');
-      slot.setScale(slotScale);
-      slot.setInteractive({ useHandCursor: true });
-
-      // Slot click handler
-      const slotIndex = row * cfg.columns + col;
-      slot.setData('slotIndex', slotIndex);
-
-      slot.on('pointerdown', () => {
-        console.log('[INV] Slot clicked:', slotIndex);
-        onSlotClick(slotIndex);
-      });
-
-      slot.on('pointerover', () => slot.setTint(0xaaaaaa));
-      slot.on('pointerout', () => slot.clearTint());
-
-      slotsContainer.add(slot);
-      slots.push(slot);
+  for (let i = 0; i < 24; i++) {
+    const item = inventoryItems[i];
+    if (item) {
+      const rarity = RARITY_COLORS[item.rarity];
+      html += `
+        <div class="inv-slot" data-id="${item.id}" style="border: 2px solid ${rarity.border}; box-shadow: ${rarity.glow};">
+          <span class="icon">${SLOT_ICONS[item.type]}</span>
+          <span class="level">${item.level}</span>
+        </div>
+      `;
+    } else {
+      html += `<div class="inv-slot empty"></div>`;
     }
   }
 
-  // Store slots reference
-  inventoryContainer.setData('slots', slots);
-  inventoryContainer.setData('slotsContainer', slotsContainer);
+  grid.innerHTML = html;
+  document.getElementById('inv-count').textContent = `${inventoryItems.length} шт`;
 
-  // Center container vertically (adjust for header + body)
-  const totalH = headerH + bodyH;
-  inventoryContainer.y = h / 2 - (totalH / 2 - headerH / 2);
-
-  console.log('[INV] Panel created. Slots:', slots.length);
-
-  // Store globally
-  window.inventoryContainer = inventoryContainer;
-  window.inventoryDimmer = inventoryDimmer;
-}
-
-/**
- * Show inventory panel
- */
-function showInventoryPanel() {
-  if (!inventoryContainer || !inventoryDimmer) {
-    console.warn('[INV] Panel not created yet!');
-    return;
-  }
-
-  isInventoryOpen = true;
-  inventoryDimmer.setVisible(true);
-  inventoryContainer.setVisible(true);
-
-  // Update slot contents
-  updateInventorySlots();
-
-  console.log('[INV] Panel opened');
-}
-
-/**
- * Hide inventory panel
- */
-function hideInventoryPanel() {
-  if (inventoryDimmer) inventoryDimmer.setVisible(false);
-  if (inventoryContainer) inventoryContainer.setVisible(false);
-  isInventoryOpen = false;
-
-  console.log('[INV] Panel closed');
-}
-
-/**
- * Toggle inventory panel
- */
-function toggleInventoryPanel() {
-  if (isInventoryOpen) {
-    hideInventoryPanel();
-  } else {
-    showInventoryPanel();
-  }
-}
-
-/**
- * Update inventory slot contents
- */
-function updateInventorySlots() {
-  if (!inventoryContainer) return;
-
-  const slots = inventoryContainer.getData('slots');
-  if (!slots) return;
-
-  // Get inventory items from game state
-  const items = getInventoryItems();
-
-  slots.forEach((slot, index) => {
-    // TODO: Display item icon if slot has item
-    // For now just clear/reset
-    slot.clearTint();
+  // Клики на слоты
+  grid.querySelectorAll('.inv-slot:not(.empty)').forEach(slot => {
+    slot.onclick = (e) => {
+      const id = slot.dataset.id;
+      const item = inventoryItems.find(i => i.id === id);
+      if (item) showPopup(e, item, slot);
+    };
   });
 }
 
-/**
- * Get inventory items from game state
- */
-function getInventoryItems() {
-  // Integration with game state
-  if (typeof window.inventory !== 'undefined' && Array.isArray(window.inventory)) {
-    return window.inventory;
-  }
-  // Demo items
-  return [];
+function updateStats() {
+  const hp = 850 + Object.values(equippedItems).reduce((a, i) => a + (i?.hp || 0), 0);
+  const atk = 120 + Object.values(equippedItems).reduce((a, i) => a + (i?.attack || 0), 0);
+  const def = 75 + Object.values(equippedItems).reduce((a, i) => a + (i?.defense || 0), 0);
+
+  document.getElementById('inv-hp').textContent = hp;
+  document.getElementById('inv-atk').textContent = atk;
+  document.getElementById('inv-def').textContent = def;
 }
 
-/**
- * Handle slot click
- */
-function onSlotClick(slotIndex) {
-  const items = getInventoryItems();
-  const item = items[slotIndex];
+// ============================================================
+//  POPUP
+// ============================================================
 
-  if (item) {
-    console.log('[INV] Selected item:', item);
-    // TODO: Show item details popup
-  } else {
-    console.log('[INV] Empty slot:', slotIndex);
+function showPopup(e, item, slot) {
+  hidePopup();
+  selectedItem = item;
+
+  // Выделение
+  document.querySelectorAll('.inv-slot').forEach(s => s.classList.remove('selected'));
+  slot.classList.add('selected');
+
+  const rect = slot.getBoundingClientRect();
+  const rarity = RARITY_COLORS[item.rarity];
+
+  popupElement = document.createElement('div');
+  popupElement.className = 'inv-popup';
+  popupElement.style.left = `${rect.left + rect.width / 2}px`;
+  popupElement.style.top = `${rect.top - 12}px`;
+  popupElement.innerHTML = `
+    <div class="inv-popup-name" style="color: ${rarity.text}">${item.name}</div>
+    <div class="inv-popup-info">Уровень ${item.level} • ${SLOT_LABELS[item.type]}</div>
+    <div class="inv-popup-btns">
+      <button class="inv-btn inv-btn-equip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        Надеть
+      </button>
+      <button class="inv-btn inv-btn-sell">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        Продать
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(popupElement);
+
+  // Кнопки
+  popupElement.querySelector('.inv-btn-equip').onclick = () => equipItem(item);
+  popupElement.querySelector('.inv-btn-sell').onclick = () => sellItem(item);
+
+  // Закрыть при клике вне
+  setTimeout(() => {
+    document.addEventListener('click', closePopupOnClickOutside);
+  }, 10);
+}
+
+function hidePopup() {
+  if (popupElement) {
+    popupElement.remove();
+    popupElement = null;
+  }
+  selectedItem = null;
+  document.querySelectorAll('.inv-slot').forEach(s => s.classList.remove('selected'));
+  document.removeEventListener('click', closePopupOnClickOutside);
+}
+
+function closePopupOnClickOutside(e) {
+  if (popupElement && !popupElement.contains(e.target) && !e.target.closest('.inv-slot')) {
+    hidePopup();
   }
 }
 
-// Expose globally
-window.createInventoryPanel = createInventoryPanel;
+// ============================================================
+//  ДЕЙСТВИЯ
+// ============================================================
+
+function equipItem(item) {
+  equippedItems[item.type] = item;
+  inventoryItems = inventoryItems.filter(i => i.id !== item.id);
+  hidePopup();
+  renderEquipment();
+  renderGrid();
+  updateStats();
+  console.log('[INV] Equipped:', item.name);
+}
+
+function sellItem(item) {
+  inventoryItems = inventoryItems.filter(i => i.id !== item.id);
+  hidePopup();
+  renderGrid();
+  console.log('[INV] Sold:', item.name);
+}
+
+// ============================================================
+//  SHOW / HIDE
+// ============================================================
+
+function showInventoryPanel() {
+  if (!inventoryOverlay) createInventoryOverlay();
+  inventoryOverlay.classList.add('open');
+  isInventoryOpen = true;
+  console.log('[INV] Opened');
+}
+
+function hideInventoryPanel() {
+  hidePopup();
+  if (inventoryOverlay) inventoryOverlay.classList.remove('open');
+  isInventoryOpen = false;
+  console.log('[INV] Closed');
+}
+
+function toggleInventoryPanel() {
+  isInventoryOpen ? hideInventoryPanel() : showInventoryPanel();
+}
+
+// ============================================================
+//  EXPORTS
+// ============================================================
+
+window.createInventoryPanel = createInventoryOverlay;
 window.showInventoryPanel = showInventoryPanel;
 window.hideInventoryPanel = hideInventoryPanel;
 window.toggleInventoryPanel = toggleInventoryPanel;
-window.updateInventorySlots = updateInventorySlots;
-window.invElements = invElements;
 
-// Getter/Setter for isInventoryOpen
 Object.defineProperty(window, 'isInventoryOpen', {
   get: () => isInventoryOpen,
-  set: (val) => { isInventoryOpen = val; },
+  set: (v) => { isInventoryOpen = v; },
   configurable: true
 });
 
-console.log('[InventoryPanel] Module loaded (Phaser stone style)');
+console.log('[InventoryPanel] v3 DOM overlay loaded');

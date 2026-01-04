@@ -21,7 +21,6 @@
 //  SELECTION KEYS:
 //  1-8: Icons | 9: Header | 0: Avatar | -: Ring | =: Panel | B: DarkBG
 //  L: Level | N: Nickname | R: Energy | S: Stars | G: Gems | A: Adena
-//  I: Inventory (auto-opens panel)
 //
 //  SAVED: All positions + sizes → localStorage JSON
 // ============================================================
@@ -98,9 +97,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
     txtEnergy: window.headerTextEnergy,
     txtStars: window.headerTextStars,
     txtGems: window.headerTextGems,
-    txtAdena: window.headerTextAdena,
-    // Inventory
-    invCont: window.inventoryContainer
+    txtAdena: window.headerTextAdena
   });
 
   // Create overlay
@@ -186,9 +183,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
         <button class="tune-el" data-el="txtGems" style="padding:4px 6px;font-size:10px;cursor:pointer">Gems</button>
         <button class="tune-el" data-el="txtAdena" style="padding:4px 6px;font-size:10px;cursor:pointer">Adena</button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:2px;margin:4px 0;">
-        <button class="tune-el" data-el="inventory" style="padding:4px 6px;font-size:10px;cursor:pointer;background:#a0f">📦INV</button>
-      </div>
 
       <hr style="border-color:#333;margin:5px 0">
       <div id="tune-values" style="line-height:1.4;font-size:10px;max-height:150px;overflow-y:auto;"></div>
@@ -218,10 +212,10 @@ function initTuneMode(scene, cityBg, heroOffset) {
     }
   };
 
-  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a', darkbg:'#aaa', txtLevel:'#f88', txtNickname:'#8f8', txtEnergy:'#ff8', txtStars:'#8ff', txtGems:'#f8f', txtAdena:'#fa8', inventory:'#a0f' };
+  const selColors = { bg:'#0f0', panel:'#ff0', hero:'#0ff', btn:'#f0f', icon0:'#f80', icon1:'#f80', icon2:'#f80', icon3:'#f80', header:'#0af', avatar:'#fa0', ring:'#0fa', hpanel:'#f0a', darkbg:'#aaa', txtLevel:'#f88', txtNickname:'#8f8', txtEnergy:'#ff8', txtStars:'#8ff', txtGems:'#f8f', txtAdena:'#fa8' };
 
   const updateOverlay = () => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena, invCont } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     document.getElementById('tune-sel').style.color = selColors[selectedElement] || '#fff';
     document.getElementById('tune-sel').textContent = selectedElement;
 
@@ -245,13 +239,12 @@ function initTuneMode(scene, cityBg, heroOffset) {
     html += `<b style="color:#8ff">S.TxtStars:</b> ${txtStars?.x.toFixed(0)},${txtStars?.y.toFixed(0)} sz:${parseInt(txtStars?.style.fontSize) || 18}<br>`;
     html += `<b style="color:#f8f">G.TxtGems:</b> ${txtGems?.x.toFixed(0)},${txtGems?.y.toFixed(0)} sz:${parseInt(txtGems?.style.fontSize) || 18}<br>`;
     html += `<b style="color:#fa8">A.TxtAdena:</b> ${txtAdena?.x.toFixed(0)},${txtAdena?.y.toFixed(0)} sz:${parseInt(txtAdena?.style.fontSize) || 18}<br>`;
-    html += `<b style="color:#a0f">I.Inventory:</b> ${invCont?.x.toFixed(0) ?? 'N/A'},${invCont?.y.toFixed(0) ?? 'N/A'} s:${invCont?.scaleX?.toFixed(2) ?? 'N/A'}<br>`;
     document.getElementById('tune-values').innerHTML = html;
   };
 
   // SAVE button
   document.getElementById('tune-save').onclick = () => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena, invCont } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     const settings = {
       bgX: cityBg.x,
       bgY: cityBg.y,
@@ -305,11 +298,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
       txtGemsSize: parseInt(txtGems?.style.fontSize) || 18,
       txtAdenaX: txtAdena?.x,
       txtAdenaY: txtAdena?.y,
-      txtAdenaSize: parseInt(txtAdena?.style.fontSize) || 18,
-      // Inventory
-      inventoryX: invCont?.x,
-      inventoryY: invCont?.y,
-      inventoryScale: invCont?.scaleX
+      txtAdenaSize: parseInt(txtAdena?.style.fontSize) || 18
     };
     const json = JSON.stringify(settings, null, 2);
     localStorage.setItem('TUNE_SETTINGS', json);
@@ -325,7 +314,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   };
 
   document.getElementById('tune-copy').onclick = () => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena, invCont } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
 
     // Build comprehensive config output
     const lines = [];
@@ -355,11 +344,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
     lines.push(`Stars: ${txtStars?.x},${txtStars?.y} sz:${parseInt(txtStars?.style.fontSize) || 18}`);
     lines.push(`Gems: ${txtGems?.x},${txtGems?.y} sz:${parseInt(txtGems?.style.fontSize) || 18}`);
     lines.push(`Adena: ${txtAdena?.x},${txtAdena?.y} sz:${parseInt(txtAdena?.style.fontSize) || 18}`);
-    lines.push('');
-
-    // INVENTORY
-    lines.push('=== INVENTORY ===');
-    lines.push(`Inventory: ${invCont?.x?.toFixed(0)},${invCont?.y?.toFixed(0)} s:${invCont?.scaleX?.toFixed(2)}`);
 
     const txt = lines.join('\n');
     navigator.clipboard?.writeText(txt);
@@ -371,7 +355,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
   let dragging = false, startX = 0, startY = 0;
 
   scene.input.on('pointerdown', (p) => {
-    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena, invCont } = getUI();
+    const { cont, panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
 
     // TELEPORT MODE: If clicking on empty space, teleport selected element to click position
     let clickedOnElement = false;
@@ -482,9 +466,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
       } else if (selectedElement === 'bg') {
         cityBg.x = p.x;
         cityBg.y = p.y;
-      } else if (selectedElement === 'inventory' && invCont) {
-        invCont.x = p.x;
-        invCont.y = p.y;
       }
       updateOverlay();
     }
@@ -495,7 +476,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   scene.input.on('pointermove', (p) => {
     if (!dragging) return;
-    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena, invCont } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     const dx = p.x - startX, dy = p.y - startY;
     startX = p.x; startY = p.y;
 
@@ -538,8 +519,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
       txtGems.x += dx; txtGems.y += dy;
     } else if (selectedElement === 'txtAdena' && txtAdena) {
       txtAdena.x += dx; txtAdena.y += dy;
-    } else if (selectedElement === 'inventory' && invCont) {
-      invCont.x += dx; invCont.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const i = parseInt(selectedElement[4]);
       if (icons[i]) { icons[i].x += dx; icons[i].y += dy; }
@@ -551,7 +530,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Arrow keys
   const moveSelected = (dx, dy) => {
-    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena, invCont } = getUI();
+    const { cont, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
 
     if (selectedElement === 'bg') {
       cityBg.x += dx; cityBg.y += dy;
@@ -593,8 +572,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
       txtGems.x += dx; txtGems.y += dy;
     } else if (selectedElement === 'txtAdena' && txtAdena) {
       txtAdena.x += dx; txtAdena.y += dy;
-    } else if (selectedElement === 'inventory' && invCont) {
-      invCont.x += dx; invCont.y += dy;
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) {
@@ -612,7 +589,7 @@ function initTuneMode(scene, cityBg, heroOffset) {
 
   // Q/E for scale (or width/height for rectangles, fontSize for texts)
   const scaleSelected = (delta) => {
-    const { panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena, invCont } = getUI();
+    const { panel, btn, icons, hero, headerCont, headerAvatar, headerRing, headerPanel, headerDarkBg, txtLevel, txtNickname, txtEnergy, txtStars, txtGems, txtAdena } = getUI();
     if (selectedElement === 'bg') {
       cityBg.setScale(cityBg.scaleX + delta);
     } else if (selectedElement === 'panel' && panel) {
@@ -663,8 +640,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
     } else if (selectedElement === 'txtAdena' && txtAdena) {
       const currentSize = parseInt(txtAdena.style.fontSize) || 18;
       txtAdena.setFontSize(currentSize + delta * 100);
-    } else if (selectedElement === 'inventory' && invCont) {
-      invCont.setScale(invCont.scaleX + delta);
     } else if (selectedElement.startsWith('icon')) {
       const idx = parseInt(selectedElement.replace('icon', ''));
       if (icons[idx]) icons[idx].setScale(icons[idx].scaleX + delta);
@@ -698,16 +673,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
   scene.input.keyboard.on('keydown-G', () => { selectedElement = 'txtGems'; updateOverlay(); });
   scene.input.keyboard.on('keydown-A', () => { selectedElement = 'txtAdena'; updateOverlay(); });
 
-  // Inventory shortcut
-  scene.input.keyboard.on('keydown-I', () => {
-    selectedElement = 'inventory';
-    // Auto-open inventory panel if not open
-    if (!window.isInventoryOpen && window.showInventoryPanel) {
-      window.showInventoryPanel();
-    }
-    updateOverlay();
-  });
-
   // === TOUCH ARROW CONTROLS (for mobile/iPhone) ===
   const TOUCH_STEP = 5; // pixels per tap (larger for touch)
   const TOUCH_SCALE_STEP = 0.05; // scale step for touch
@@ -726,12 +691,6 @@ function initTuneMode(scene, cityBg, heroOffset) {
   document.querySelectorAll('.tune-el').forEach(btn => {
     btn.onclick = () => {
       selectedElement = btn.dataset.el;
-      // Auto-open inventory panel when selecting inventory
-      if (btn.dataset.el === 'inventory') {
-        if (!window.isInventoryOpen && window.showInventoryPanel) {
-          window.showInventoryPanel();
-        }
-      }
       updateOverlay();
       // Highlight selected button
       document.querySelectorAll('.tune-el').forEach(b => b.style.background = '');
@@ -854,222 +813,5 @@ function applyTuneSettings(scene, cityBg, heroOffset) {
     console.log("[TUNE] Settings applied");
   }, 150);
 }
-
-// ============================================================
-//  TUNE2 MODE — Inventory Elements Tuning (?tune2=1)
-// ============================================================
-
-const TUNE2_ENABLED = new URLSearchParams(window.location.search).has('tune2');
-if (TUNE2_ENABLED) {
-  console.log("[TUNE2] Inventory Tune Mode ENABLED");
-  window.TUNE2_MODE = true;
-}
-
-function initTune2Mode(scene) {
-  if (!TUNE2_ENABLED) return;
-
-  const STEP = 1;
-  const SCALE_STEP = 0.02;
-
-  let selectedElement = 'header';
-
-  // Wait for inventory to be created, then open it
-  setTimeout(() => {
-    if (window.showInventoryPanel) {
-      window.showInventoryPanel();
-      console.log('[TUNE2] Inventory opened for tuning');
-    }
-  }, 500);
-
-  // Get inventory elements
-  const getInv = () => window.invElements || {};
-
-  // Create overlay
-  const overlay = document.createElement('div');
-  overlay.id = 'tune2-overlay';
-  overlay.style.cssText = 'position:fixed;top:10px;left:10px;background:rgba(80,0,120,0.95);color:#f0f;padding:12px;font:11px monospace;z-index:99999;border-radius:5px;min-width:220px;cursor:move;border:2px solid #f0f;';
-
-  // Make overlay draggable
-  let isDragging = false, startX = 0, startY = 0;
-  overlay.addEventListener('pointerdown', (e) => {
-    if (e.target.tagName === 'BUTTON') return;
-    isDragging = true;
-    startX = e.clientX - overlay.offsetLeft;
-    startY = e.clientY - overlay.offsetTop;
-  });
-  document.addEventListener('pointermove', (e) => {
-    if (!isDragging) return;
-    overlay.style.left = (e.clientX - startX) + 'px';
-    overlay.style.top = (e.clientY - startY) + 'px';
-  });
-  document.addEventListener('pointerup', () => { isDragging = false; });
-
-  const selColors = { header:'#ff0', body:'#0ff', title:'#f80', closeBtn:'#f00', slots:'#0f0', container:'#fff' };
-
-  overlay.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <b>📦 TUNE2: Inventory</b>
-    </div>
-    <div>[<span id="tune2-sel" style="color:#ff0">header</span>]</div>
-    <hr style="border-color:#808;margin:5px 0">
-
-    <!-- TOUCH CONTROLS -->
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin:8px 0;">
-      <button id="t2-up" style="width:50px;height:35px;font-size:18px;cursor:pointer">⬆</button>
-      <div style="display:flex;gap:2px;">
-        <button id="t2-left" style="width:50px;height:35px;font-size:18px;cursor:pointer">⬅</button>
-        <button id="t2-down" style="width:50px;height:35px;font-size:18px;cursor:pointer">⬇</button>
-        <button id="t2-right" style="width:50px;height:35px;font-size:18px;cursor:pointer">➡</button>
-      </div>
-      <div style="display:flex;gap:2px;margin-top:4px;">
-        <button id="t2-scale-down" style="width:50px;height:30px;cursor:pointer">➖</button>
-        <button id="t2-scale-up" style="width:50px;height:30px;cursor:pointer">➕</button>
-      </div>
-    </div>
-
-    <!-- ELEMENT SELECTOR -->
-    <div style="display:flex;flex-wrap:wrap;gap:3px;margin:8px 0;">
-      <button class="t2-el" data-el="container" style="padding:5px 8px;font-size:11px;cursor:pointer;background:#444">📦Cont</button>
-      <button class="t2-el" data-el="header" style="padding:5px 8px;font-size:11px;cursor:pointer;background:#880">🏷️Header</button>
-      <button class="t2-el" data-el="body" style="padding:5px 8px;font-size:11px;cursor:pointer;background:#088">📋Body</button>
-      <button class="t2-el" data-el="title" style="padding:5px 8px;font-size:11px;cursor:pointer;background:#840">📝Title</button>
-      <button class="t2-el" data-el="closeBtn" style="padding:5px 8px;font-size:11px;cursor:pointer;background:#800">❌Close</button>
-      <button class="t2-el" data-el="slots" style="padding:5px 8px;font-size:11px;cursor:pointer;background:#080">🎒Slots</button>
-    </div>
-
-    <hr style="border-color:#808;margin:5px 0">
-    <div id="tune2-values" style="line-height:1.4;font-size:10px;max-height:180px;overflow-y:auto;"></div>
-    <hr style="border-color:#808;margin:5px 0">
-    <div style="display:flex;gap:5px;">
-      <button id="t2-copy" style="flex:1;padding:8px;cursor:pointer;font-size:12px">📋 COPY</button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  const updateOverlay = () => {
-    const inv = getInv();
-    const cont = window.inventoryContainer;
-    document.getElementById('tune2-sel').style.color = selColors[selectedElement] || '#fff';
-    document.getElementById('tune2-sel').textContent = selectedElement;
-
-    let html = '';
-    html += `<b style="color:#fff">Container:</b> ${cont?.x.toFixed(0)},${cont?.y.toFixed(0)} s:${cont?.scaleX.toFixed(2)}<br>`;
-    html += `<b style="color:#ff0">Header:</b> ${inv.header?.x.toFixed(0)},${inv.header?.y.toFixed(0)} s:${inv.header?.scaleX.toFixed(2)}<br>`;
-    html += `<b style="color:#0ff">Body:</b> ${inv.body?.x.toFixed(0)},${inv.body?.y.toFixed(0)} w:${inv.body?.width.toFixed(0)} h:${inv.body?.height.toFixed(0)}<br>`;
-    html += `<b style="color:#f80">Title:</b> ${inv.title?.x.toFixed(0)},${inv.title?.y.toFixed(0)} sz:${parseInt(inv.title?.style?.fontSize) || 24}<br>`;
-    html += `<b style="color:#f00">CloseBtn:</b> ${inv.closeBtn?.x.toFixed(0)},${inv.closeBtn?.y.toFixed(0)} s:${inv.closeBtn?.scaleX.toFixed(2)}<br>`;
-    html += `<b style="color:#0f0">Slots:</b> ${inv.slotsContainer?.x.toFixed(0)},${inv.slotsContainer?.y.toFixed(0)} s:${inv.slotsContainer?.scaleX.toFixed(2)}<br>`;
-    document.getElementById('tune2-values').innerHTML = html;
-  };
-
-  // Move selected element
-  const moveSelected = (dx, dy) => {
-    const inv = getInv();
-    const cont = window.inventoryContainer;
-
-    if (selectedElement === 'container' && cont) {
-      cont.x += dx; cont.y += dy;
-    } else if (selectedElement === 'header' && inv.header) {
-      inv.header.x += dx; inv.header.y += dy;
-    } else if (selectedElement === 'body' && inv.body) {
-      inv.body.x += dx; inv.body.y += dy;
-    } else if (selectedElement === 'title' && inv.title) {
-      inv.title.x += dx; inv.title.y += dy;
-    } else if (selectedElement === 'closeBtn' && inv.closeBtn) {
-      inv.closeBtn.x += dx; inv.closeBtn.y += dy;
-    } else if (selectedElement === 'slots' && inv.slotsContainer) {
-      inv.slotsContainer.x += dx; inv.slotsContainer.y += dy;
-    }
-    updateOverlay();
-  };
-
-  // Scale selected element
-  const scaleSelected = (delta) => {
-    const inv = getInv();
-    const cont = window.inventoryContainer;
-
-    if (selectedElement === 'container' && cont) {
-      cont.setScale(cont.scaleX + delta);
-    } else if (selectedElement === 'header' && inv.header) {
-      inv.header.setScale(inv.header.scaleX + delta);
-    } else if (selectedElement === 'body' && inv.body) {
-      // For body, change width/height
-      inv.body.width += delta * 50;
-      inv.body.height += delta * 30;
-    } else if (selectedElement === 'title' && inv.title) {
-      // For title, change fontSize
-      const currentSize = parseInt(inv.title.style.fontSize) || 24;
-      inv.title.setFontSize(currentSize + delta * 50);
-    } else if (selectedElement === 'closeBtn' && inv.closeBtn) {
-      inv.closeBtn.setScale(inv.closeBtn.scaleX + delta);
-    } else if (selectedElement === 'slots' && inv.slotsContainer) {
-      inv.slotsContainer.setScale(inv.slotsContainer.scaleX + delta);
-    }
-    updateOverlay();
-  };
-
-  // Arrow buttons
-  const TOUCH_STEP = 5;
-  document.getElementById('t2-up').onclick = () => moveSelected(0, -TOUCH_STEP);
-  document.getElementById('t2-down').onclick = () => moveSelected(0, TOUCH_STEP);
-  document.getElementById('t2-left').onclick = () => moveSelected(-TOUCH_STEP, 0);
-  document.getElementById('t2-right').onclick = () => moveSelected(TOUCH_STEP, 0);
-  document.getElementById('t2-scale-up').onclick = () => scaleSelected(SCALE_STEP);
-  document.getElementById('t2-scale-down').onclick = () => scaleSelected(-SCALE_STEP);
-
-  // Element selector buttons
-  document.querySelectorAll('.t2-el').forEach(btn => {
-    btn.onclick = () => {
-      selectedElement = btn.dataset.el;
-      updateOverlay();
-      document.querySelectorAll('.t2-el').forEach(b => b.style.outline = '');
-      btn.style.outline = '2px solid #fff';
-    };
-  });
-
-  // Copy button
-  document.getElementById('t2-copy').onclick = () => {
-    const inv = getInv();
-    const cont = window.inventoryContainer;
-
-    const config = {
-      container: { x: cont?.x, y: cont?.y, scale: cont?.scaleX },
-      header: { x: inv.header?.x, y: inv.header?.y, scale: inv.header?.scaleX },
-      body: { x: inv.body?.x, y: inv.body?.y, width: inv.body?.width, height: inv.body?.height },
-      title: { x: inv.title?.x, y: inv.title?.y, fontSize: parseInt(inv.title?.style?.fontSize) || 24 },
-      closeBtn: { x: inv.closeBtn?.x, y: inv.closeBtn?.y, scale: inv.closeBtn?.scaleX },
-      slotsContainer: { x: inv.slotsContainer?.x, y: inv.slotsContainer?.y, scale: inv.slotsContainer?.scaleX }
-    };
-
-    const txt = JSON.stringify(config, null, 2);
-    navigator.clipboard?.writeText(txt);
-    console.log('[TUNE2] Config copied:\n' + txt);
-    alert('Inventory config copied!\n\n' + txt);
-  };
-
-  // Keyboard controls
-  scene.input.keyboard.on('keydown-UP', () => moveSelected(0, -STEP));
-  scene.input.keyboard.on('keydown-DOWN', () => moveSelected(0, STEP));
-  scene.input.keyboard.on('keydown-LEFT', () => moveSelected(-STEP, 0));
-  scene.input.keyboard.on('keydown-RIGHT', () => moveSelected(STEP, 0));
-  scene.input.keyboard.on('keydown-E', () => scaleSelected(SCALE_STEP));
-  scene.input.keyboard.on('keydown-Q', () => scaleSelected(-SCALE_STEP));
-
-  // Number keys to select elements
-  scene.input.keyboard.on('keydown-ONE', () => { selectedElement = 'container'; updateOverlay(); });
-  scene.input.keyboard.on('keydown-TWO', () => { selectedElement = 'header'; updateOverlay(); });
-  scene.input.keyboard.on('keydown-THREE', () => { selectedElement = 'body'; updateOverlay(); });
-  scene.input.keyboard.on('keydown-FOUR', () => { selectedElement = 'title'; updateOverlay(); });
-  scene.input.keyboard.on('keydown-FIVE', () => { selectedElement = 'closeBtn'; updateOverlay(); });
-  scene.input.keyboard.on('keydown-SIX', () => { selectedElement = 'slots'; updateOverlay(); });
-
-  // Initial update
-  setTimeout(updateOverlay, 600);
-
-  console.log('[TUNE2] Ready! Keys: 1-6 select, Arrows move, Q/E scale');
-}
-
-// Export
-window.initTune2Mode = initTune2Mode;
 
 console.log("[TuneMode] Module loaded");
