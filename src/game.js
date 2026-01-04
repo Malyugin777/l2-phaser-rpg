@@ -163,8 +163,7 @@ let arenaPanel, arenaText, arenaFightButton, arenaFightButtonText;
 let arenaBackButton, arenaBackButtonText;
 let dungeonPanel, dungeonPanelText, dungeonStartButton, dungeonStartButtonText;
 
-// Panel states
-let isInventoryOpen = false;
+// Panel states (isInventoryOpen is now in inventoryPanel.js)
 let isStatsOpen = false;
 let isForgeOpen = false;
 let isQuestsOpen = false;
@@ -580,7 +579,7 @@ function fixHeroVisibility(scene) {
 
 function initPanelVariables() {
   // Initialize all panel states
-  isInventoryOpen = false;
+  // isInventoryOpen is handled by inventoryPanel.js
   isStatsOpen = false;
   isForgeOpen = false;
   isQuestsOpen = false;
