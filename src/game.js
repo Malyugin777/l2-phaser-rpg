@@ -209,6 +209,12 @@ const game = new Phaser.Game(phaserConfig);
 // Initialize handlers
 game.events.once("ready", () => {
   initGameHandlers(game);
+
+  // Add InventoryScene as overlay (parallel scene)
+  if (typeof InventoryScene !== 'undefined') {
+    game.scene.add('InventoryScene', InventoryScene, false);
+    console.log('[GAME] InventoryScene added');
+  }
 });
 
 // ============================================================

@@ -163,11 +163,12 @@ function onIconClick(scene, panelName) {
 
   switch (panelName) {
     case 'inventory':
-      if (typeof isInventoryOpen !== 'undefined' && isInventoryOpen) {
-        if (typeof hideInventoryPanel === 'function') hideInventoryPanel();
+      // Use new InventoryScene (Phaser overlay)
+      if (scene.scene.isActive('InventoryScene')) {
+        scene.scene.stop('InventoryScene');
       } else {
         if (typeof hideAllPanels === 'function') hideAllPanels();
-        if (typeof showInventoryPanel === 'function') showInventoryPanel();
+        scene.scene.launch('InventoryScene');
       }
       break;
 
