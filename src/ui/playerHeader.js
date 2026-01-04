@@ -6,23 +6,23 @@
 // ============================================================
 
 const PLAYER_HEADER_CONFIG = {
-  // Panel settings
+  // Panel settings (from TuneMode iPhone)
   panel: {
     scale: 0.8,
     y: -160
   },
 
-  // Avatar settings - positioned relative to visible top
+  // Avatar settings - tuned position
   avatar: {
-    x: -312,         // Left side
-    y: 70,           // From top of visible area
+    x: 7,            // Near center (tuned from iPhone)
+    y: 67,           // From top of visible area
     scale: 0.82
   },
 
-  // EXP ring settings - around avatar
+  // EXP ring settings - left side
   expRing: {
-    x: -312,         // Same as avatar
-    y: 70,           // Same as avatar
+    x: -321,         // Left side (tuned from iPhone)
+    y: 68,           // From top of visible area
     radius: 52,
     thickness: 8,
     color: 0xFFD700,
@@ -37,22 +37,22 @@ const PLAYER_HEADER_CONFIG = {
     alpha: 0.92
   },
 
-  // Resource texts - right side of header
+  // Resource texts - tuned from iPhone
   resources: {
-    energy: { x: -10, y: 65, fontSize: 18 },
+    energy: { x: -18, y: 65, fontSize: 18 },
     stars:  { x: 95,  y: 65, fontSize: 18 },
     gems:   { x: 200, y: 65, fontSize: 18 },
-    adena:  { x: 305, y: 65, fontSize: 18 }
+    adena:  { x: 312, y: 65, fontSize: 18 }
   },
 
-  // Level text - below avatar
+  // Level text - tuned from iPhone
   level: {
-    x: -312,
-    y: 110,
+    x: -272,
+    y: 109,
     fontSize: 12
   },
 
-  // Nickname text - next to avatar
+  // Nickname text - tuned from iPhone
   nickname: {
     x: -244,
     y: 70,
