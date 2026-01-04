@@ -86,6 +86,25 @@ class InventoryScene extends Phaser.Scene {
     const H = this.scale.height;  // 1688
     const C = this.CFG;
     
+    // Проверяем загружена ли PNG рамка
+    if (!this.textures.exists('inv_slot_frame')) {
+      // Пробуем загрузить динамически
+      this.load.image('inv_slot_frame', 'assets/ui/invertory_slot_frame.png');
+      this.load.once('complete', () => {
+        console.log('[INV] PNG slot frame loaded dynamically');
+        this.buildUI(W, H, C);
+      });
+      this.load.start();
+      return;
+    }
+    
+    this.buildUI(W, H, C);
+  }
+  
+  buildUI(W, H, C) {
+    // Логируем доступные текстуры для слотов
+    console.log('[INV] Textures: inv_slot_frame=', this.textures.exists('inv_slot_frame'));
+    
     // ===== ФИКСИРОВАННЫЕ РАЗМЕРЫ =====
     // Game pixels! Display = Game / 2
     // Чтобы выглядело как 60px на экране, нужно 120 game px
@@ -249,18 +268,18 @@ class InventoryScene extends Phaser.Scene {
     const slotGap = 4;
     const slotWithLabel = C.equipSlot + 32;  // слот + label (16 display)
     
-    // Левая колонка
+    // Левая колонка — с PNG рамкой!
     const leftX = P.x + C.padding + C.equipSlot/2;
     leftSlots.forEach((type, i) => {
       const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(leftX, y, type);
+      this.createEquipSlot(leftX, y, type, true);  // useFrame = true
     });
     
-    // Правая колонка
+    // Правая колонка — пока без PNG (для сравнения)
     const rightX = P.x + P.w - C.padding - C.equipSlot/2;
     rightSlots.forEach((type, i) => {
       const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(rightX, y, type);
+      this.createEquipSlot(rightX, y, type, false);  // useFrame = false
     });
     
     // Центр — герой (по центру между колонками)
@@ -275,19 +294,40 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   //  EQUIP SLOT — PNG с tint
   // ============================================================
-  createEquipSlot(x, y, type) {
+  createEquipSlot(x, y, type, useFrame = false) {
     const C = this.CFG;
     const item = this.equipped[type];
     
     // Контейнер слота
     const container = this.add.container(x, y);
     
-    // PNG слот или fallback
+    // Проверяем какие текстуры доступны
+    const hasSlotFrame = this.textures.exists('inv_slot_frame') || this.textures.exists('invertory_slot_frame');
+    const slotFrameKey = this.textures.exists('inv_slot_frame') ? 'inv_slot_frame' : 'invertory_slot_frame';
+    
     let slotBg;
-    if (this.textures.exists('inv_slot')) {
+    
+    // Используем PNG рамку если есть и запрошена
+    if (useFrame && hasSlotFrame) {
+      slotBg = this.add.image(0, 0, slotFrameKey);
+      slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
+      console.log(`[INV] Using PNG frame for ${type}`);
+      // Тонируем пустые слоты темнее
+      if (!item) {
+        slotBg.setTint(0x888888);
+        slotBg.setAlpha(0.7);
+      }
+    } else if (useFrame && !hasSlotFrame) {
+      console.warn(`[INV] PNG frame requested but not loaded for ${type}!`);
+      // Fallback to graphics
+      slotBg = this.add.graphics();
+      slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, 1);
+      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
+      slotBg.lineStyle(6, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
+      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
+    } else if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
       slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
-      // Тонируем пустые слоты
       if (!item) {
         slotBg.setTint(C.slotTintEmpty);
       }
@@ -796,4 +836,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v11 CLEAN loaded');
+console.log('[InventoryScene] v12 PNG-FRAME loaded');
