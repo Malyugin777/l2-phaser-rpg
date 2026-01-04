@@ -268,18 +268,18 @@ class InventoryScene extends Phaser.Scene {
     const slotGap = 4;
     const slotWithLabel = C.equipSlot + 32;  // слот + label (16 display)
     
-    // Левая колонка — с PNG рамкой!
+    // Левая колонка — с PNG рамкой (затемнённая)
     const leftX = P.x + C.padding + C.equipSlot/2;
     leftSlots.forEach((type, i) => {
       const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(leftX, y, type, true);  // useFrame = true
+      this.createEquipSlot(leftX, y, type, true, true);  // useFrame=true, darken=true
     });
     
-    // Правая колонка — пока без PNG (для сравнения)
+    // Правая колонка — с PNG БЕЗ затемнения (как оригинал)
     const rightX = P.x + P.w - C.padding - C.equipSlot/2;
     rightSlots.forEach((type, i) => {
       const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(rightX, y, type, false);  // useFrame = false
+      this.createEquipSlot(rightX, y, type, true, false);  // useFrame=true, darken=false
     });
     
     // Центр — герой (по центру между колонками)
@@ -294,7 +294,7 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   //  EQUIP SLOT — PNG с tint
   // ============================================================
-  createEquipSlot(x, y, type, useFrame = false) {
+  createEquipSlot(x, y, type, useFrame = false, darken = true) {
     const C = this.CFG;
     const item = this.equipped[type];
     
@@ -311,12 +311,13 @@ class InventoryScene extends Phaser.Scene {
     if (useFrame && hasSlotFrame) {
       slotBg = this.add.image(0, 0, slotFrameKey);
       slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
-      console.log(`[INV] Using PNG frame for ${type}`);
-      // Тонируем пустые слоты темнее
-      if (!item) {
+      console.log(`[INV] Using PNG frame for ${type}, darken=${darken}`);
+      // Затемняем пустые слоты ТОЛЬКО если darken=true
+      if (!item && darken) {
         slotBg.setTint(0x888888);
         slotBg.setAlpha(0.7);
       }
+      // Если darken=false — оставляем оригинальный светлый цвет
     } else if (useFrame && !hasSlotFrame) {
       console.warn(`[INV] PNG frame requested but not loaded for ${type}!`);
       // Fallback to graphics
@@ -836,4 +837,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v12 PNG-FRAME loaded');
+console.log('[InventoryScene] v13 PNG-TEST loaded');
