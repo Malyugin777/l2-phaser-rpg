@@ -24,8 +24,8 @@ class InventoryScene extends Phaser.Scene {
     this.selectedItem = null;
     this.popup = null;
 
-    // Tune mode
-    this.tuneMode = true;
+    // Tune mode (press T to toggle)
+    this.tuneMode = false;
     this.tunableElements = [];
     this.selectedElement = null;
   }
@@ -541,6 +541,22 @@ class InventoryScene extends Phaser.Scene {
   setupInput() {
     this.input.keyboard.on('keydown-ESC', () => this.closeInventory());
     this.input.keyboard.on('keydown-I', () => this.closeInventory());
+    this.input.keyboard.on('keydown-T', () => this.toggleTuneMode());
+  }
+
+  toggleTuneMode() {
+    this.tuneMode = !this.tuneMode;
+    if (this.tuneMode) {
+      this.setupTuneMode();
+      console.log('[INV] Tune mode ON');
+    } else {
+      if (this.tuneLabel) {
+        this.tuneLabel.destroy();
+        this.tuneLabel = null;
+      }
+      this.selectedElement = null;
+      console.log('[INV] Tune mode OFF');
+    }
   }
 
   // ============================================================
