@@ -11,34 +11,34 @@
 let isInventoryOpen = false;
 let inventoryOverlay = null;
 
-// ========== TUNE CONFIG — ТОЛЬКО ОТСТУПЫ, ОСТАЛЬНОЕ АВТО ==========
+// ========== TUNE CONFIG — ДВИГАЙ СТРЕЛКАМИ ==========
 const T = {
   // Header
   headerH: 60,
   
-  // Equipment slots
-  slotSize: 58,
-  slotGap: 6,
-  colPadding: 12,      // Отступ колонок от края
+  // Equipment slots — КРУТИ ЭТО
+  slotSize: 72,        // Размер слотов экипировки
+  slotGap: 8,          // Отступ между слотами
+  colPadding: 16,      // Отступ колонок от края
   
   // Character preview  
-  charSize: 110,
+  charSize: 130,       // Размер превью персонажа
   
   // Stats bar
-  statsH: 44,
+  statsH: 48,
   statsMargin: 12,
   
-  // Grid
-  gridSlotSize: 54,
-  gridGap: 6,
-  gridPadding: 14,
+  // Grid — КРУТИ ЭТО
+  gridSlotSize: 58,    // Размер слотов сумки
+  gridGap: 8,
+  gridPadding: 16,
   gridRows: 4,
   gridCols: 6,
-  gridBottomPad: 20,   // Отступ сетки от низа
+  gridBottomPad: 20,
   
-  // Background adjustments (tune these!)
-  bgPadTop: 0,         // Доп. отступ сверху камня
-  bgPadBottom: 0,      // Доп. отступ снизу камня
+  // Background (камень) — КРУТИ ЭТО
+  bgScale: 105,        // Масштаб камня %
+  bgOffsetY: 0,        // Сдвиг камня вниз (px)
 };
 
 // ========== CALCULATED VALUES (авто от anchors) ==========
@@ -47,7 +47,7 @@ function calcLayout() {
   
   // Grid height (снизу вверх)
   const gridH = T.gridRows * T.gridSlotSize + (T.gridRows - 1) * T.gridGap;
-  const gridTop = vh - gridH - T.gridBottomPad - 30; // 30 = title
+  const gridTop = vh - gridH - T.gridBottomPad - 30;
   
   // Stats bar
   const statsTop = gridTop - T.statsH - T.statsMargin;
@@ -56,11 +56,7 @@ function calcLayout() {
   const equipTop = T.headerH;
   const equipH = statsTop - equipTop - T.statsMargin;
   
-  // Background stone fills equipment zone
-  const bgTop = equipTop + T.bgPadTop;
-  const bgH = equipH - T.bgPadTop - T.bgPadBottom;
-  
-  return { vh, gridH, gridTop, statsTop, equipTop, equipH, bgTop, bgH };
+  return { vh, gridH, gridTop, statsTop, equipTop, equipH };
 }
 
 // ========== DATA ==========
@@ -100,9 +96,10 @@ let tuneTarget = 'slotSize';
 let tuneLabel = null;
 
 const TUNE_KEYS = [
-  'headerH', 'slotSize', 'slotGap', 'colPadding', 'charSize',
-  'statsH', 'statsMargin', 'gridSlotSize', 'gridGap', 'gridPadding',
-  'gridBottomPad', 'bgPadTop', 'bgPadBottom'
+  'slotSize', 'slotGap', 'colPadding', 'charSize',
+  'gridSlotSize', 'gridGap', 'gridPadding', 'gridBottomPad',
+  'bgScale', 'bgOffsetY',
+  'headerH', 'statsH', 'statsMargin'
 ];
 
 // ============================================================
@@ -164,7 +161,6 @@ function createInventoryOverlay() {
 // ============================================================
 function applyStyles() {
   const L = calcLayout();
-  const vw = window.innerWidth;
   
   document.getElementById('inv-style').textContent = `
     #inv-overlay {
@@ -198,8 +194,10 @@ function applyStyles() {
     
     #inv-equip {
       height:${L.equipH}px;
-      background:url('assets/ui/phone_invertory_v2.png') center/${vw}px ${L.bgH}px no-repeat;
-      background-position-y:${T.bgPadTop}px;
+      background-image:url('assets/ui/phone_invertory_v2.png');
+      background-repeat:no-repeat;
+      background-position:center ${T.bgOffsetY}px;
+      background-size:${T.bgScale}% auto;
       display:flex;
       padding:${T.colPadding}px;
     }
