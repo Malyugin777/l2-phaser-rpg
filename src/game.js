@@ -285,6 +285,11 @@ function preload() {
   this.load.image('ui_exp_ring_full', 'assets/ui/ui_exp_ring_full.png');
   this.load.image('ui_avatar_placeholder', 'assets/ui/avatar_placeholder.png');
 
+  // Inventory UI (Stone style)
+  this.load.image('Invertory_header', 'assets/ui/Invertory_header.png');
+  this.load.image('invertory_slot_frame', 'assets/ui/invertory_slot_frame.png');
+  this.load.image('btn_close', 'assets/ui/btn_close.png');
+
   // Spine hero (Boy_1)
   this.load.spine('hero', 'assets/spine-main/Boy_1.json', 'assets/spine-main/Boy_1.atlas');
 
