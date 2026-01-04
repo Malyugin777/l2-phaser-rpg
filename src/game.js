@@ -163,8 +163,7 @@ let arenaPanel, arenaText, arenaFightButton, arenaFightButtonText;
 let arenaBackButton, arenaBackButtonText;
 let dungeonPanel, dungeonPanelText, dungeonStartButton, dungeonStartButtonText;
 
-// Panel states
-let isInventoryOpen = false;
+// Panel states (isInventoryOpen is in inventoryPanel.js)
 let isStatsOpen = false;
 let isForgeOpen = false;
 let isQuestsOpen = false;
