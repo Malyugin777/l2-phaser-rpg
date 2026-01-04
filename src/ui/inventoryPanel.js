@@ -10,6 +10,15 @@ let inventoryContainer = null;
 let inventoryDimmer = null;
 let inventoryScene = null;
 
+// Individual element refs for TuneMode
+let invElements = {
+  header: null,
+  body: null,
+  title: null,
+  closeBtn: null,
+  slotsContainer: null
+};
+
 // Inventory config
 const INV_CONFIG = {
   slots: {
@@ -46,9 +55,9 @@ function createInventoryPanel(scene) {
   inventoryDimmer.setInteractive();
   inventoryDimmer.setVisible(false);
 
-  // Click on dimmer to close
+  // Click on dimmer to close (unless in tune2 mode)
   inventoryDimmer.on('pointerdown', () => {
-    hideInventoryPanel();
+    if (!window.TUNE2_MODE) hideInventoryPanel();
   });
 
   // === 2. CONTAINER (Holds all inventory elements) ===
@@ -113,12 +122,14 @@ function createInventoryPanel(scene) {
   );
   bodyBg.setOrigin(0.5);
   inventoryContainer.add(bodyBg);
+  invElements.body = bodyBg;
 
   // === 4. HEADER SPRITE ===
   const header = scene.add.image(0, 0, 'Invertory_header');
   header.setOrigin(0.5, 0.5);
   header.setScale(headerScale);
   inventoryContainer.add(header);
+  invElements.header = header;
 
   // === 5. HEADER TITLE TEXT ===
   const titleText = scene.add.text(0, -5, 'INVENTORY', {
@@ -131,6 +142,7 @@ function createInventoryPanel(scene) {
   });
   titleText.setOrigin(0.5);
   inventoryContainer.add(titleText);
+  invElements.title = titleText;
 
   // === 6. CLOSE BUTTON ===
   const closeBtn = scene.add.image(
@@ -141,15 +153,18 @@ function createInventoryPanel(scene) {
   closeBtn.setScale(closeScale);
   closeBtn.setInteractive({ useHandCursor: true });
   closeBtn.on('pointerdown', () => {
-    hideInventoryPanel();
+    // Don't close in tune2 mode
+    if (!window.TUNE2_MODE) hideInventoryPanel();
   });
   closeBtn.on('pointerover', () => closeBtn.setTint(0xcccccc));
   closeBtn.on('pointerout', () => closeBtn.clearTint());
   inventoryContainer.add(closeBtn);
+  invElements.closeBtn = closeBtn;
 
   // === 7. INVENTORY SLOTS GRID ===
   const slotsContainer = scene.add.container(0, headerH / 2 + INV_CONFIG.bodyPadding + slotH / 2);
   inventoryContainer.add(slotsContainer);
+  invElements.slotsContainer = slotsContainer;
 
   // Create slots
   const slots = [];
@@ -290,6 +305,7 @@ window.showInventoryPanel = showInventoryPanel;
 window.hideInventoryPanel = hideInventoryPanel;
 window.toggleInventoryPanel = toggleInventoryPanel;
 window.updateInventorySlots = updateInventorySlots;
+window.invElements = invElements;
 
 // Getter/Setter for isInventoryOpen
 Object.defineProperty(window, 'isInventoryOpen', {

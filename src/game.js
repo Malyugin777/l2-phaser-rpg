@@ -524,6 +524,10 @@ function setupCleanMode(scene) {
   if (typeof applyTuneSettings === "function") {
     applyTuneSettings(scene, cityBg, HERO_OFFSET);
   }
+  // TUNE2 mode (inventory elements)
+  if (typeof initTune2Mode === "function") {
+    initTune2Mode(scene);
+  }
 
   // Force linear filter on textures
   const LINEAR = Phaser.Textures.FilterMode.LINEAR;
