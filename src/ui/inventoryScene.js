@@ -1,14 +1,14 @@
 "use strict";
 
 // ============================================================
-//  INVENTORY SCENE v3 — Dark Glass RPG (Code-Only UI)
-//  Программный UI без текстур, единая тёмная стеклянная панель
+//  INVENTORY SCENE v4 — Visual RPG (Textures + Spine Hero)
+//  Phaser Scene с текстурами хедера и Spine-персонажем
 // ============================================================
 
 class InventoryScene extends Phaser.Scene {
   constructor() {
     super({ key: 'InventoryScene' });
-    
+
     this.equippedItems = {};
     this.inventoryItems = [
       { id: "1", name: "Iron Sword", type: "mainHand", rarity: "common", level: 5, attack: 25 },
@@ -20,70 +20,91 @@ class InventoryScene extends Phaser.Scene {
       { id: "7", name: "Warrior Gloves", type: "gloves", rarity: "common", level: 4, defense: 5 },
       { id: "8", name: "Phoenix Armor", type: "chest", rarity: "epic", level: 20, defense: 65, hp: 200 },
     ];
-    
+
     this.selectedItem = null;
     this.popup = null;
+
+    // Tune mode
+    this.tuneMode = true;
+    this.tunableElements = [];
+    this.selectedElement = null;
   }
 
   preload() {
-    // Only load slot frames and close button - background/header are code-drawn
+    // Load textures
     if (!this.textures.exists('inv_slot')) {
       this.load.image('inv_slot', 'assets/ui/invertory_slot_frame.png');
     }
     if (!this.textures.exists('inv_close')) {
       this.load.image('inv_close', 'assets/ui/btn_close.png');
     }
+    if (!this.textures.exists('inv_header')) {
+      this.load.image('inv_header', 'assets/ui/Invertory_header.png');
+    }
   }
 
   create() {
-    const W = this.scale.width;   // 780
-    const H = this.scale.height;  // 1688
-    
-    console.log('[INV_SCENE] Creating v2, size:', W, 'x', H);
+    const W = this.scale.width;
+    const H = this.scale.height;
 
-    // ========== CONFIG v2 — ЖИРНЫЕ РАЗМЕРЫ ==========
+    console.log('[INV_SCENE] Creating v4 Visual, size:', W, 'x', H);
+
+    // ========== CONFIG ==========
     this.CFG = {
-      // Colors
-      dimmerAlpha: 0.85, // Темнее!
-      
+      dimmerAlpha: 0.85,
+
       rarityColors: {
-        common:   { color: 0x52525b },
+        common:   { color: 0x9ca3af },
         uncommon: { color: 0x22c55e },
         rare:     { color: 0x3b82f6 },
         epic:     { color: 0xa855f7 },
         legendary:{ color: 0xf59e0b }
       },
-      
-      // Layout — КЛЮЧЕВЫЕ ВЫСОТЫ
-      headerHeight: 90,
-      equipZoneHeight: 580,  // Зона экипировки
-      statsBarHeight: 55,
-      
-      // Slots — УВЕЛИЧЕННЫЕ
-      equipSlotSize: 82,
-      equipSlotGap: 8,
-      gridSlotSize: 68,
+
+      // Layout
+      panelPadding: 20,
+      headerHeight: 100,
+      equipZoneHeight: 520,
+      statsBarHeight: 50,
+
+      // Slots
+      equipSlotSize: 80,
+      equipSlotGap: 12,
+      gridSlotSize: 72,
       gridCols: 6,
       gridRows: 4,
-      gridGap: 10,
-      
-      // Positions — ШИРОКО РАЗНЕСЕНЫ
-      leftColX: W * 0.14,      // 14% от края
-      rightColX: W * 0.86,     // 86% от края
+      gridGap: 8,
+
+      // Positions
+      leftColX: W * 0.15,
+      rightColX: W * 0.85,
       centerX: W / 2,
     };
 
-    // Вычисляем Y координаты
-    this.CFG.equipZoneY = this.CFG.headerHeight;
-    this.CFG.statsBarY = this.CFG.headerHeight + this.CFG.equipZoneHeight;
-    this.CFG.gridStartY = this.CFG.statsBarY + this.CFG.statsBarHeight + 45;
+    // Panel bounds
+    const panelW = W - 40;
+    const panelH = H * 0.88;
+    const panelX = W / 2;
+    const panelY = H / 2;
 
-    // ========== 1. ПОЛНЫЙ DIMMER ==========
+    this.panelBounds = {
+      x: panelX - panelW / 2,
+      y: panelY - panelH / 2,
+      w: panelW,
+      h: panelH
+    };
+
+    // Derived positions
+    this.CFG.headerY = this.panelBounds.y;
+    this.CFG.equipZoneY = this.panelBounds.y + this.CFG.headerHeight;
+    this.CFG.statsBarY = this.CFG.equipZoneY + this.CFG.equipZoneHeight;
+    this.CFG.gridStartY = this.CFG.statsBarY + this.CFG.statsBarHeight + 30;
+
+    // ========== 1. DIMMER ==========
     this.dimmer = this.add.rectangle(W/2, H/2, W, H, 0x000000, this.CFG.dimmerAlpha);
     this.dimmer.setInteractive();
     this.dimmer.on('pointerdown', (ptr) => {
-      // Закрыть только если клик вне UI
-      if (ptr.y > this.CFG.gridStartY + 300) {
+      if (ptr.y > this.CFG.gridStartY + 350) {
         this.closeInventory();
       }
     });
@@ -91,123 +112,103 @@ class InventoryScene extends Phaser.Scene {
     // ========== 2. MAIN CONTAINER ==========
     this.mainContainer = this.add.container(0, 0);
 
-    // ========== 3. DARK GLASS PANEL (единая панель) ==========
-    this.createDarkGlassPanel(W, H);
+    // ========== 3. VISUAL PANEL ==========
+    this.createVisualPanel(W, H);
 
-    // ========== 6. EQUIPMENT SLOTS ==========
+    // ========== 4. EQUIPMENT SLOTS ==========
     this.createEquipmentSlots(W);
 
-    // ========== 7. CHARACTER PREVIEW ==========
-    this.createCharPreview(W);
+    // ========== 5. HERO PREVIEW ==========
+    this.createHeroPreview(W);
 
-    // ========== 8. STATS BAR ==========
+    // ========== 6. STATS BAR ==========
     this.createStatsBar(W);
 
-    // ========== 9. INVENTORY GRID ==========
+    // ========== 7. INVENTORY GRID ==========
     this.createInventoryGrid(W, H);
 
-    // ========== 10. INPUT ==========
+    // ========== 8. INPUT ==========
     this.setupInput();
 
-    console.log('[INV_SCENE] v2 Created successfully');
+    // ========== 9. TUNE MODE ==========
+    if (this.tuneMode) {
+      this.setupTuneMode();
+    }
+
+    console.log('[INV_SCENE] v4 Created successfully');
   }
 
   // ============================================================
-  //  DARK GLASS PANEL (Code-Only UI)
+  //  VISUAL PANEL (with textures)
   // ============================================================
-  createDarkGlassPanel(W, H) {
-    const panelW = W * 0.95;
-    const panelH = H * 0.85;
-    const panelX = W / 2;
-    const panelY = H / 2;
-    const radius = 20;
-    const headerHeight = 60;
+  createVisualPanel(W, H) {
+    const pb = this.panelBounds;
 
-    // Store panel bounds for layout calculations
-    this.panelBounds = {
-      x: panelX - panelW / 2,
-      y: panelY - panelH / 2,
-      w: panelW,
-      h: panelH,
-      headerHeight: headerHeight
-    };
+    // ===== MAIN BACKGROUND =====
+    this.panelBg = this.add.graphics();
 
-    // ===== MAIN PANEL BACKGROUND =====
-    this.bg = this.add.graphics();
+    // Dark fill with rounded corners
+    this.panelBg.fillStyle(0x0d0d12, 0.95);
+    this.panelBg.fillRoundedRect(pb.x, pb.y, pb.w, pb.h, 16);
 
-    // Fill - deep black/blue with alpha
-    this.bg.fillStyle(0x101014, 0.95);
-    this.bg.fillRoundedRect(
-      panelX - panelW / 2,
-      panelY - panelH / 2,
-      panelW,
-      panelH,
-      radius
-    );
+    // Gold/bronze stroke
+    this.panelBg.lineStyle(3, 0x8b7355, 1);
+    this.panelBg.strokeRoundedRect(pb.x, pb.y, pb.w, pb.h, 16);
 
-    // Stroke - dark metallic gray
-    this.bg.lineStyle(2, 0x3f3f46, 1);
-    this.bg.strokeRoundedRect(
-      panelX - panelW / 2,
-      panelY - panelH / 2,
-      panelW,
-      panelH,
-      radius
-    );
+    // Inner glow line
+    this.panelBg.lineStyle(1, 0x3f3f46, 0.5);
+    this.panelBg.strokeRoundedRect(pb.x + 4, pb.y + 4, pb.w - 8, pb.h - 8, 12);
 
-    this.mainContainer.add(this.bg);
+    this.mainContainer.add(this.panelBg);
 
-    // ===== HEADER SEPARATOR LINE =====
-    const lineY = this.panelBounds.y + headerHeight;
-    this.headerLine = this.add.graphics();
-    this.headerLine.lineStyle(1, 0x3f3f46, 1);
-    this.headerLine.lineBetween(
-      this.panelBounds.x + 15,
-      lineY,
-      this.panelBounds.x + panelW - 15,
-      lineY
-    );
-    this.mainContainer.add(this.headerLine);
+    // ===== HEADER IMAGE =====
+    if (this.textures.exists('inv_header')) {
+      this.header = this.add.image(W / 2, pb.y + 50, 'inv_header');
+      this.header.setDisplaySize(pb.w - 20, this.CFG.headerHeight);
+      this.mainContainer.add(this.header);
+      this.registerTunable(this.header, 'header');
+    }
 
-    // ===== HEADER TITLE =====
-    const titleY = this.panelBounds.y + headerHeight / 2;
-    this.title = this.add.text(panelX, titleY, 'ИНВЕНТАРЬ', {
-      fontFamily: 'Verdana, Arial, sans-serif',
-      fontSize: '24px',
+    // ===== TITLE TEXT (over header) =====
+    this.title = this.add.text(W / 2, pb.y + 50, 'ИНВЕНТАРЬ', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '28px',
       fontStyle: 'bold',
-      color: '#f59e0b'  // Gold
+      color: '#ffd700',
+      stroke: '#000000',
+      strokeThickness: 4,
+      shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 4, fill: true }
     }).setOrigin(0.5);
     this.mainContainer.add(this.title);
+    this.registerTunable(this.title, 'title');
 
     // ===== CLOSE BUTTON =====
-    const closeX = this.panelBounds.x + panelW - 40;
-    const closeY = titleY;
+    const closeX = pb.x + pb.w - 45;
+    const closeY = pb.y + 50;
 
     if (this.textures.exists('inv_close')) {
       this.closeBtn = this.add.image(closeX, closeY, 'inv_close');
-      this.closeBtn.setDisplaySize(36, 36);
-      this.closeBtn.setTint(0xaaaaaa);  // Slightly dimmed to fit dark theme
+      this.closeBtn.setDisplaySize(40, 40);
     } else {
       this.closeBtn = this.add.text(closeX, closeY, '✕', {
-        fontSize: '28px',
-        color: '#71717a',
+        fontSize: '32px',
+        color: '#ff6b6b',
         fontStyle: 'bold'
       }).setOrigin(0.5);
     }
+
     this.closeBtn.setInteractive({ useHandCursor: true });
     this.closeBtn.on('pointerdown', () => this.closeInventory());
-    this.closeBtn.on('pointerover', () => {
-      this.closeBtn.setScale(1.15);
-      if (this.closeBtn.setTint) this.closeBtn.setTint(0xffffff);
-    });
-    this.closeBtn.on('pointerout', () => {
-      this.closeBtn.setScale(1.0);
-      if (this.closeBtn.setTint) this.closeBtn.setTint(0xaaaaaa);
-    });
+    this.closeBtn.on('pointerover', () => this.closeBtn.setScale(1.2));
+    this.closeBtn.on('pointerout', () => this.closeBtn.setScale(1.0));
     this.mainContainer.add(this.closeBtn);
 
-    // Update CFG to use panel-relative positions
-    this.CFG.headerHeight = this.panelBounds.y + headerHeight;
+    // ===== SEPARATOR LINE =====
+    const sepY = this.CFG.equipZoneY;
+    this.separator = this.add.graphics();
+    this.separator.lineStyle(2, 0x5a4a3a, 0.8);
+    this.separator.lineBetween(pb.x + 30, sepY, pb.x + pb.w - 30, sepY);
+    this.mainContainer.add(this.separator);
   }
 
   // ============================================================
@@ -215,19 +216,19 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   createEquipmentSlots(W) {
     const cfg = this.CFG;
-    const startY = cfg.headerHeight + 25;
+    const startY = cfg.equipZoneY + 30;
     const slotSize = cfg.equipSlotSize;
     const gap = cfg.equipSlotGap;
-    
+
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
-    
+
     const labels = {
       helmet: 'Шлем', chest: 'Броня', pants: 'Штаны', gloves: 'Перчатки',
       boots: 'Ботинки', mainHand: 'Оружие', offHand: 'Щит', necklace: 'Ожерелье',
       earring1: 'Серьга', earring2: 'Серьга', ring1: 'Кольцо', ring2: 'Кольцо'
     };
-    
+
     const icons = {
       helmet: '🪖', chest: '🛡️', pants: '👖', gloves: '🧤',
       boots: '👢', mainHand: '⚔️', offHand: '🛡️', necklace: '📿',
@@ -254,74 +255,99 @@ class InventoryScene extends Phaser.Scene {
   createEquipSlot(x, y, type, label, icon) {
     const size = this.CFG.equipSlotSize;
     const container = this.add.container(x, y);
-    
-    // Slot background
+
+    // Slot background - NO tint, original texture
     let slotBg;
     if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
       slotBg.setDisplaySize(size, size);
-      slotBg.setTint(0x666666);  // Darken to fit dark glass theme
+      // Light tint for visibility on dark bg
+      slotBg.setTint(0xbbbbbb);
     } else {
-      slotBg = this.add.rectangle(0, 0, size, size, 0x1a1a1f);
-      slotBg.setStrokeStyle(2, 0x3f3f46);
+      slotBg = this.add.rectangle(0, 0, size, size, 0x2a2a35);
+      slotBg.setStrokeStyle(2, 0x5a5a6a);
     }
     container.add(slotBg);
 
-    // Icon — КРУПНЕЕ
+    // Icon
     const iconText = this.add.text(0, 0, icon, {
-      fontSize: '36px'
-    }).setOrigin(0.5).setAlpha(0.5);
+      fontSize: '32px'
+    }).setOrigin(0.5).setAlpha(0.4);
     container.add(iconText);
-    
+
     // Label
-    const labelText = this.add.text(0, size / 2 + 14, label, {
+    const labelText = this.add.text(0, size / 2 + 12, label, {
       fontFamily: 'Verdana',
-      fontSize: '12px',
-      color: '#9ca3af'
+      fontSize: '11px',
+      color: '#a0a0a0'
     }).setOrigin(0.5);
     container.add(labelText);
-    
+
     // Interactive
     slotBg.setInteractive({ useHandCursor: true });
     slotBg.on('pointerover', () => {
-      slotBg.setTint(0x888888);  // Lighter on hover
-      container.setScale(1.05);
+      slotBg.setTint(0xffffff);
+      container.setScale(1.08);
     });
     slotBg.on('pointerout', () => {
-      slotBg.setTint(0x666666);  // Back to dark
+      slotBg.setTint(0xbbbbbb);
       container.setScale(1.0);
     });
     slotBg.on('pointerdown', () => this.onEquipSlotClick(type));
-    
+
     this.mainContainer.add(container);
-    
+    this.registerTunable(container, `slot_${type}`);
+
     return { container, bg: slotBg, icon: iconText, label: labelText, type, item: null };
   }
 
   // ============================================================
-  //  CHARACTER PREVIEW
+  //  HERO PREVIEW (Spine)
   // ============================================================
-  createCharPreview(W) {
+  createHeroPreview(W) {
     const cfg = this.CFG;
-    const centerY = cfg.headerHeight + cfg.equipZoneHeight / 2;
-    const size = 160;
+    const centerY = cfg.equipZoneY + cfg.equipZoneHeight / 2 + 20;
 
-    // Preview background - darker, glass-like
-    const previewBg = this.add.rectangle(W / 2, centerY, size, size, 0x0a0a0f, 0.8);
-    previewBg.setStrokeStyle(2, 0x3f3f46);
-    this.mainContainer.add(previewBg);
+    // Background frame
+    const frameW = 180;
+    const frameH = 320;
 
-    // Character icon (placeholder)
-    const charIcon = this.add.text(W / 2, centerY, '🛡️', {
-      fontSize: '72px'
-    }).setOrigin(0.5).setAlpha(0.6);
-    this.mainContainer.add(charIcon);
+    this.heroFrame = this.add.graphics();
+    this.heroFrame.fillStyle(0x0a0a10, 0.6);
+    this.heroFrame.fillRoundedRect(W/2 - frameW/2, centerY - frameH/2, frameW, frameH, 12);
+    this.heroFrame.lineStyle(2, 0x4a4a5a, 0.8);
+    this.heroFrame.strokeRoundedRect(W/2 - frameW/2, centerY - frameH/2, frameW, frameH, 12);
+    this.mainContainer.add(this.heroFrame);
 
-    // Shadow under character
-    const shadow = this.add.ellipse(W / 2, centerY + 65, 80, 20, 0x000000, 0.3);
+    // Shadow under hero
+    const shadow = this.add.ellipse(W / 2, centerY + 130, 100, 25, 0x000000, 0.5);
     this.mainContainer.add(shadow);
 
-    this.charPreview = { bg: previewBg, icon: charIcon, shadow };
+    // Try to add Spine hero
+    try {
+      if (this.cache.custom && this.cache.custom.spine && this.cache.custom.spine.has('hero')) {
+        this.heroSpine = this.add.spine(W / 2, centerY + 80, 'hero', 'idle', true);
+        this.heroSpine.setScale(0.7);
+        this.mainContainer.add(this.heroSpine);
+        this.registerTunable(this.heroSpine, 'heroSpine');
+        console.log('[INV] Spine hero added');
+      } else {
+        // Fallback - text placeholder
+        this.heroPlaceholder = this.add.text(W / 2, centerY, '⚔️', {
+          fontSize: '80px'
+        }).setOrigin(0.5).setAlpha(0.5);
+        this.mainContainer.add(this.heroPlaceholder);
+        console.log('[INV] Spine not available, using placeholder');
+      }
+    } catch (e) {
+      console.log('[INV] Spine error:', e.message);
+      this.heroPlaceholder = this.add.text(W / 2, centerY, '🛡️', {
+        fontSize: '80px'
+      }).setOrigin(0.5).setAlpha(0.5);
+      this.mainContainer.add(this.heroPlaceholder);
+    }
+
+    this.charPreview = { frame: this.heroFrame, shadow };
   }
 
   // ============================================================
@@ -329,12 +355,12 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   createStatsBar(W) {
     const y = this.CFG.statsBarY + this.CFG.statsBarHeight / 2;
-    const barW = W * 0.9;
+    const barW = this.panelBounds.w - 60;
     const barH = this.CFG.statsBarHeight;
 
-    // Background - dark glass style
-    const statsBg = this.add.rectangle(W / 2, y, barW, barH, 0x0a0a0f, 0.9);
-    statsBg.setStrokeStyle(1, 0x3f3f46);
+    // Background
+    const statsBg = this.add.rectangle(W / 2, y, barW, barH, 0x1a1a22, 0.9);
+    statsBg.setStrokeStyle(1, 0x4a4a5a);
     this.mainContainer.add(statsBg);
 
     // Stats
@@ -345,7 +371,7 @@ class InventoryScene extends Phaser.Scene {
       fontFamily: 'Verdana',
       fontSize: '18px',
       fontStyle: 'bold',
-      color: '#e4e4e7'  // Slightly dimmed white
+      color: '#e8e8e8'
     }).setOrigin(0.5);
     this.mainContainer.add(statsText);
 
@@ -379,42 +405,43 @@ class InventoryScene extends Phaser.Scene {
     const gap = cfg.gridGap;
     const cols = cfg.gridCols;
     const rows = cfg.gridRows;
-    
+
     const gridW = cols * slotSize + (cols - 1) * gap;
     const startX = (W - gridW) / 2 + slotSize / 2;
-    
+
     // Title
-    const titleY = startY - 35;
-    const gridTitle = this.add.text(35, titleY, 'Предметы', {
-      fontFamily: 'Verdana',
+    const titleY = startY - 30;
+    const gridTitle = this.add.text(this.panelBounds.x + 30, titleY, 'Предметы', {
+      fontFamily: 'Georgia',
       fontSize: '18px',
       fontStyle: 'bold',
-      color: '#ffffff'
+      color: '#d4af37'
     });
     this.mainContainer.add(gridTitle);
-    
-    const countText = this.add.text(W - 35, titleY, `${this.inventoryItems.length} шт`, {
+
+    const countText = this.add.text(this.panelBounds.x + this.panelBounds.w - 30, titleY,
+      `${this.inventoryItems.length} шт`, {
       fontFamily: 'Verdana',
-      fontSize: '14px',
-      color: '#71717a'
+      fontSize: '13px',
+      color: '#808080'
     }).setOrigin(1, 0);
     this.mainContainer.add(countText);
     this.gridCountText = countText;
-    
+
     // Grid slots
     this.gridSlots = [];
-    
+
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const x = startX + col * (slotSize + gap);
         const y = startY + row * (slotSize + gap);
         const idx = row * cols + col;
-        
+
         const slot = this.createGridSlot(x, y, idx);
         this.gridSlots.push(slot);
       }
     }
-    
+
     this.refreshGrid();
   }
 
@@ -422,50 +449,54 @@ class InventoryScene extends Phaser.Scene {
     const size = this.CFG.gridSlotSize;
     const container = this.add.container(x, y);
 
-    // Slot background
+    // Slot background - lighter tint
     let slotBg;
     if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
       slotBg.setDisplaySize(size, size);
-      slotBg.setTint(0x666666);  // Darken to fit dark glass theme
+      slotBg.setTint(0xaaaaaa);
     } else {
-      slotBg = this.add.rectangle(0, 0, size, size, 0x1a1a1f);
-      slotBg.setStrokeStyle(1, 0x3f3f46);
+      slotBg = this.add.rectangle(0, 0, size, size, 0x2a2a35);
+      slotBg.setStrokeStyle(1, 0x4a4a5a);
     }
     container.add(slotBg);
-    
+
     // Item icon
     const itemIcon = this.add.text(0, 0, '', {
-      fontSize: '28px'
+      fontSize: '26px'
     }).setOrigin(0.5).setVisible(false);
     container.add(itemIcon);
-    
+
     // Level badge
     const levelBadge = this.add.text(size/2 - 4, -size/2 + 4, '', {
       fontFamily: 'Verdana',
-      fontSize: '11px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: '#fbbf24',
-      backgroundColor: '#000000aa',
+      color: '#ffd700',
+      backgroundColor: '#000000cc',
       padding: { x: 3, y: 2 }
     }).setOrigin(1, 0).setVisible(false);
     container.add(levelBadge);
-    
+
     // Interactive
     slotBg.setInteractive({ useHandCursor: true });
-    slotBg.on('pointerover', () => container.setScale(1.08));
+    slotBg.on('pointerover', () => {
+      container.setScale(1.1);
+      slotBg.setTint(0xffffff);
+    });
     slotBg.on('pointerout', () => {
       if (this.selectedItem?.id !== this.gridSlots[index]?.item?.id) {
         container.setScale(1.0);
+        slotBg.setTint(0xaaaaaa);
       }
     });
     slotBg.on('pointerdown', () => this.onGridSlotClick(index));
-    
+
     this.mainContainer.add(container);
-    
-    return { 
-      container, bg: slotBg, icon: itemIcon, level: levelBadge, 
-      index, item: null, x, y 
+
+    return {
+      container, bg: slotBg, icon: itemIcon, level: levelBadge,
+      index, item: null, x, y
     };
   }
 
@@ -475,34 +506,30 @@ class InventoryScene extends Phaser.Scene {
       boots: '👢', mainHand: '⚔️', offHand: '🛡️', necklace: '📿',
       earring1: '💎', earring2: '💎', ring1: '💍', ring2: '💍'
     };
-    
+
     this.gridSlots.forEach((slot, i) => {
       const item = this.inventoryItems[i];
       slot.item = item || null;
-      
+
       if (item) {
         slot.icon.setText(icons[item.type] || '📦');
         slot.icon.setVisible(true);
         slot.level.setText(item.level);
         slot.level.setVisible(true);
-        
+
         // Rarity border
         const rarity = this.CFG.rarityColors[item.rarity] || this.CFG.rarityColors.common;
-        if (slot.bg.setStrokeStyle) {
-          slot.bg.setStrokeStyle(3, rarity.color);
-        }
-        
+        slot.bg.setTint(rarity.color);
+
         slot.container.setAlpha(1);
       } else {
         slot.icon.setVisible(false);
         slot.level.setVisible(false);
-        if (slot.bg.setStrokeStyle) {
-          slot.bg.setStrokeStyle(1, 0x3f3f46);
-        }
-        slot.container.setAlpha(0.4);
+        slot.bg.setTint(0x666666);
+        slot.container.setAlpha(0.5);
       }
     });
-    
+
     if (this.gridCountText) {
       this.gridCountText.setText(`${this.inventoryItems.length} шт`);
     }
@@ -517,70 +544,141 @@ class InventoryScene extends Phaser.Scene {
   }
 
   // ============================================================
+  //  TUNE MODE
+  // ============================================================
+  registerTunable(element, name) {
+    if (!this.tuneMode) return;
+    this.tunableElements.push({ element, name, originalX: element.x, originalY: element.y });
+  }
+
+  setupTuneMode() {
+    console.log('[INV_TUNE] ===== TUNE MODE ENABLED =====');
+    console.log('[INV_TUNE] Arrow keys = move, Q/E = scale, P = print');
+
+    // Tune label
+    this.tuneLabel = this.add.text(10, 10, '🔧 TUNE MODE', {
+      fontSize: '14px',
+      color: '#00ff00',
+      backgroundColor: '#000000aa',
+      padding: { x: 6, y: 4 }
+    }).setScrollFactor(0).setDepth(1000);
+
+    this.input.keyboard.on('keydown-LEFT', () => this.moveSelected(-5, 0));
+    this.input.keyboard.on('keydown-RIGHT', () => this.moveSelected(5, 0));
+    this.input.keyboard.on('keydown-UP', () => this.moveSelected(0, -5));
+    this.input.keyboard.on('keydown-DOWN', () => this.moveSelected(0, 5));
+    this.input.keyboard.on('keydown-Q', () => this.scaleSelected(-0.05));
+    this.input.keyboard.on('keydown-E', () => this.scaleSelected(0.05));
+    this.input.keyboard.on('keydown-P', () => this.printTuneData());
+
+    // Click to select
+    this.input.on('pointerdown', (ptr) => {
+      this.tunableElements.forEach(t => {
+        const bounds = t.element.getBounds ? t.element.getBounds() :
+          { x: t.element.x - 50, y: t.element.y - 50, width: 100, height: 100 };
+        if (ptr.x >= bounds.x && ptr.x <= bounds.x + bounds.width &&
+            ptr.y >= bounds.y && ptr.y <= bounds.y + bounds.height) {
+          this.selectedElement = t;
+          console.log('[TUNE] Selected:', t.name);
+        }
+      });
+    });
+  }
+
+  moveSelected(dx, dy) {
+    if (!this.selectedElement) return;
+    this.selectedElement.element.x += dx;
+    this.selectedElement.element.y += dy;
+  }
+
+  scaleSelected(ds) {
+    if (!this.selectedElement) return;
+    const el = this.selectedElement.element;
+    const newScale = (el.scaleX || 1) + ds;
+    el.setScale(Math.max(0.1, newScale));
+  }
+
+  printTuneData() {
+    console.log('[TUNE] ===== POSITIONS =====');
+    this.tunableElements.forEach(t => {
+      const el = t.element;
+      console.log(`${t.name}: x=${Math.round(el.x)}, y=${Math.round(el.y)}, scale=${(el.scaleX || 1).toFixed(2)}`);
+    });
+  }
+
+  // ============================================================
   //  SLOT CLICKS
   // ============================================================
   onEquipSlotClick(type) {
     console.log('[INV] Equip slot clicked:', type);
     const slot = this.equipSlots[type];
     if (slot.item) {
-      // TODO: Unequip
+      // Unequip
+      this.inventoryItems.push(slot.item);
+      slot.item = null;
+      slot.icon.setAlpha(0.4);
+      slot.bg.setTint(0xbbbbbb);
+      delete this.equippedItems[type];
+      this.refreshGrid();
+      this.updateStatsDisplay();
     }
   }
 
   onGridSlotClick(index) {
     const slot = this.gridSlots[index];
     if (!slot.item) return;
-    
+
     console.log('[INV] Grid slot clicked:', index, slot.item.name);
-    
+
     this.closePopup();
-    
+
     this.selectedItem = slot.item;
-    slot.container.setScale(0.92);
-    
-    this.showPopup(slot.x, slot.y - 80, slot.item);
+    slot.container.setScale(0.95);
+
+    this.showPopup(slot.x, slot.y - 90, slot.item);
   }
 
   // ============================================================
   //  POPUP
   // ============================================================
   showPopup(x, y, item) {
-    const popupW = 180;
-    const popupH = 120;
+    const popupW = 190;
+    const popupH = 130;
 
     this.popup = this.add.container(x, y);
 
-    // Background - dark glass style
-    const bg = this.add.rectangle(0, 0, popupW, popupH, 0x0a0a0f, 0.98);
-    bg.setStrokeStyle(2, 0x3f3f46);
+    // Background
+    const bg = this.add.rectangle(0, 0, popupW, popupH, 0x12121a, 0.98);
+    bg.setStrokeStyle(2, 0x5a4a3a);
     this.popup.add(bg);
-    
+
     // Item name
     const rarity = this.CFG.rarityColors[item.rarity] || this.CFG.rarityColors.common;
-    const nameText = this.add.text(0, -38, item.name, {
-      fontFamily: 'Verdana',
-      fontSize: '14px',
+    const nameText = this.add.text(0, -42, item.name, {
+      fontFamily: 'Georgia',
+      fontSize: '15px',
       fontStyle: 'bold',
       color: '#' + rarity.color.toString(16).padStart(6, '0')
     }).setOrigin(0.5);
     this.popup.add(nameText);
-    
+
     // Level info
-    const infoText = this.add.text(0, -18, `Уровень ${item.level}`, {
+    const infoText = this.add.text(0, -22, `Уровень ${item.level}`, {
       fontFamily: 'Verdana',
       fontSize: '11px',
-      color: '#9ca3af'
+      color: '#a0a0a0'
     }).setOrigin(0.5);
     this.popup.add(infoText);
-    
+
     // Equip button
-    const equipBtn = this.add.rectangle(0, 12, 140, 32, 0x2563eb);
+    const equipBtn = this.add.rectangle(0, 12, 150, 34, 0x2563eb);
+    equipBtn.setStrokeStyle(1, 0x3b82f6);
     equipBtn.setInteractive({ useHandCursor: true });
     equipBtn.on('pointerdown', () => this.equipItem(item));
     equipBtn.on('pointerover', () => equipBtn.setFillStyle(0x3b82f6));
     equipBtn.on('pointerout', () => equipBtn.setFillStyle(0x2563eb));
     this.popup.add(equipBtn);
-    
+
     const equipText = this.add.text(0, 12, '✨ Надеть', {
       fontFamily: 'Verdana',
       fontSize: '14px',
@@ -588,28 +686,28 @@ class InventoryScene extends Phaser.Scene {
       color: '#ffffff'
     }).setOrigin(0.5);
     this.popup.add(equipText);
-    
+
     // Sell button
-    const sellBtn = this.add.rectangle(0, 48, 140, 32, 0x000000, 0);
-    sellBtn.setStrokeStyle(2, 0xf59e0b);
+    const sellBtn = this.add.rectangle(0, 50, 150, 34, 0x000000, 0);
+    sellBtn.setStrokeStyle(2, 0xd4af37);
     sellBtn.setInteractive({ useHandCursor: true });
     sellBtn.on('pointerdown', () => this.sellItem(item));
-    sellBtn.on('pointerover', () => sellBtn.setFillStyle(0xf59e0b, 0.2));
+    sellBtn.on('pointerover', () => sellBtn.setFillStyle(0xd4af37, 0.2));
     sellBtn.on('pointerout', () => sellBtn.setFillStyle(0x000000, 0));
     this.popup.add(sellBtn);
-    
-    const sellText = this.add.text(0, 48, '💰 Продать', {
+
+    const sellText = this.add.text(0, 50, '💰 Продать', {
       fontFamily: 'Verdana',
       fontSize: '14px',
       fontStyle: 'bold',
-      color: '#f59e0b'
+      color: '#d4af37'
     }).setOrigin(0.5);
     this.popup.add(sellText);
-    
+
     // Arrow
-    const arrow = this.add.triangle(0, popupH/2 + 10, -10, 0, 10, 0, 0, 12, 0x0a0a0f);
+    const arrow = this.add.triangle(0, popupH/2 + 8, -12, 0, 12, 0, 0, 14, 0x12121a);
     this.popup.add(arrow);
-    
+
     this.mainContainer.add(this.popup);
   }
 
@@ -618,8 +716,14 @@ class InventoryScene extends Phaser.Scene {
       this.popup.destroy();
       this.popup = null;
     }
-    
-    this.gridSlots.forEach(slot => slot.container.setScale(1));
+
+    this.gridSlots.forEach(slot => {
+      slot.container.setScale(1);
+      if (slot.item) {
+        const rarity = this.CFG.rarityColors[slot.item.rarity];
+        slot.bg.setTint(rarity.color);
+      }
+    });
     this.selectedItem = null;
   }
 
@@ -628,10 +732,15 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   equipItem(item) {
     console.log('[INV] Equipping:', item.name);
-    
+
+    // If slot occupied, swap
+    if (this.equippedItems[item.type]) {
+      this.inventoryItems.push(this.equippedItems[item.type]);
+    }
+
     this.equippedItems[item.type] = item;
     this.inventoryItems = this.inventoryItems.filter(i => i.id !== item.id);
-    
+
     this.closePopup();
     this.refreshGrid();
     this.updateStatsDisplay();
@@ -640,9 +749,9 @@ class InventoryScene extends Phaser.Scene {
 
   sellItem(item) {
     console.log('[INV] Selling:', item.name);
-    
+
     this.inventoryItems = this.inventoryItems.filter(i => i.id !== item.id);
-    
+
     this.closePopup();
     this.refreshGrid();
   }
@@ -650,22 +759,20 @@ class InventoryScene extends Phaser.Scene {
   updateEquipSlot(type) {
     const slot = this.equipSlots[type];
     const item = this.equippedItems[type];
-    
+
     if (item) {
       const icons = {
         helmet: '🪖', chest: '🛡️', pants: '👖', gloves: '🧤',
         boots: '👢', mainHand: '⚔️', offHand: '🛡️', necklace: '📿',
         earring1: '💎', earring2: '💎', ring1: '💍', ring2: '💍'
       };
-      
+
       slot.icon.setText(icons[type]);
       slot.icon.setAlpha(1);
       slot.item = item;
-      
+
       const rarity = this.CFG.rarityColors[item.rarity];
-      if (slot.bg.setStrokeStyle) {
-        slot.bg.setStrokeStyle(3, rarity.color);
-      }
+      slot.bg.setTint(rarity.color);
     }
   }
 
@@ -684,4 +791,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v3 Dark Glass RPG loaded');
+console.log('[InventoryScene] v4 Visual RPG loaded');
