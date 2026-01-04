@@ -13,14 +13,12 @@ class InventoryScene extends Phaser.Scene {
     super({ key: 'InventoryScene' });
     
     // ===== КОНФИГ L2 STYLE =====
+    // Все размеры вычисляются динамически в create()
     this.CFG = {
-      // Размеры слотов
-      equipSlot: 72,
-      gridSlot: 56,
+      padding: 20,
+      gap: 10,
       gridCols: 6,
       gridRows: 4,
-      gap: 8,
-      padding: 16,
       
       // Цвета L2 Dark Fantasy (hex для Phaser)
       bgTop: 0x232730,
@@ -84,9 +82,34 @@ class InventoryScene extends Phaser.Scene {
   //  CREATE — строим UI
   // ============================================================
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = this.scale.width;   // 780
+    const H = this.scale.height;  // 1688
     const C = this.CFG;
+    
+    // ===== ДИНАМИЧЕСКИЙ РАСЧЁТ РАЗМЕРОВ =====
+    const contentW = W - C.padding * 2;  // 740
+    
+    // Сетка: 6 колонок, подгоняем слот под ширину
+    // gridW = gridCols * gridSlot + (gridCols-1) * gap
+    // gridSlot = (contentW - (gridCols-1) * gap) / gridCols
+    C.gridSlot = Math.floor((contentW - (C.gridCols - 1) * C.gap) / C.gridCols);
+    // 740 - 50 = 690 / 6 = 115 — слишком большие, ограничим
+    C.gridSlot = Math.min(C.gridSlot, 90);  // Макс 90px
+    
+    // Экип слоты чуть больше
+    C.equipSlot = Math.floor(C.gridSlot * 1.1);  // ~99px, но ограничим
+    C.equipSlot = Math.min(C.equipSlot, 88);
+    
+    // Герой — занимает центр между колонками
+    // heroBoxW = contentW - 2*equipSlot - 2*gap
+    C.heroBoxW = contentW - C.equipSlot * 2 - C.gap * 4;
+    C.heroBoxW = Math.min(C.heroBoxW, 180);  // Макс 180
+    C.heroBoxH = Math.floor(C.heroBoxW * 1.3);  // Пропорция
+    
+    console.log(`[INV] Screen: ${W}×${H}`);
+    console.log(`[INV] ContentW: ${contentW}`);
+    console.log(`[INV] GridSlot: ${C.gridSlot}, EquipSlot: ${C.equipSlot}`);
+    console.log(`[INV] HeroBox: ${C.heroBoxW}×${C.heroBoxH}`);
     
     // Контейнер для всего UI
     this.container = this.add.container(0, 0);
@@ -133,10 +156,10 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   createMainPanel(W, H) {
     const C = this.CFG;
-    const panelW = Math.min(W * 0.94, 400);
-    const panelH = H * 0.88;
-    const panelX = (W - panelW) / 2;
-    const panelY = (H - panelH) / 2;
+    const panelW = W;      // На всю ширину
+    const panelH = H;      // На всю высоту
+    const panelX = 0;
+    const panelY = 0;
     
     this.panelBounds = { x: panelX, y: panelY, w: panelW, h: panelH };
     
@@ -145,15 +168,11 @@ class InventoryScene extends Phaser.Scene {
     
     // Градиент сверху вниз
     bg.fillGradientStyle(C.bgTop, C.bgTop, C.bgBottom, C.bgBottom, 1);
-    bg.fillRoundedRect(panelX, panelY, panelW, panelH, 16);
-    
-    // Рамка
-    bg.lineStyle(4, C.border, 1);
-    bg.strokeRoundedRect(panelX, panelY, panelW, panelH, 16);
+    bg.fillRect(panelX, panelY, panelW, panelH);
     
     // Внутренний блик сверху
     bg.lineStyle(1, 0xffffff, 0.05);
-    bg.strokeRoundedRect(panelX + 2, panelY + 2, panelW - 4, panelH - 4, 14);
+    bg.lineBetween(panelX, panelY + 1, panelX + panelW, panelY + 1);
     
     this.container.add(bg);
     this.panelBg = bg;
@@ -175,7 +194,7 @@ class InventoryScene extends Phaser.Scene {
     // Фон хедера
     const headerBg = this.add.graphics();
     headerBg.fillGradientStyle(0x2a2f3a, 0x2a2f3a, C.panelBg, C.panelBg, 1);
-    headerBg.fillRoundedRect(P.x, P.y, P.w, headerH, { tl: 16, tr: 16, bl: 0, br: 0 });
+    headerBg.fillRect(P.x, P.y, P.w, headerH);
     
     // Линия снизу
     headerBg.lineStyle(3, C.border, 1);
@@ -346,8 +365,8 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   createHeroPreview(x, y) {
     const C = this.CFG;
-    const boxW = 110;
-    const boxH = 140;
+    const boxW = C.heroBoxW;
+    const boxH = C.heroBoxH;
     
     // Фон
     const bg = this.add.graphics();
@@ -366,8 +385,10 @@ class InventoryScene extends Phaser.Scene {
     // Spine герой или emoji fallback
     if (this.game.cache?.custom?.spine?.has('hero') || this.cache?.custom?.spine?.get('hero')) {
       try {
-        this.heroSpine = this.add.spine(x, y + 30, 'hero', 'idle', true);
-        this.heroSpine.setScale(0.18);
+        this.heroSpine = this.add.spine(x, y + boxH * 0.2, 'hero', 'idle', true);
+        // Scale пропорционально размеру бокса (базовый 0.22 при boxH=170)
+        const spineScale = (boxH / 170) * 0.22;
+        this.heroSpine.setScale(spineScale);
         this.container.add(this.heroSpine);
       } catch (e) {
         console.warn('[INV] Spine hero failed, using fallback');
@@ -475,44 +496,51 @@ class InventoryScene extends Phaser.Scene {
     // Заголовок
     const title = this.add.text(P.x + C.padding, startY, 'Предметы', {
       fontFamily: 'Verdana',
-      fontSize: '13px',
+      fontSize: '14px',
       fontStyle: 'bold',
       color: C.textColor,
     });
     this.container.add(title);
     
-    const count = this.add.text(P.x + P.w - C.padding, startY, `${this.items.length}/24`, {
+    const totalSlots = C.gridCols * C.gridRows;
+    const count = this.add.text(P.x + P.w - C.padding, startY, `${this.items.length}/${totalSlots}`, {
       fontFamily: 'Verdana',
-      fontSize: '11px',
+      fontSize: '12px',
       color: C.textMuted,
     }).setOrigin(1, 0);
     this.container.add(count);
     this.gridCountText = count;
     
-    // Сетка
-    const gridStartY = startY + 28;
-    const totalSlots = C.gridCols * C.gridRows;
-    const gridW = C.gridCols * C.gridSlot + (C.gridCols - 1) * C.gap;
-    const gridStartX = P.x + (P.w - gridW) / 2 + C.gridSlot/2;
+    // ===== СЕТКА — вычисляем чтобы влезла в contentW =====
+    const gridStartY = startY + 30;
+    const contentW = P.w - C.padding * 2;
+    
+    // Пересчитываем gridSlot чтобы точно влез
+    const gridSlot = Math.floor((contentW - (C.gridCols - 1) * C.gap) / C.gridCols);
+    const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * C.gap;
+    const gridStartX = P.x + C.padding + gridSlot / 2;
+    
+    console.log(`[INV] Grid: slot=${gridSlot}, totalW=${actualGridW}, contentW=${contentW}`);
     
     this.gridSlots = [];
     
     for (let i = 0; i < totalSlots; i++) {
       const col = i % C.gridCols;
       const row = Math.floor(i / C.gridCols);
-      const x = gridStartX + col * (C.gridSlot + C.gap);
-      const y = gridStartY + row * (C.gridSlot + C.gap) + C.gridSlot/2;
+      const x = gridStartX + col * (gridSlot + C.gap);
+      const y = gridStartY + row * (gridSlot + C.gap) + gridSlot / 2;
       
       const item = this.items[i];
-      this.createGridSlot(x, y, item, i);
+      this.createGridSlot(x, y, item, i, gridSlot);
     }
   }
 
   // ============================================================
   //  GRID SLOT
   // ============================================================
-  createGridSlot(x, y, item, index) {
+  createGridSlot(x, y, item, index, slotSize) {
     const C = this.CFG;
+    const size = slotSize || C.gridSlot;
     
     const container = this.add.container(x, y);
     
@@ -520,7 +548,7 @@ class InventoryScene extends Phaser.Scene {
     let slotBg;
     if (this.textures.exists('inv_slot')) {
       slotBg = this.add.image(0, 0, 'inv_slot');
-      slotBg.setDisplaySize(C.gridSlot, C.gridSlot);
+      slotBg.setDisplaySize(size, size);
       if (!item) {
         slotBg.setTint(C.slotTintEmpty);
         slotBg.setAlpha(0.5);
@@ -528,9 +556,9 @@ class InventoryScene extends Phaser.Scene {
     } else {
       slotBg = this.add.graphics();
       slotBg.fillStyle(item ? 0x2a2a45 : 0x1a1d24, item ? 1 : 0.5);
-      slotBg.fillRoundedRect(-C.gridSlot/2, -C.gridSlot/2, C.gridSlot, C.gridSlot, 6);
+      slotBg.fillRoundedRect(-size/2, -size/2, size, size, 6);
       slotBg.lineStyle(3, item ? C.rarity[item.rarity]?.color || C.border : C.border, 1);
-      slotBg.strokeRoundedRect(-C.gridSlot/2, -C.gridSlot/2, C.gridSlot, C.gridSlot, 6);
+      slotBg.strokeRoundedRect(-size/2, -size/2, size, size, 6);
     }
     container.add(slotBg);
     
@@ -538,21 +566,21 @@ class InventoryScene extends Phaser.Scene {
     if (item && C.rarity[item.rarity]?.glow) {
       const glow = this.add.graphics();
       glow.lineStyle(2, C.rarity[item.rarity].glow, 0.5);
-      glow.strokeRoundedRect(-C.gridSlot/2 - 1, -C.gridSlot/2 - 1, C.gridSlot + 2, C.gridSlot + 2, 7);
+      glow.strokeRoundedRect(-size/2 - 1, -size/2 - 1, size + 2, size + 2, 7);
       container.add(glow);
     }
     
     if (item) {
       // Иконка
       const icon = this.add.text(0, -2, this.ICONS[item.type], {
-        fontSize: `${Math.round(C.gridSlot * 0.4)}px`,
+        fontSize: `${Math.round(size * 0.4)}px`,
       }).setOrigin(0.5);
       container.add(icon);
       
       // Уровень
-      const lvl = this.add.text(C.gridSlot/2 - 6, C.gridSlot/2 - 8, item.level, {
+      const lvl = this.add.text(size/2 - 6, size/2 - 8, item.level, {
         fontFamily: 'Verdana',
-        fontSize: '9px',
+        fontSize: '10px',
         fontStyle: 'bold',
         color: C.gold,
       }).setOrigin(0.5);
@@ -560,7 +588,7 @@ class InventoryScene extends Phaser.Scene {
       container.add(lvl);
       
       // Интерактив
-      const hitArea = this.add.rectangle(0, 0, C.gridSlot, C.gridSlot, 0xffffff, 0);
+      const hitArea = this.add.rectangle(0, 0, size, size, 0xffffff, 0);
       hitArea.setInteractive({ useHandCursor: true });
       hitArea.on('pointerdown', () => this.showPopup(item, 'equip'));
       hitArea.on('pointerover', () => container.setScale(1.08));
