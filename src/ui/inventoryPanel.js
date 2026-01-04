@@ -68,9 +68,7 @@ function createInventoryOverlay() {
       height: 100%;
       max-width: 100vw;
       max-height: 100vh;
-      background-image: url('assets/ui/phone_invertory_v2.png');
-      background-size: 100% 100%;
-      background-color: #18181b;
+      background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
       overflow-y: auto;
       overflow-x: hidden;
       position: relative;
@@ -112,6 +110,9 @@ function createInventoryOverlay() {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
+      background-image: url('assets/ui/phone_invertory_v2.png');
+      background-size: 100% 100%;
+      background-position: center;
     }
     
     .inv-equip-col {
