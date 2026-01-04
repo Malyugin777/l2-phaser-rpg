@@ -9,7 +9,7 @@ const PLAYER_HEADER_CONFIG = {
   // Panel settings
   panel: {
     scale: 0.8,
-    y: -100          // Panel moved up more to cover text
+    y: -160          // Panel moved up more
   },
 
   // Avatar settings - positioned relative to visible top
