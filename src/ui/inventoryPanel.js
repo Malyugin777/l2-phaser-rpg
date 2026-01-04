@@ -8,7 +8,7 @@
 // ============================================================
 
 const INV_TUNE_ENABLED = new URLSearchParams(window.location.search).has('inv_tune');
-const INV_TUNE_VERSION = 'inv_v3';
+const INV_TUNE_VERSION = 'inv_v4';
 
 let isInventoryOpen = false;
 let inventoryOverlay = null;
@@ -19,17 +19,17 @@ function getInvSettings() {
     // Close button
     closeBtnX: 320, closeBtnY: 10, closeBtnScale: 1,
 
-    // Background stone
-    bgX: 0, bgY: 0, bgScale: 1,
+    // Background stone (tuned)
+    bgX: -150, bgY: -65, bgScale: 1.15,
 
-    // Header
-    headerX: 0, headerY: 0, headerScale: 1,
+    // Header (tuned)
+    headerX: 0, headerY: 0, headerScale: 1.05,
 
-    // Left column
-    leftColX: 20, leftColY: 80,
+    // Left column (tuned)
+    leftColX: 20, leftColY: 70,
 
-    // Right column
-    rightColX: 280, rightColY: 80,
+    // Right column (tuned)
+    rightColX: 280, rightColY: 70,
 
     // Character preview
     charX: 150, charY: 200, charScale: 1,
