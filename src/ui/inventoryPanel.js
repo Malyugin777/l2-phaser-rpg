@@ -506,50 +506,36 @@ function initInvTuneMode() {
     }
   });
 
-  // Make tune panel draggable - SIMPLE VERSION
+  // Make tune panel draggable with pointer capture (original working version)
   const tunePanel = document.getElementById('inv-tune-panel');
   if (!tunePanel) {
     console.error('[TUNE] Panel NOT FOUND!');
     return;
   }
 
-  let dragActive = false;
-  let dragOffsetX = 0;
-  let dragOffsetY = 0;
+  let offsetX = 0, offsetY = 0;
 
-  // Drag на всей панели кроме кнопок
-  tunePanel.onmousedown = function(e) {
+  tunePanel.onpointerdown = (e) => {
     if (e.target.tagName === 'BUTTON') return;
-    dragActive = true;
-    dragOffsetX = e.clientX - tunePanel.offsetLeft;
-    dragOffsetY = e.clientY - tunePanel.offsetTop;
+    e.preventDefault();
+    tunePanel.setPointerCapture(e.pointerId);
+    offsetX = e.clientX - tunePanel.offsetLeft;
+    offsetY = e.clientY - tunePanel.offsetTop;
     tunePanel.style.cursor = 'grabbing';
-    console.log('[TUNE] DRAG START', e.clientX, e.clientY);
   };
 
-  document.addEventListener('mousemove', function(e) {
-    if (!dragActive) return;
-    const newX = e.clientX - dragOffsetX;
-    const newY = e.clientY - dragOffsetY;
-    tunePanel.style.left = newX + 'px';
-    tunePanel.style.top = newY + 'px';
-    console.log('[TUNE] MOVE', newX, newY);
-  });
-
-  document.addEventListener('mouseup', function() {
-    if (dragActive) {
-      dragActive = false;
-      tunePanel.style.cursor = 'move';
-      console.log('[TUNE] DRAG END');
-    }
-  });
-
-  // Тест: клик на панели
-  tunePanel.onclick = function(e) {
-    console.log('[TUNE] CLICK on panel, target:', e.target.tagName);
+  tunePanel.onpointermove = (e) => {
+    if (!tunePanel.hasPointerCapture(e.pointerId)) return;
+    tunePanel.style.left = (e.clientX - offsetX) + 'px';
+    tunePanel.style.top = (e.clientY - offsetY) + 'px';
   };
 
-  console.log('[TUNE] Simple drag attached to panel');
+  tunePanel.onpointerup = (e) => {
+    tunePanel.releasePointerCapture(e.pointerId);
+    tunePanel.style.cursor = 'move';
+  };
+
+  console.log('[TUNE] Pointer capture drag attached');
 
   // Initial highlight
   if (els.bg) els.bg.classList.add('selected');
