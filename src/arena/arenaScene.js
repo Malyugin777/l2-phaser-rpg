@@ -680,6 +680,11 @@ function hideCity() {
     window.bottomUI.container.setVisible(false);
     console.log('[ARENA] Bottom UI hidden');
   }
+
+  // Hide version text on arena
+  if (window.versionText?.setVisible) {
+    window.versionText.setVisible(false);
+  }
 }
 
 function showCity() {
@@ -697,6 +702,11 @@ function showCity() {
     window.bottomUI.container.setVisible(true);
     console.log('[ARENA] Bottom UI restored');
   }
+
+  // Show version text when back in city
+  if (window.versionText?.setVisible) {
+    window.versionText.setVisible(true);
+  }
 }
 
 // ============================================================
@@ -706,7 +716,8 @@ function showCity() {
 function showVSScreen(scene, enemyData, onComplete) {
   const w = BASE_W, h = BASE_H;
 
-  const vsOverlay = scene.add.rectangle(w/2, h/2, w, h, 0x000000, 0.9);
+  // Полностью непрозрачный фон (alpha = 1.0)
+  const vsOverlay = scene.add.rectangle(w/2, h/2, w, h, 0x000000, 1.0);
   vsOverlay.setDepth(500).setScrollFactor(0).setAlpha(0);
 
   // Player name: TG username (without @) or first_name

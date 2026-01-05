@@ -397,8 +397,9 @@ async function initAuth() {
   if (result.success && result.user) {
     console.log('[Game] Auth success:', result.user);
 
-    // Сохранить данные пользователя
-    window.playerName = result.user.first_name || 'Warrior';
+    // Сохранить данные пользователя (username приоритетнее first_name)
+    window.currentUser = result.user;
+    window.playerName = result.user.username || result.user.first_name || 'Warrior';
     window.playerAvatar = result.user.photo_url || null;
 
     // Обновить header UI (имя и аватар)
@@ -640,6 +641,7 @@ function setupCleanMode(scene) {
   versionText.setOrigin(0, 1);
   versionText.setScrollFactor(0);
   versionText.setDepth(9999);
+  window.versionText = versionText;  // Store globally for arena hide
 
   // Player Header (Top UI)
   if (typeof createPlayerHeader === "function") {

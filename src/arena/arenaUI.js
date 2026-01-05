@@ -16,7 +16,7 @@ let arenaUIElements = {
   enemyHpBg: null,
   enemyHpBar: null,
   enemyNameText: null,
-  enemyLevelText: null,
+  // enemyLevelText removed - не показываем уровень врага
 
   // Timer
   timerBg: null,
@@ -84,13 +84,7 @@ function createArenaUI(scene, playerData, enemyData) {
     fontSize: "22px", color: "#ff4444", fontFamily: "Verdana", fontStyle: "bold"
   }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
 
-  // Enemy level (под именем, мелко)
-  const enemyLevel = enemyData?.level || 1;
-  arenaUIElements.enemyLevelText = scene.add.text(centerX + gap + barW/2, barY + 30, "Lv." + enemyLevel, {
-    fontSize: "14px", color: "#ff8888", fontFamily: "Verdana"
-  }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
-
-  // БЕЗ enemyHpText — враг не видит свои HP числами!
+  // БЕЗ enemyLevelText и enemyHpText — враг видит только имя и полоску HP!
 
   // === TIMER (center) ===
   arenaUIElements.timerBg = scene.add.rectangle(centerX, barY, 100, 50, 0x000000, 0.9)
