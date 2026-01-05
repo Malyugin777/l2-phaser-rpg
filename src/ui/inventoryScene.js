@@ -1,12 +1,11 @@
 "use strict";
 
 // ============================================================
-//  INVENTORY SCENE v3 — FULLSCREEN
-//  - No panel, fullscreen gradient background
-//  - PNG slot icons (silhouettes for empty slots)
+//  INVENTORY SCENE v4 — FULLSCREEN + SCROLL ALL
+//  - Header offset for safe area (80px top)
+//  - Entire content scrollable (equipment + hero + stats + grid)
 //  - Hero positioned 30% lower
-//  - Stats bar full width
-//  - Grid fills remaining space
+//  - Stats bar wider (80px height)
 // ============================================================
 
 class InventoryScene extends Phaser.Scene {
@@ -14,6 +13,7 @@ class InventoryScene extends Phaser.Scene {
     super({ key: 'InventoryScene' });
 
     this.CFG = {
+      headerOffset: 80,   // Safe area top offset
       headerH: 60,
 
       // Colors
@@ -48,7 +48,7 @@ class InventoryScene extends Phaser.Scene {
       }
     };
 
-    // PNG icon mapping for equipment slots (silhouettes)
+    // PNG icon mapping for equipment slots
     this.SLOT_ICONS = {
       helmet:   'inv_helmet',
       chest:    'inv_armor',
@@ -58,7 +58,7 @@ class InventoryScene extends Phaser.Scene {
       mainHand: 'inv_sword',
       offHand:  'inv_shield',
       necklace: 'inv_necklace',
-      earring1: 'inv_ring',   // Use ring as fallback (no earring asset)
+      earring1: 'inv_ring',
       earring2: 'inv_ring',
       ring1:    'inv_ring',
       ring2:    'inv_ring'
@@ -77,14 +77,13 @@ class InventoryScene extends Phaser.Scene {
   }
 
   create() {
-    const W = this.scale.width;   // 780
-    const H = this.scale.height;  // 1688
+    const W = this.scale.width;
+    const H = this.scale.height;
     const C = this.CFG;
 
-    // FULLSCREEN — no panel bounds
     this.panelBounds = { x: 0, y: 0, w: W, h: H };
 
-    // Main container
+    // Main UI container
     this.ui = this.add.container(0, 0);
 
     // Background gradient fullscreen
@@ -93,11 +92,33 @@ class InventoryScene extends Phaser.Scene {
     bg.fillRect(0, 0, W, H);
     this.ui.add(bg);
 
-    // Build UI
+    // Fixed header (not scrollable)
     this._createHeader();
+
+    // Scrollable content container
+    this.scrollContent = this.add.container(0, 0);
+    this.ui.add(this.scrollContent);
+
+    // Build scrollable content
+    const contentStartY = C.headerOffset + C.headerH;
+    this.currentY = contentStartY;
+
     this._createEquipmentZone();
     this._createStatsBar();
     this._createGrid();
+
+    // Calculate total content height
+    this.contentHeight = this.currentY + 40;
+    this.viewHeight = H - C.headerOffset - C.headerH;
+
+    // Setup scroll for entire content
+    this._setupFullScroll();
+
+    // Mask for scroll content (below header)
+    const maskGfx = this.make.graphics({ add: false });
+    maskGfx.fillStyle(0xffffff, 1);
+    maskGfx.fillRect(0, C.headerOffset + C.headerH, W, H - C.headerOffset - C.headerH);
+    this.scrollContent.setMask(maskGfx.createGeometryMask());
 
     // Fade in
     this.ui.setAlpha(0);
@@ -111,27 +132,28 @@ class InventoryScene extends Phaser.Scene {
     // ESC to close
     this.input.keyboard?.on('keydown-ESC', () => this._close());
 
-    console.log('[InventoryScene] v3 Fullscreen Created');
+    console.log('[InventoryScene] v4 Created, contentH:', this.contentHeight, 'viewH:', this.viewHeight);
   }
 
   // ============================================================
-  //  HEADER — Compact, full width
+  //  HEADER — Fixed at top with offset
   // ============================================================
   _createHeader() {
     const W = this.scale.width;
     const C = this.CFG;
+    const headerY = C.headerOffset;
     const headerH = C.headerH;
 
     // Dark header background
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0a0c10, 0.95);
-    bg.fillRect(0, 0, W, headerH);
-    bg.lineStyle(1, C.border, 0.5);
-    bg.lineBetween(0, headerH, W, headerH);
-    this.ui.add(bg);
+    const headerBg = this.add.graphics();
+    headerBg.fillStyle(0x0a0c10, 0.98);
+    headerBg.fillRect(0, headerY, W, headerH);
+    headerBg.lineStyle(1, C.border, 0.5);
+    headerBg.lineBetween(0, headerY + headerH, W, headerY + headerH);
+    this.ui.add(headerBg);
 
     // Title left
-    const title = this.add.text(20, headerH / 2, 'ИНВЕНТАРЬ', {
+    const title = this.add.text(20, headerY + headerH / 2, 'ИНВЕНТАРЬ', {
       fontFamily: C.fontMain,
       fontSize: '24px',
       fontStyle: 'bold',
@@ -141,7 +163,7 @@ class InventoryScene extends Phaser.Scene {
     this.ui.add(title);
 
     // Close button right
-    const closeBtn = this.add.text(W - 30, headerH / 2, '×', {
+    const closeBtn = this.add.text(W - 30, headerY + headerH / 2, '×', {
       fontSize: '40px',
       fontStyle: 'bold',
       color: '#ffffff'
@@ -159,7 +181,7 @@ class InventoryScene extends Phaser.Scene {
   _createEquipmentZone() {
     const W = this.scale.width;
     const C = this.CFG;
-    const startY = C.headerH + 12;
+    const startY = this.currentY + 12;
 
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
@@ -184,16 +206,16 @@ class InventoryScene extends Phaser.Scene {
       this._createEquipSlot(rightX, y, type, slotSize);
     });
 
-    // Hero in center — 30% lower (65% from top)
+    // Hero in center — 30% lower (65% from top of zone)
     const centerX = W / 2;
     const heroY = startY + zoneH * 0.65;
     this._createHeroPreview(centerX, heroY);
 
-    this.equipZoneEndY = startY + zoneH + 12;
+    this.currentY = startY + zoneH + 16;
   }
 
   // ============================================================
-  //  EQUIPMENT SLOT — PNG icon silhouette
+  //  EQUIPMENT SLOT
   // ============================================================
   _createEquipSlot(x, y, type, size) {
     const C = this.CFG;
@@ -209,7 +231,7 @@ class InventoryScene extends Phaser.Scene {
     bg.strokeRoundedRect(-size/2, -size/2, size, size, 10);
     container.add(bg);
 
-    // PNG Icon (silhouette for empty, item icon if equipped)
+    // PNG Icon
     const iconKey = this.SLOT_ICONS[type];
     if (iconKey && this.textures.exists(iconKey)) {
       const icon = this.add.image(0, 0, iconKey);
@@ -257,29 +279,29 @@ class InventoryScene extends Phaser.Scene {
     });
     container.add(hitArea);
 
-    this.ui.add(container);
+    this.scrollContent.add(container);
     this.slotSprites[type] = { container, bg };
   }
 
   // ============================================================
-  //  HERO PREVIEW — 30% lower, bigger
+  //  HERO PREVIEW — 30% lower
   // ============================================================
   _createHeroPreview(x, y) {
     // Shadow/pedestal
     const shadow = this.add.graphics();
     shadow.fillStyle(0x000000, 0.3);
     shadow.fillEllipse(x, y + 90, 90, 22);
-    this.ui.add(shadow);
+    this.scrollContent.add(shadow);
 
     // Try Spine hero
     if (this.cache?.custom?.spine?.get('hero')) {
       try {
         this.heroSpine = this.add.spine(x, y + 70, 'hero', 'idle', true);
         this.heroSpine.setScale(0.38);
-        this.ui.add(this.heroSpine);
+        this.scrollContent.add(this.heroSpine);
         return;
       } catch (e) {
-        console.log('[INV] Spine failed, using fallback');
+        console.log('[INV] Spine failed');
       }
     }
 
@@ -287,67 +309,67 @@ class InventoryScene extends Phaser.Scene {
     if (this.textures.exists('hero_preview')) {
       const hero = this.add.image(x, y + 30, 'hero_preview');
       hero.setDisplaySize(160, 200);
-      this.ui.add(hero);
+      this.scrollContent.add(hero);
     }
   }
 
   // ============================================================
-  //  STATS BAR — Full width, no padding
+  //  STATS BAR — Wider (+30%), 80px height
   // ============================================================
   _createStatsBar() {
     const W = this.scale.width;
     const C = this.CFG;
-    const barH = 70;
-    const y = this.equipZoneEndY;
+    const barH = 80;  // Increased from 56
+    const padding = 10;
+    const y = this.currentY;
 
-    // Full width background
+    // Full width background with minimal padding
     const bg = this.add.graphics();
     bg.fillStyle(0x1a1d24, 1);
-    bg.fillRect(0, y, W, barH);
+    bg.fillRoundedRect(padding, y, W - padding * 2, barH, 16);
     bg.lineStyle(1, C.border, 0.6);
-    bg.lineBetween(0, y, W, y);
-    bg.lineBetween(0, y + barH, W, y + barH);
-    this.ui.add(bg);
+    bg.strokeRoundedRect(padding, y, W - padding * 2, barH, 16);
+    this.scrollContent.add(bg);
 
     // Stats
     const stats = this._calculateStats();
     const centerY = y + barH / 2;
-    const statW = W / 3;
+    const statW = (W - padding * 2) / 3;
 
     // HP
-    const hpX = statW * 0.5;
+    const hpX = padding + statW * 0.5;
     if (this.textures.exists('icon_hp')) {
-      this.ui.add(this.add.image(hpX - 45, centerY, 'icon_hp').setDisplaySize(28, 28));
+      this.scrollContent.add(this.add.image(hpX - 50, centerY, 'icon_hp').setDisplaySize(32, 32));
     } else {
-      this.ui.add(this.add.text(hpX - 45, centerY, '❤️', { fontSize: '22px' }).setOrigin(0.5));
+      this.scrollContent.add(this.add.text(hpX - 50, centerY, '❤️', { fontSize: '26px' }).setOrigin(0.5));
     }
-    this.ui.add(this.add.text(hpX + 5, centerY, stats.hp.toString(), {
-      fontFamily: C.fontMain, fontSize: '24px', fontStyle: 'bold', color: C.red
+    this.scrollContent.add(this.add.text(hpX + 10, centerY, stats.hp.toString(), {
+      fontFamily: C.fontMain, fontSize: '28px', fontStyle: 'bold', color: C.red
     }).setOrigin(0.5));
 
     // ATK
-    const atkX = statW * 1.5;
+    const atkX = padding + statW * 1.5;
     if (this.textures.exists('icon_atk')) {
-      this.ui.add(this.add.image(atkX - 45, centerY, 'icon_atk').setDisplaySize(28, 28));
+      this.scrollContent.add(this.add.image(atkX - 50, centerY, 'icon_atk').setDisplaySize(32, 32));
     } else {
-      this.ui.add(this.add.text(atkX - 45, centerY, '⚔️', { fontSize: '22px' }).setOrigin(0.5));
+      this.scrollContent.add(this.add.text(atkX - 50, centerY, '⚔️', { fontSize: '26px' }).setOrigin(0.5));
     }
-    this.ui.add(this.add.text(atkX + 5, centerY, stats.atk.toString(), {
-      fontFamily: C.fontMain, fontSize: '24px', fontStyle: 'bold', color: '#ffffff'
+    this.scrollContent.add(this.add.text(atkX + 10, centerY, stats.atk.toString(), {
+      fontFamily: C.fontMain, fontSize: '28px', fontStyle: 'bold', color: '#ffffff'
     }).setOrigin(0.5));
 
     // DEF
-    const defX = statW * 2.5;
+    const defX = padding + statW * 2.5;
     if (this.textures.exists('icon_def')) {
-      this.ui.add(this.add.image(defX - 45, centerY, 'icon_def').setDisplaySize(28, 28));
+      this.scrollContent.add(this.add.image(defX - 50, centerY, 'icon_def').setDisplaySize(32, 32));
     } else {
-      this.ui.add(this.add.text(defX - 45, centerY, '🛡️', { fontSize: '22px' }).setOrigin(0.5));
+      this.scrollContent.add(this.add.text(defX - 50, centerY, '🛡️', { fontSize: '26px' }).setOrigin(0.5));
     }
-    this.ui.add(this.add.text(defX + 5, centerY, stats.def.toString(), {
-      fontFamily: C.fontMain, fontSize: '24px', fontStyle: 'bold', color: C.blue
+    this.scrollContent.add(this.add.text(defX + 10, centerY, stats.def.toString(), {
+      fontFamily: C.fontMain, fontSize: '28px', fontStyle: 'bold', color: C.blue
     }).setOrigin(0.5));
 
-    this.statsBarEndY = y + barH;
+    this.currentY = y + barH + 12;
   }
 
   _calculateStats() {
@@ -368,20 +390,19 @@ class InventoryScene extends Phaser.Scene {
   }
 
   // ============================================================
-  //  GRID — Fill remaining space
+  //  GRID
   // ============================================================
   _createGrid() {
     const W = this.scale.width;
-    const H = this.scale.height;
     const C = this.CFG;
-    const startY = this.statsBarEndY;
+    const startY = this.currentY;
 
     // Title bar
     const titleBarH = 40;
     const titleBg = this.add.graphics();
     titleBg.fillStyle(0x0e1116, 0.7);
     titleBg.fillRect(0, startY, W, titleBarH);
-    this.ui.add(titleBg);
+    this.scrollContent.add(titleBg);
 
     const title = this.add.text(16, startY + titleBarH / 2, 'Предметы', {
       fontFamily: C.fontMain,
@@ -389,39 +410,29 @@ class InventoryScene extends Phaser.Scene {
       fontStyle: 'bold',
       color: C.textColor
     }).setOrigin(0, 0.5);
-    this.ui.add(title);
+    this.scrollContent.add(title);
 
-    const totalSlots = C.gridCols * 6;  // 6 rows
+    const totalSlots = C.gridCols * 6;
     const count = this.add.text(W - 16, startY + titleBarH / 2, `${this.items.length}/${totalSlots}`, {
       fontFamily: C.fontMain,
       fontSize: '16px',
       color: C.textMuted
     }).setOrigin(1, 0.5);
-    this.ui.add(count);
+    this.scrollContent.add(count);
 
-    // Grid area
-    const gridStartY = startY + titleBarH;
-    const gridH = H - gridStartY;
-
-    // Calculate slot size to fill width
+    // Grid
+    const gridStartY = startY + titleBarH + 8;
     const padding = 12;
     const gap = C.gridGap;
     const cols = C.gridCols;
     const availableW = W - padding * 2;
     const slotSize = Math.floor((availableW - gap * (cols - 1)) / cols);
 
-    // How many rows fit
-    const rowsVisible = Math.floor((gridH - padding) / (slotSize + gap));
-    const totalRows = Math.max(rowsVisible, Math.ceil(this.items.length / cols), 4);
-    const contentH = totalRows * (slotSize + gap);
+    const totalRows = Math.max(4, Math.ceil(this.items.length / cols));
 
     // Center grid
     const actualGridW = cols * slotSize + (cols - 1) * gap;
     const gridStartX = (W - actualGridW) / 2 + slotSize / 2;
-
-    // Grid container
-    this.gridContent = this.add.container(0, 0);
-    this.ui.add(this.gridContent);
 
     // Create slots
     this.gridSlots = [];
@@ -429,29 +440,14 @@ class InventoryScene extends Phaser.Scene {
       for (let col = 0; col < cols; col++) {
         const i = row * cols + col;
         const x = gridStartX + col * (slotSize + gap);
-        const y = gridStartY + padding + row * (slotSize + gap) + slotSize / 2;
+        const y = gridStartY + row * (slotSize + gap) + slotSize / 2;
 
         const item = this.items[i] || null;
         this._createGridSlot(x, y, item, i, slotSize);
       }
     }
 
-    // Mask (NOT added to scene)
-    const maskGfx = this.make.graphics({ add: false });
-    maskGfx.fillStyle(0xffffff, 1);
-    maskGfx.fillRect(0, gridStartY, W, gridH);
-    this.gridContent.setMask(maskGfx.createGeometryMask());
-
-    // Scroll bounds
-    this.scrollMaxY = 0;
-    this.scrollMinY = Math.min(0, gridH - contentH - padding);
-
-    // Setup scroll
-    if (contentH > gridH) {
-      this._setupScroll(gridStartY, gridH);
-    }
-
-    console.log(`[INV] Grid: ${totalRows} rows, slotSize=${slotSize}, scrollable=${contentH > gridH}`);
+    this.currentY = gridStartY + totalRows * (slotSize + gap) + padding;
   }
 
   _createGridSlot(x, y, item, index, size) {
@@ -491,17 +487,6 @@ class InventoryScene extends Phaser.Scene {
         container.add(lvl);
       }
 
-      // Quantity
-      if (item.quantity && item.quantity > 1) {
-        const qty = this.add.text(-size/2 + 10, size/2 - 10, 'x' + item.quantity, {
-          fontFamily: C.fontMain,
-          fontSize: '11px',
-          color: '#ffffff'
-        }).setOrigin(0.5);
-        qty.setShadow(1, 1, '#000000', 2);
-        container.add(qty);
-      }
-
       // Interactive
       const hitArea = this.add.rectangle(0, 0, size, size, 0xffffff, 0);
       hitArea.setInteractive({ useHandCursor: true });
@@ -509,35 +494,43 @@ class InventoryScene extends Phaser.Scene {
       container.add(hitArea);
     }
 
-    this.gridContent.add(container);
+    this.scrollContent.add(container);
     this.gridSlots.push({ container, item, index });
   }
 
   // ============================================================
-  //  SCROLL
+  //  FULL CONTENT SCROLL
   // ============================================================
-  _setupScroll(startY, viewH) {
+  _setupFullScroll() {
+    const C = this.CFG;
+    const scrollAreaTop = C.headerOffset + C.headerH;
+
     const drag = {
       active: false,
       startY: 0,
-      startContentY: 0
+      contentStartY: 0
     };
     this._drag = drag;
 
+    // Scroll limits
+    const minY = Math.min(0, -(this.contentHeight - this.viewHeight - scrollAreaTop));
+    const maxY = 0;
+
     this.input.on('pointerdown', (pointer) => {
-      if (pointer.y > startY) {
+      // Only scroll if below header
+      if (pointer.y > scrollAreaTop) {
         drag.active = true;
         drag.startY = pointer.y;
-        drag.startContentY = this.gridContent.y;
+        drag.contentStartY = this.scrollContent.y;
       }
     });
 
     this.input.on('pointermove', (pointer) => {
       if (!drag.active) return;
       const delta = pointer.y - drag.startY;
-      let newY = drag.startContentY + delta;
-      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
-      this.gridContent.y = newY;
+      let newY = drag.contentStartY + delta;
+      newY = Phaser.Math.Clamp(newY, minY, maxY);
+      this.scrollContent.y = newY;
     });
 
     this.input.on('pointerup', () => {
@@ -545,10 +538,14 @@ class InventoryScene extends Phaser.Scene {
     });
 
     this.input.on('wheel', (pointer, objects, dx, dy) => {
-      let newY = this.gridContent.y - dy * 0.5;
-      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
-      this.gridContent.y = newY;
+      if (pointer.y > scrollAreaTop) {
+        let newY = this.scrollContent.y - dy * 0.5;
+        newY = Phaser.Math.Clamp(newY, minY, maxY);
+        this.scrollContent.y = newY;
+      }
     });
+
+    console.log('[INV] Scroll: minY=', minY, 'maxY=', maxY, 'contentH=', this.contentHeight);
   }
 
   // ============================================================
@@ -597,4 +594,4 @@ if (typeof window !== 'undefined') {
   window.InventoryScene = InventoryScene;
 }
 
-console.log('[InventoryScene] v3 Fullscreen loaded');
+console.log('[InventoryScene] v4 Fullscreen + Scroll loaded');
