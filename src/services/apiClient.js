@@ -8,6 +8,7 @@ const API_URL = 'https://pocketchronicle.ru';
 
 let authToken = null;
 let currentUser = null;
+let isOfflineMode = false;
 
 // Telegram WebApp ready
 if (window.Telegram?.WebApp) {
@@ -31,6 +32,13 @@ async function apiAuth() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData })
     });
+
+    // 401 = не в Telegram, играем офлайн
+    if (response.status === 401) {
+      console.log('[API] Not in Telegram, playing offline');
+      isOfflineMode = true;
+      return { success: false, offline: true };
+    }
 
     if (!response.ok) {
       throw new Error('Auth failed: ' + response.status);
@@ -139,6 +147,13 @@ function apiIsAuthenticated() {
   return !!authToken;
 }
 
+/**
+ * Проверить офлайн режим
+ */
+function apiIsOffline() {
+  return isOfflineMode;
+}
+
 // Экспорт
 window.apiAuth = apiAuth;
 window.apiGetProfile = apiGetProfile;
@@ -146,5 +161,6 @@ window.apiSaveProgress = apiSaveProgress;
 window.apiGetLeaderboard = apiGetLeaderboard;
 window.apiGetCurrentUser = apiGetCurrentUser;
 window.apiIsAuthenticated = apiIsAuthenticated;
+window.apiIsOffline = apiIsOffline;
 
 console.log('[ApiClient] Loaded, API_URL:', API_URL);
