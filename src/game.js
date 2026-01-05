@@ -215,6 +215,12 @@ game.events.once("ready", () => {
     game.scene.add('InventoryScene', InventoryScene, false);
     console.log('[GAME] InventoryScene added');
   }
+
+  // Add LeaderboardScene
+  if (typeof LeaderboardScene !== 'undefined') {
+    game.scene.add('LeaderboardScene', LeaderboardScene, false);
+    console.log('[GAME] LeaderboardScene added');
+  }
 });
 
 // Global stubs for legacy inventory panel calls
@@ -315,6 +321,13 @@ function preload() {
   this.load.image('icon_anvil', 'assets/ui/icon_anvil.png');
   this.load.image('icon_helmet', 'assets/ui/icon_helmet.png');
   this.load.image('icon_map', 'assets/ui/icon_map.png');
+
+  // Leaderboard
+  this.load.image('btn_rating', 'assets/ui/raiting.png');
+  this.load.image('icon_golden_cup', 'assets/ui/golden_cup.png');
+  this.load.image('icon_silver_cup', 'assets/ui/silver_cup.png');
+  this.load.image('icon_bronze_cup', 'assets/ui/bronze_cup.png');
+  this.load.image('icon_pvp', 'assets/ui/pvp 1.png');
 
   // Player Header UI
   this.load.image('ui_top_panel', 'assets/ui/top_ui.png');
@@ -576,6 +589,18 @@ function setupCleanMode(scene) {
 
   // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
   setTimeout(() => applyFinalPositions(scene), 200);
+
+  // Rating button (right side)
+  if (scene.textures.exists('btn_rating')) {
+    const ratingBtn = scene.add.image(scene.scale.width - 80, scene.scale.height - 350, 'btn_rating');
+    ratingBtn.setDisplaySize(120, 120);
+    ratingBtn.setInteractive({ useHandCursor: true });
+    ratingBtn.on('pointerdown', () => scene.scene.launch('LeaderboardScene'));
+    ratingBtn.on('pointerover', () => ratingBtn.setScale(1.1));
+    ratingBtn.on('pointerout', () => ratingBtn.setScale(1));
+    ratingBtn.setDepth(200);
+    console.log('[GAME] Rating button added');
+  }
 
   console.log("[CLEAN MODE] Initialized");
 }
