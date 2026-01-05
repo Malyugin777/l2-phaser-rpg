@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v13 — Readable fonts + scroll fix
+//  v14 — @username display + safe area margins
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -107,7 +107,7 @@ class LeaderboardScene extends Phaser.Scene {
       if (result.success && result.leaderboard) {
         const data = result.leaderboard.map((u, i) => ({
           id: i + 1,
-          name: u.first_name || u.username || 'Unknown',
+          name: u.username ? `@${u.username}` : (u.first_name || 'Unknown'),
           level: u.level || 1,
           value: tab === 'kills' ? (u.kills || 0) : (u.rating || 0),
           avatar: u.photo_url || null
@@ -160,14 +160,15 @@ class LeaderboardScene extends Phaser.Scene {
     const H = this.scale.height;
     const C = this.CFG;
 
-    const safeTop = (window?.SAFE_TOP_PX ?? 0) | 0;
-    const safeBottom = (window?.SAFE_BOTTOM_PX ?? 0) | 0;
+    // Safe areas with fallback for phones with notches
+    const safeTop = Math.max((window?.SAFE_TOP_PX ?? 0) | 0, 60);
+    const safeBottom = Math.max((window?.SAFE_BOTTOM_PX ?? 0) | 0, 80);
     const usableH = H - safeTop - safeBottom;
 
     const panelW = Math.min(C.panelMaxW, W - C.panelSidePad * 2);
-    const panelH = Math.min(usableH - 60, H - 80);
+    const panelH = Math.min(usableH - 40, H - safeTop - safeBottom - 40);
     const panelX = (W - panelW) / 2;
-    const panelY = safeTop + Math.max(20, (usableH - panelH) / 2);
+    const panelY = safeTop + Math.max(10, (usableH - panelH) / 2);
 
     this.panelBounds = { x: panelX, y: panelY, w: panelW, h: panelH };
 
