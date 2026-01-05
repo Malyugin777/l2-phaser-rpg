@@ -173,14 +173,15 @@ async function onFightButtonClick(scene) {
   if (typeof window.apiGetOpponent === 'function' && typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
     const result = await window.apiGetOpponent();
     if (result.success && result.opponent) {
+      // NO @ prefix - just username or first_name
       enemyData = {
-        name: result.opponent.username ? `@${result.opponent.username}` : (result.opponent.first_name || 'Игрок'),
+        name: result.opponent.username || result.opponent.first_name || 'Игрок',
         level: result.opponent.level || 1,
         rating: result.opponent.rating || 0,
         isReal: true,  // Пометка что это реальный игрок
         odId: result.opponent.id  // ID для отправки результата
       };
-      console.log('[UI] Real opponent:', enemyData.name);
+      console.log('[UI] Real opponent:', enemyData.name, 'level:', enemyData.level);
     }
   }
 

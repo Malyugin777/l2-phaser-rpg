@@ -709,14 +709,20 @@ function showVSScreen(scene, enemyData, onComplete) {
   const vsOverlay = scene.add.rectangle(w/2, h/2, w, h, 0x000000, 0.9);
   vsOverlay.setDepth(500).setScrollFactor(0).setAlpha(0);
 
-  const playerName = window.profile?.name || "Игрок";
-  const playerLevel = window.stats?.level || 1;
+  // Player name: TG username (without @) or first_name
+  const user = window.apiGetCurrentUser ? window.apiGetCurrentUser() : null;
+  const playerName = user?.username || user?.first_name || window.playerName || "Игрок";
+  const playerLevel = window.heroState?.level || window.stats?.level || 1;
+
+  // Enemy name (already without @ from bottomUI.js)
   const enemyName = enemyData?.name || "Противник";
   const enemyLevel = enemyData?.level || 1;
 
+  console.log('[VS Screen] Player:', playerName, 'Lv.' + playerLevel, 'vs', enemyName, 'Lv.' + enemyLevel);
+
   const vsText = scene.add.text(w/2, h/2,
     `${playerName}  Lv.${playerLevel}\n\n VS \n\n${enemyName}  Lv.${enemyLevel}`, {
-    fontFamily: 'Arial', fontSize: '32px', color: '#ffffff',
+    fontFamily: 'Verdana', fontSize: '32px', color: '#ffffff',
     align: 'center', stroke: '#000000', strokeThickness: 4
   });
   vsText.setOrigin(0.5).setDepth(501).setScrollFactor(0).setAlpha(0);
@@ -895,6 +901,10 @@ function activateWeaponSkin(sprite, name) {
 // ============================================================
 
 function spawnFighters(scene, enemyData) {
+  // Store enemy data globally for UI
+  window.currentOpponent = enemyData || window.currentOpponent;
+  console.log('[ARENA] spawnFighters: enemy =', window.currentOpponent?.name);
+
   // Fighter positions (percentage of world width)
   const playerStartX = WORLD_W * (arenaTuneSettings.playerStartX || ARENA_CONFIG.playerSpawnX);
   const enemyStartX = WORLD_W * (arenaTuneSettings.enemyStartX || ARENA_CONFIG.enemySpawnX);
@@ -1419,21 +1429,36 @@ function startArenaFight(scene) {
     critMultiplier: 2.0
   };
 
-  // Generate enemy name/rating for match history
-  const enemyNames = ["Knight", "Warrior", "Paladin", "Gladiator", "Berserker", "Champion", "Duelist", "Fighter"];
-  const randomName = enemyNames[Math.floor(Math.random() * enemyNames.length)] + Math.floor(Math.random() * 1000);
-  const enemyRating = arenaData.rating + Math.floor(Math.random() * 200) - 100;
+  // Use real opponent data or generate fallback
+  const opponent = window.currentOpponent || {};
+  const realEnemyName = opponent.name || ("Bot" + Math.floor(Math.random() * 1000));
+  const realEnemyRating = opponent.rating || (arenaData.rating + Math.floor(Math.random() * 200) - 100);
+  const realEnemyLevel = opponent.level || (stats.progression?.level || 1);
 
   currentMatchData = {
-    enemyName: randomName,
-    enemyRating: enemyRating,
+    enemyName: realEnemyName,
+    enemyRating: realEnemyRating,
     myRatingBefore: arenaData.rating
   };
 
   arenaCombat.init(playerStats, enemyStats);
 
-  // Create arena UI for the fight
-  createArenaUI(scene);
+  // Get player name (TG username without @)
+  const user = window.apiGetCurrentUser ? window.apiGetCurrentUser() : null;
+  const playerName = user?.username || user?.first_name || window.playerName || "Player";
+
+  // Create arena UI with real names
+  const playerData = {
+    name: playerName,
+    maxHealth: playerStats.maxHealth
+  };
+  const enemyUIData = {
+    name: realEnemyName,
+    level: realEnemyLevel
+  };
+
+  console.log('[ARENA] Creating UI: player=' + playerName + ', enemy=' + realEnemyName);
+  createArenaUI(scene, playerData, enemyUIData);
 
   console.log("[ARENA] Fight started - Player speed:", playerStats.attackSpeed, "Enemy speed:", enemyStats.attackSpeed);
 }
@@ -1814,21 +1839,38 @@ function handleArenaEnd(scene, result) {
   const rewards = applyArenaResult(isWin, enemyRating);
 
   // === ОТПРАВИТЬ РЕЗУЛЬТАТ НА СЕРВЕР ===
+  console.log('[ARENA] Checking API: apiArenaResult=' + (typeof window.apiArenaResult), 'isAuth=' + (typeof window.apiIsAuthenticated === 'function' ? window.apiIsAuthenticated() : 'N/A'));
+
   if (typeof window.apiArenaResult === 'function' && typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
+    console.log('[ARENA] Sending result to API, isWin=' + isWin);
+
     window.apiArenaResult(isWin).then(apiResult => {
+      console.log('[ARENA] API response:', apiResult);
+
       if (apiResult.success) {
         // Обновить heroState с серверными данными
         window.heroState = window.heroState || {};
+        const oldRating = window.heroState.rating || 0;
+        const oldKills = window.heroState.kills || 0;
+
         window.heroState.rating = apiResult.rating;
         window.heroState.kills = apiResult.kills;
-        console.log('[ARENA] API result: rating=' + apiResult.rating + ', delta=' + apiResult.delta);
+
+        console.log('[ARENA] Updated: rating ' + oldRating + ' → ' + apiResult.rating + ' (delta=' + apiResult.delta + ')');
+        console.log('[ARENA] Updated: kills ' + oldKills + ' → ' + apiResult.kills);
 
         // Обновить UI header
         if (typeof window.updateHeaderStats === 'function') {
           window.updateHeaderStats();
         }
+      } else {
+        console.warn('[ARENA] API returned error:', apiResult.error);
       }
+    }).catch(err => {
+      console.error('[ARENA] API call failed:', err);
     });
+  } else {
+    console.log('[ARENA] Skipping API (not authenticated or function missing)');
   }
 
   // Calculate match duration

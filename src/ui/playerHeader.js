@@ -458,9 +458,9 @@ function updateHeaderStats() {
   // Update level
   window.playerHeader.setLevel(h.level || 1);
 
-  // Update resources: Energy, Stars(rating), Gems, Gold(adena)
+  // Update resources: Energy, Stars (Telegram), Gems, Gold (adena)
   const energy = h.energy || 100;
-  const rating = h.rating || 0;
+  const stars = h.stars || 0;  // Telegram Stars - NOT rating!
   const gems = h.gems || 0;
   const gold = h.gold || 0;
 
@@ -471,14 +471,14 @@ function updateHeaderStats() {
     return n.toString();
   };
 
-  window.playerHeader.setResources(energy, rating, gems, formatNum(gold));
+  window.playerHeader.setResources(energy, stars, gems, formatNum(gold));
 
   // Update EXP ring (calculate percent to next level)
   const expForLevel = (h.level || 1) * 100; // Simple formula
   const expPercent = (h.exp || 0) / expForLevel;
   window.playerHeader.setExp(Math.min(expPercent, 1));
 
-  console.log('[PlayerHeader] Stats updated:', { level: h.level, energy, rating, gems, gold });
+  console.log('[PlayerHeader] Stats updated:', { level: h.level, energy, stars, gems, gold });
 }
 
 window.updateHeaderStats = updateHeaderStats;
