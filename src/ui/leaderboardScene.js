@@ -218,13 +218,16 @@ class LeaderboardScene extends Phaser.Scene {
     
     this.listBounds = { x: P.x + 16, y: listY, w: P.w - 32, h: listH };
     
+    // List container
     this.listContainer = this.add.container(0, 0);
     this.container.add(this.listContainer);
     
-    const maskShape = this.add.graphics();
-    maskShape.fillStyle(0xffffff);
-    maskShape.fillRect(this.listBounds.x, this.listBounds.y, this.listBounds.w, this.listBounds.h);
-    this.listContainer.setMask(maskShape.createGeometryMask());
+    // Mask (НЕ белая, просто геометрия)
+    const maskGraphics = this.make.graphics();
+    maskGraphics.fillStyle(0x000000);  // Цвет не важен для геометрической маски
+    maskGraphics.fillRect(this.listBounds.x, this.listBounds.y, this.listBounds.w, this.listBounds.h);
+    const mask = maskGraphics.createGeometryMask();
+    this.listContainer.setMask(mask);
     
     this.refreshList();
     this.setupScroll();
@@ -238,6 +241,8 @@ class LeaderboardScene extends Phaser.Scene {
     const L = this.listBounds;
     const rowGap = 16;
     
+    console.log(`[LEADERBOARD] Rendering ${data.length} rows, listY=${L.y}, listH=${L.h}`);
+    
     data.forEach((row, i) => {
       const y = L.y + i * (C.rowH + rowGap) + C.rowH/2;
       this.createRow(L.x + L.w/2, y, row, i + 1);
@@ -247,6 +252,8 @@ class LeaderboardScene extends Phaser.Scene {
     this.scrollMinY = Math.min(0, -(contentH - L.h));
     this.scrollMaxY = 0;
     this.listContainer.y = 0;
+    
+    console.log(`[LEADERBOARD] contentH=${contentH}, scrollMin=${this.scrollMinY}`);
   }
 
   createRow(x, y, data, rank) {
@@ -254,6 +261,8 @@ class LeaderboardScene extends Phaser.Scene {
     const L = this.listBounds;
     const isTop = rank <= 3;
     const rowW = L.w - 16;
+    
+    console.log(`[LEADERBOARD] Creating row #${rank} at x=${x}, y=${y}`);
     
     const container = this.add.container(x, y);
     
@@ -393,4 +402,4 @@ class LeaderboardScene extends Phaser.Scene {
 }
 
 window.LeaderboardScene = LeaderboardScene;
-console.log('[LeaderboardScene] Module loaded');
+console.log('[LeaderboardScene] v2 Module loaded');
