@@ -346,6 +346,7 @@ function preload() {
   this.load.image('inv_shield', 'assets/ui/shield_inv_.png');
   this.load.image('inv_necklace', 'assets/ui/necklase_inv.png');
   this.load.image('inv_ring', 'assets/ui/ring_inv.png');
+  this.load.image('inv_earring', 'assets/ui/slots/earring.svg');
   this.load.image('icon_hp', 'assets/ui/hp.png');
   this.load.image('icon_atk', 'assets/ui/atk.png');
   this.load.image('icon_def', 'assets/ui/def.png');

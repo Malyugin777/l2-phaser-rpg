@@ -64,8 +64,8 @@ class InventoryScene extends Phaser.Scene {
       mainHand: 'inv_sword',
       offHand:  'inv_shield',
       necklace: 'inv_necklace',
-      earring1: 'inv_ring',
-      earring2: 'inv_ring',
+      earring1: 'inv_earring',
+      earring2: 'inv_earring',
       ring1:    'inv_ring',
       ring2:    'inv_ring'
     };
