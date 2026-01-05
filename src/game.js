@@ -408,7 +408,7 @@ async function initAuth() {
 
     // Автосохранение каждые 60 секунд
     setInterval(() => {
-      const isAuth = typeof apiIsAuthenticated === 'function' && apiIsAuthenticated();
+      const isAuth = typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated();
       const hasHero = !!window.heroState;
       console.log('[Autosave] Check: authenticated=' + isAuth + ', heroState=' + hasHero);
 
@@ -419,7 +419,7 @@ async function initAuth() {
           kills: window.heroState.kills || 0
         };
         console.log('[Autosave] Sending:', data);
-        apiSaveProgress(data);
+        window.apiSaveProgress(data);
       }
     }, 60000);
     console.log('[Game] Autosave enabled (60s interval)');
@@ -607,30 +607,57 @@ function setupCleanMode(scene) {
     playerHeader.setResources(30, 150, 5000, 125000);  // Energy/Stars/Gems/Adena
   }
 
-  // DEBUG: Manual save button (temporary)
-  const saveBtn = scene.add.text(700, 150, '💾', { fontSize: '40px' })
+  // DEBUG: Manual save button (temporary) - visible in top left
+  const saveBtn = scene.add.text(50, 200, '💾 SAVE', {
+    fontSize: '24px',
+    backgroundColor: '#333',
+    padding: { x: 10, y: 5 }
+  })
     .setScrollFactor(0)
-    .setDepth(9999)
-    .setInteractive();
+    .setDepth(10000)
+    .setInteractive({ useHandCursor: true });
   saveBtn.on('pointerdown', async () => {
     console.log('[DEBUG] Manual save triggered');
-    console.log('[DEBUG] authenticated:', typeof apiIsAuthenticated === 'function' ? apiIsAuthenticated() : 'N/A');
+    console.log('[DEBUG] window.apiIsAuthenticated:', typeof window.apiIsAuthenticated);
+    console.log('[DEBUG] apiIsAuthenticated():', typeof window.apiIsAuthenticated === 'function' ? window.apiIsAuthenticated() : 'N/A');
     console.log('[DEBUG] heroState:', window.heroState);
-    if (typeof apiIsAuthenticated === 'function' && apiIsAuthenticated()) {
-      const result = await apiSaveProgress({
+    if (typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
+      const result = await window.apiSaveProgress({
         level: window.heroState?.level || 1,
         rating: window.heroState?.rating || 0,
         kills: window.heroState?.kills || 0
       });
       console.log('[DEBUG] Save result:', result);
-      saveBtn.setText('✅');
-      scene.time.delayedCall(1000, () => saveBtn.setText('💾'));
+      saveBtn.setText('✅ OK');
+      scene.time.delayedCall(1000, () => saveBtn.setText('💾 SAVE'));
     } else {
       console.log('[DEBUG] Not authenticated, cannot save');
-      saveBtn.setText('❌');
-      scene.time.delayedCall(1000, () => saveBtn.setText('💾'));
+      saveBtn.setText('❌ NO AUTH');
+      scene.time.delayedCall(1500, () => saveBtn.setText('💾 SAVE'));
     }
   });
+
+  // DEBUG: Test autosave after 5 seconds
+  setTimeout(async () => {
+    console.log('[Autosave] ===== Initial save test (5s) =====');
+    console.log('[Autosave] window.apiIsAuthenticated:', typeof window.apiIsAuthenticated);
+    console.log('[Autosave] window.apiSaveProgress:', typeof window.apiSaveProgress);
+    if (typeof window.apiIsAuthenticated === 'function') {
+      console.log('[Autosave] apiIsAuthenticated():', window.apiIsAuthenticated());
+    }
+    console.log('[Autosave] heroState:', window.heroState ? 'exists' : 'null');
+
+    if (typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
+      const result = await window.apiSaveProgress({
+        level: window.heroState?.level || 1,
+        rating: window.heroState?.rating || 0,
+        kills: window.heroState?.kills || 0
+      });
+      console.log('[Autosave] Test save result:', result);
+    } else {
+      console.log('[Autosave] Skipped - not authenticated');
+    }
+  }, 5000);
 
   // Create panels (needed for icon clicks to work)
   if (typeof createMapUI === "function") createMapUI(scene);
