@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v10 — Focused row scaling effect
+//  v11 — Press Start 2P font + icon positions
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -29,6 +29,10 @@ class LeaderboardScene extends Phaser.Scene {
       bgBottom: 0x0e141b,
       gold: "#D6B36A",
       goldHex: 0xD6B36A,
+
+      // Font families
+      fontPixel: '"Press Start 2P", monospace',
+      fontReadable: 'Verdana, sans-serif',
 
       top1: { border: 0xd6b36a, badge: 0xd6b36a },
       top2: { border: 0xbec5d1, badge: 0xbec5d1 },
@@ -158,7 +162,7 @@ class LeaderboardScene extends Phaser.Scene {
 
     this.input.keyboard?.on("keydown-ESC", () => this.close());
 
-    console.log("[LeaderboardScene] v10 Created");
+    console.log("[LeaderboardScene] v11 Created");
   }
 
   _createHeader() {
@@ -166,9 +170,8 @@ class LeaderboardScene extends Phaser.Scene {
     const P = this.panelBounds;
 
     const title = this.add.text(C.panelInnerPad, 54, "ЛИДЕРБОРД", {
-      fontFamily: "Cinzel, Georgia, serif",
-      fontSize: "48px",
-      fontStyle: "bold",
+      fontFamily: C.fontPixel,
+      fontSize: "28px",
       color: C.gold,
     });
     title.setOrigin(0, 0.5);
@@ -234,9 +237,8 @@ class LeaderboardScene extends Phaser.Scene {
     tab.add(icon);
 
     const text = this.add.text(60, tabH / 2, label, {
-      fontFamily: "Verdana",
-      fontSize: "26px",
-      fontStyle: "bold",
+      fontFamily: C.fontPixel,
+      fontSize: "14px",
       color: "#ffffff",
     }).setOrigin(0, 0.5);
     tab.add(text);
@@ -383,8 +385,8 @@ class LeaderboardScene extends Phaser.Scene {
     row.add(badge);
 
     row.add(this.add.text(badgeX, 0, String(rank), {
-      fontSize: "22px",
-      fontStyle: "bold",
+      fontFamily: C.fontPixel,
+      fontSize: "12px",
       color: isTop ? "#0E141B" : "rgba(255,255,255,0.55)",
     }).setOrigin(0.5));
 
@@ -397,24 +399,24 @@ class LeaderboardScene extends Phaser.Scene {
     lvlBg.strokeCircle(lvlX, 0, 28);
     row.add(lvlBg);
 
-    row.add(this.add.text(lvlX, -10, "Lvl", { fontSize: "14px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5));
-    row.add(this.add.text(lvlX, 8, String(data.level), { fontSize: "20px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0.5));
+    row.add(this.add.text(lvlX, -10, "Lvl", { fontFamily: C.fontReadable, fontSize: "10px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5));
+    row.add(this.add.text(lvlX, 8, String(data.level), { fontFamily: C.fontPixel, fontSize: "12px", color: "#ffffff" }).setOrigin(0.5));
 
     // Name - ближе
-    row.add(this.add.text(lvlX + 50, 0, data.name, { fontSize: "24px", color: "#ffffff" }).setOrigin(0, 0.5));
+    row.add(this.add.text(lvlX + 50, 0, data.name, { fontFamily: C.fontPixel, fontSize: "11px", color: "#ffffff" }).setOrigin(0, 0.5));
 
     // Value + icon
     const valueX = rowW / 2 - 30;
     const iconKey = this.currentTab === "rating" ? "icon_golden_cup" : "icon_pvp";
     if (this.textures.exists(iconKey)) {
-      const icon = this.add.image(valueX - 60, 0, iconKey);  // Было -70
+      const icon = this.add.image(valueX - 90, 0, iconKey);  // Сдвинуто влево
       icon.setDisplaySize(24, 24).setAlpha(0.85);  // Чуть меньше
       row.add(icon);
     }
 
     row.add(this.add.text(valueX, 0, String(data.value), {
-      fontSize: "24px",
-      fontStyle: "bold",
+      fontFamily: C.fontPixel,
+      fontSize: "14px",
       color: isTop ? "#ffffff" : "rgba(255,255,255,0.82)",
     }).setOrigin(1, 0.5));
 
@@ -585,26 +587,26 @@ class LeaderboardScene extends Phaser.Scene {
     this.footerBg = this.add.graphics();
     this.footer.add(this.footerBg);
 
-    this.footerRankText = this.add.text(0, 0, "", { fontSize: "28px", fontStyle: "bold", color: C.gold });
+    this.footerRankText = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "16px", color: C.gold });
     this.footer.add(this.footerRankText);
 
     this.footerLvlBg = this.add.graphics();
     this.footer.add(this.footerLvlBg);
 
-    this.footerLvlTop = this.add.text(0, 0, "Lvl", { fontSize: "14px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5);
+    this.footerLvlTop = this.add.text(0, 0, "Lvl", { fontFamily: C.fontReadable, fontSize: "10px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5);
     this.footer.add(this.footerLvlTop);
 
-    this.footerLvlNum = this.add.text(0, 0, "", { fontSize: "22px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0.5);
+    this.footerLvlNum = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "14px", color: "#ffffff" }).setOrigin(0.5);
     this.footer.add(this.footerLvlNum);
 
-    this.footerName = this.add.text(0, 0, "", { fontSize: "24px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0, 0.5);
+    this.footerName = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "12px", color: "#ffffff" }).setOrigin(0, 0.5);
     this.footer.add(this.footerName);
 
-    this.footerSub = this.add.text(0, 0, "Это ты", { fontSize: "18px", color: "rgba(255,255,255,0.4)" }).setOrigin(0, 0.5);
+    this.footerSub = this.add.text(0, 0, "Это ты", { fontFamily: C.fontReadable, fontSize: "10px", color: "rgba(255,255,255,0.4)" }).setOrigin(0, 0.5);
     this.footer.add(this.footerSub);
 
     this.footerIcon = null;
-    this.footerValue = this.add.text(0, 0, "", { fontSize: "28px", fontStyle: "bold", color: C.gold }).setOrigin(1, 0.5);
+    this.footerValue = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "16px", color: C.gold }).setOrigin(1, 0.5);
     this.footer.add(this.footerValue);
 
     this.footerY = P.h - C.footerH + 12;
@@ -658,7 +660,7 @@ class LeaderboardScene extends Phaser.Scene {
     }
 
     if (this.textures.exists(iconKey)) {
-      this.footerIcon = this.add.image(valueX - 80, lvlY, iconKey).setDisplaySize(28, 28).setAlpha(0.85);
+      this.footerIcon = this.add.image(valueX - 110, lvlY, iconKey).setDisplaySize(28, 28).setAlpha(0.85);
       this.footer.add(this.footerIcon);
     }
 
@@ -691,4 +693,4 @@ class LeaderboardScene extends Phaser.Scene {
 }
 
 window.LeaderboardScene = LeaderboardScene;
-console.log("[LeaderboardScene] v10 FOCUS-SCALE loaded");
+console.log("[LeaderboardScene] v11 PIXEL-FONT loaded");
