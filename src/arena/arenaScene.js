@@ -73,10 +73,10 @@ const ARENA_CONFIG = {
   engageDistance: 420,  // Must be > fightOffset * 2 to trigger before tweens end
   runSpeed: 2500,
 
-  // Transitions
-  vsScreenDuration: 1500,
-  fadeTime: 300,
-  engagePause: 300,
+  // Transitions (faster!)
+  vsScreenDuration: 800,   // Was 1500 - reduced for faster start
+  fadeTime: 200,
+  engagePause: 200,
 
   camera: {
     lerpSpeed: 0.06,
@@ -86,13 +86,13 @@ const ARENA_CONFIG = {
     zoomLerpSpeed: 0.02  // Slower for smooth transition
   },
   cinematic: {
-    introArenaDuration: 1200,
-    zoomToPlayerDuration: 400,
-    introPlayerDuration: 1000,
-    panToEnemyDuration: 600,
-    introEnemyDuration: 800,
-    readyDuration: 300,
-    zoomOutDuration: 500
+    introArenaDuration: 600,    // Was 1200 - faster intro
+    zoomToPlayerDuration: 200,  // Was 400
+    introPlayerDuration: 400,   // Was 1000
+    panToEnemyDuration: 300,    // Was 600
+    introEnemyDuration: 400,    // Was 800
+    readyDuration: 200,         // Was 300
+    zoomOutDuration: 300        // Was 500
   }
 };
 
@@ -1857,9 +1857,37 @@ function handleArenaEnd(scene, result) {
 
   // Use enemy rating from currentMatchData (set at fight start)
   const enemyRating = currentMatchData?.enemyRating || (arenaData.rating + Math.floor(Math.random() * 200) - 100);
-  const rewards = applyArenaResult(isWin, enemyRating);
+  let rewards = applyArenaResult(isWin, enemyRating);
 
-  // === ОТПРАВИТЬ РЕЗУЛЬТАТ НА СЕРВЕР ===
+  // Calculate match duration
+  const duration = Date.now() - matchStartTime;
+
+  // === ОТПРАВИТЬ РЕЗУЛЬТАТ НА СЕРВЕР И ПОКАЗАТЬ UI ===
+  const showResultAndCleanup = (finalRewards) => {
+    // Record match to history
+    if (typeof addMatchToHistory === "function" && currentMatchData) {
+      addMatchToHistory({
+        timestamp: Date.now(),
+        result: isDraw ? "draw" : (isWin ? "win" : "loss"),
+        myRating: arenaData.rating,
+        ratingChange: finalRewards.ratingChange,
+        enemyName: currentMatchData.enemyName,
+        enemyRating: currentMatchData.enemyRating,
+        myDamageDealt: result.playerDamageDealt || 0,
+        enemyDamageDealt: result.enemyDamageDealt || 0,
+        duration: duration,
+        expGained: finalRewards.expReward || 0,
+        goldGained: finalRewards.goldReward || 0
+      });
+    }
+
+    // Clear current match data
+    currentMatchData = null;
+
+    // Show result screen
+    showArenaResult(scene, isWin, finalRewards, result);
+  };
+
   console.log('[ARENA] Checking API: apiArenaResult=' + (typeof window.apiArenaResult), 'isAuth=' + (typeof window.apiIsAuthenticated === 'function' ? window.apiIsAuthenticated() : 'N/A'));
 
   if (typeof window.apiArenaResult === 'function' && typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
@@ -1877,6 +1905,10 @@ function handleArenaEnd(scene, result) {
         window.heroState.rating = apiResult.rating;
         window.heroState.kills = apiResult.kills;
 
+        // ВАЖНО: Обновить rewards с данными от сервера!
+        rewards.newRating = apiResult.rating;
+        rewards.ratingChange = apiResult.delta;
+
         console.log('[ARENA] Updated: rating ' + oldRating + ' → ' + apiResult.rating + ' (delta=' + apiResult.delta + ')');
         console.log('[ARENA] Updated: kills ' + oldKills + ' → ' + apiResult.kills);
 
@@ -1887,40 +1919,20 @@ function handleArenaEnd(scene, result) {
       } else {
         console.warn('[ARENA] API returned error:', apiResult.error);
       }
+
+      // Показать результат после получения API ответа
+      scene.time.delayedCall(500, () => showResultAndCleanup(rewards));
+
     }).catch(err => {
       console.error('[ARENA] API call failed:', err);
+      // Показать результат даже если API упал
+      scene.time.delayedCall(500, () => showResultAndCleanup(rewards));
     });
   } else {
     console.log('[ARENA] Skipping API (not authenticated or function missing)');
+    // Показать результат сразу
+    scene.time.delayedCall(1000, () => showResultAndCleanup(rewards));
   }
-
-  // Calculate match duration
-  const duration = Date.now() - matchStartTime;
-
-  // Record match to history
-  if (typeof addMatchToHistory === "function" && currentMatchData) {
-    addMatchToHistory({
-      timestamp: Date.now(),
-      result: isDraw ? "draw" : (isWin ? "win" : "loss"),
-      myRating: arenaData.rating,
-      ratingChange: rewards.ratingChange,
-      enemyName: currentMatchData.enemyName,
-      enemyRating: currentMatchData.enemyRating,
-      myDamageDealt: result.playerDamageDealt || 0,
-      enemyDamageDealt: result.enemyDamageDealt || 0,
-      duration: duration,
-      expGained: rewards.expReward || 0,
-      goldGained: rewards.goldReward || 0
-    });
-  }
-
-  // Clear current match data
-  currentMatchData = null;
-
-  // Show result screen after brief delay
-  scene.time.delayedCall(1000, () => {
-    showArenaResult(scene, isWin, rewards, result);
-  });
 }
 
 // ============================================================

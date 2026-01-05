@@ -139,96 +139,79 @@ function updateArenaUI(state) {
 function showArenaResult(scene, isWin, rewards, battleResult) {
   const w = scene.scale.width;
   const h = scene.scale.height;
+  const cx = w / 2;
+  const cy = h / 2;
 
-  // Overlay
-  arenaUIElements.resultOverlay = scene.add.rectangle(
-    w / 2, h / 2, w, h, 0x000000, 0.8
-  ).setDepth(600).setScrollFactor(0);
+  // === OVERLAY — полностью чёрный ===
+  arenaUIElements.resultOverlay = scene.add.rectangle(cx, cy, w, h, 0x000000, 0.95)
+    .setDepth(900).setScrollFactor(0);
 
-  // Panel
-  arenaUIElements.resultPanel = scene.add.rectangle(
-    w / 2, h / 2, 350, 400, 0x1a1a2e, 0.95
-  ).setStrokeStyle(4, isWin ? 0x44ff44 : 0xff4444)
-  .setDepth(601).setScrollFactor(0);
+  // === PANEL с градиентом (leaderboard style) ===
+  const panelW = 420;
+  const panelH = 400;
+  const panelX = cx - panelW / 2;
+  const panelY = cy - panelH / 2;
 
-  // Title
-  const titleText = isWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
-  const titleColor = isWin ? "#44ff44" : "#ff4444";
+  arenaUIElements.resultPanel = scene.add.graphics().setDepth(901).setScrollFactor(0);
+  // Верхняя часть — светлее
+  arenaUIElements.resultPanel.fillStyle(0x2a313b, 1);
+  arenaUIElements.resultPanel.fillRoundedRect(panelX, panelY, panelW, panelH / 2, { tl: 20, tr: 20, bl: 0, br: 0 });
+  // Нижняя часть — темнее
+  arenaUIElements.resultPanel.fillStyle(0x0e141b, 1);
+  arenaUIElements.resultPanel.fillRoundedRect(panelX, cy, panelW, panelH / 2, { tl: 0, tr: 0, bl: 20, br: 20 });
+  // Рамка
+  const borderColor = isWin ? 0xD6B36A : 0xdd4444;
+  arenaUIElements.resultPanel.lineStyle(4, borderColor, 1);
+  arenaUIElements.resultPanel.strokeRoundedRect(panelX, panelY, panelW, panelH, 20);
 
-  arenaUIElements.resultTitle = scene.add.text(
-    w / 2, h / 2 - 150, titleText, {
-      fontSize: "42px",
-      color: titleColor,
-      fontFamily: "Georgia"
-    }
-  ).setOrigin(0.5).setDepth(602).setScrollFactor(0);
+  // === ИКОНКА ===
+  const iconKey = isWin ? 'icon_golden_cup' : 'icon_pvp';
+  if (scene.textures.exists(iconKey)) {
+    arenaUIElements.resultIcon = scene.add.image(cx, cy - 140, iconKey)
+      .setDisplaySize(80, 80).setDepth(902).setScrollFactor(0);
+  }
 
-  // Battle stats
-  const statsText = [
-    "Ваш урон: " + (battleResult?.playerDamageDealt || 0),
-    "Урон врага: " + (battleResult?.enemyDamageDealt || 0),
-    "Ваше HP: " + (battleResult?.playerHealthLeft || 0),
-    "HP врага: " + (battleResult?.enemyHealthLeft || 0)
-  ].join("\n");
+  // === ЗАГОЛОВОК ===
+  const titleColor = isWin ? '#D6B36A' : '#dd4444';
+  arenaUIElements.resultTitle = scene.add.text(cx, cy - 70, isWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ', {
+    fontSize: '36px', fontFamily: 'Verdana', fontStyle: 'bold', color: titleColor
+  }).setOrigin(0.5).setDepth(902).setScrollFactor(0);
 
-  arenaUIElements.resultStats = scene.add.text(
-    w / 2, h / 2 - 50, statsText, {
-      fontSize: "18px",
-      color: "#aaaaaa",
-      fontFamily: "Verdana",
-      align: "center",
-      lineSpacing: 6
-    }
-  ).setOrigin(0.5).setDepth(602).setScrollFactor(0);
+  // === РЕЙТИНГ ИЗМЕНЕНИЕ (большой) ===
+  const ratingChange = rewards?.ratingChange || 0;
+  const ratingSign = ratingChange > 0 ? '+' : '';
+  const ratingColor = ratingChange > 0 ? '#44dd44' : '#dd4444';
+  arenaUIElements.resultRatingChange = scene.add.text(cx, cy - 20, `${ratingSign}${ratingChange} рейтинга`, {
+    fontSize: '28px', fontFamily: 'Verdana', fontStyle: 'bold', color: ratingColor
+  }).setOrigin(0.5).setDepth(902).setScrollFactor(0);
 
-  // Rewards
-  const league = typeof getLeague === 'function' ? getLeague(rewards?.newRating || 0) : { icon: '🏆' };
-  const ratingSign = (rewards?.ratingChange || 0) > 0 ? "+" : "";
+  // === СТАТИСТИКА (только урон игрока) ===
+  arenaUIElements.resultStats = scene.add.text(cx, cy + 30, `Ваш урон: ${battleResult?.playerDamageDealt || 0}`, {
+    fontSize: '16px', fontFamily: 'Verdana', color: '#888888'
+  }).setOrigin(0.5).setDepth(902).setScrollFactor(0);
 
-  const rewardsText = [
-    "─────────────",
-    league.icon + " Рейтинг: " + ratingSign + (rewards?.ratingChange || 0) + " (" + (rewards?.newRating || 0) + ")",
-    "EXP: +" + (rewards?.expReward || 0),
-    "Адена: +" + (rewards?.goldReward || 0)
-  ].join("\n");
+  // === НАГРАДЫ ===
+  const rewardsText = `🏆 Рейтинг: ${rewards?.newRating || 0}\n💰 Адена: +${rewards?.goldReward || 0}\n✨ EXP: +${rewards?.expReward || 0}`;
+  arenaUIElements.resultRewards = scene.add.text(cx, cy + 90, rewardsText, {
+    fontSize: '18px', fontFamily: 'Verdana', color: '#ffffff', align: 'center', lineSpacing: 6
+  }).setOrigin(0.5).setDepth(902).setScrollFactor(0);
 
-  arenaUIElements.resultRewards = scene.add.text(
-    w / 2, h / 2 + 60, rewardsText, {
-      fontSize: "20px",
-      color: "#ffffff",
-      fontFamily: "Verdana",
-      align: "center",
-      lineSpacing: 8
-    }
-  ).setOrigin(0.5).setDepth(602).setScrollFactor(0);
+  // === КНОПКА ===
+  arenaUIElements.resultButton = scene.add.rectangle(cx, cy + 160, 180, 50, 0x2a313b)
+    .setStrokeStyle(3, 0xD6B36A).setInteractive({ useHandCursor: true }).setDepth(902).setScrollFactor(0);
 
-  // Button
-  arenaUIElements.resultButton = scene.add.rectangle(
-    w / 2, h / 2 + 160, 180, 50, 0x4a6a4a
-  ).setStrokeStyle(2, 0x6a8a6a)
-  .setInteractive({ useHandCursor: true })
-  .setDepth(602).setScrollFactor(0);
-
-  arenaUIElements.resultButtonText = scene.add.text(
-    w / 2, h / 2 + 160, "В ГОРОД", {
-      fontSize: "22px",
-      color: "#ffffff",
-      fontFamily: "Verdana"
-    }
-  ).setOrigin(0.5).setDepth(603).setScrollFactor(0);
+  arenaUIElements.resultButtonText = scene.add.text(cx, cy + 160, 'В ГОРОД', {
+    fontSize: '20px', fontFamily: 'Verdana', fontStyle: 'bold', color: '#D6B36A'
+  }).setOrigin(0.5).setDepth(903).setScrollFactor(0);
 
   // Button hover
-  arenaUIElements.resultButton.on("pointerover", () => {
-    arenaUIElements.resultButton.setFillStyle(0x5a7a5a);
-  });
-  arenaUIElements.resultButton.on("pointerout", () => {
-    arenaUIElements.resultButton.setFillStyle(0x4a6a4a);
-  });
+  arenaUIElements.resultButton.on('pointerover', () => arenaUIElements.resultButton.setFillStyle(0x3a414b));
+  arenaUIElements.resultButton.on('pointerout', () => arenaUIElements.resultButton.setFillStyle(0x2a313b));
 
   // Button click
-  arenaUIElements.resultButton.on("pointerdown", () => {
+  arenaUIElements.resultButton.on('pointerdown', () => {
     hideArenaResult();
-    if (typeof exitArena === "function") {
+    if (typeof exitArena === 'function') {
       exitArena(scene);
     }
   });
@@ -238,16 +221,16 @@ function showArenaResult(scene, isWin, rewards, battleResult) {
     window.heroState.exp = (window.heroState.exp || 0) + (rewards.expReward || 0);
     window.heroState.gold = (window.heroState.gold || 0) + (rewards.goldReward || 0);
     window.heroState.rating = rewards.newRating || window.heroState.rating;
-    console.log("[ArenaUI] Rewards applied:", rewards);
+    console.log('[ArenaUI] Rewards applied:', rewards);
   }
 
   // Update header UI
-  if (typeof window.updateHeaderStats === "function") {
+  if (typeof window.updateHeaderStats === 'function') {
     window.updateHeaderStats();
   }
 
   // Save to server
-  if (typeof window.apiSaveProgress === "function" && typeof window.apiIsAuthenticated === "function" && window.apiIsAuthenticated()) {
+  if (typeof window.apiSaveProgress === 'function' && typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
     window.apiSaveProgress({
       level: window.heroState?.level || 1,
       rating: window.heroState?.rating || 0,

@@ -420,6 +420,9 @@ async function initAuth() {
       window.heroState.gold = profile.progress.gold || 0;
       window.heroState.gems = profile.progress.gems || 0;
       window.heroState.exp = profile.progress.exp || 0;
+      // maxExp = 100 * level (100 for level 1, 200 for level 2, etc)
+      window.heroState.maxExp = 100 * (window.heroState.level || 1);
+      window.heroState.lastEnergyRegen = Date.now();
       console.log('[Game] Progress loaded from server:', window.heroState);
 
       // Обновить header с реальными данными
@@ -437,6 +440,9 @@ async function initAuth() {
       window.heroState.gold = window.heroState.gold || 0;
       window.heroState.gems = window.heroState.gems || 0;
       window.heroState.exp = window.heroState.exp || 0;
+      // maxExp = 100 * level (100 for level 1, 200 for level 2, etc)
+      window.heroState.maxExp = 100 * (window.heroState.level || 1);
+      window.heroState.lastEnergyRegen = Date.now();
       console.log('[Game] No server progress, using defaults:', window.heroState);
     }
 

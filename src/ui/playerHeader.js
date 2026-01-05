@@ -465,8 +465,22 @@ function updateHeaderStats() {
   // Update level
   window.playerHeader.setLevel(h.level || 1);
 
-  // Update resources: Energy, Stars (Telegram), Gems, Gold (adena)
+  // === ENERGY with regen timer ===
   const energy = h.energy || 100;
+  const maxEnergy = h.maxEnergy || 100;
+  let energyDisplay = energy.toString();
+
+  // Show timer if not at max energy
+  if (energy < maxEnergy) {
+    const ENERGY_REGEN_TIME = 300000;  // 5 minutes = 300000ms per 1 energy
+    const lastRegen = h.lastEnergyRegen || Date.now();
+    const timeSince = Date.now() - lastRegen;
+    const timeToNext = Math.max(0, ENERGY_REGEN_TIME - (timeSince % ENERGY_REGEN_TIME));
+    const minutes = Math.floor(timeToNext / 60000);
+    const seconds = Math.floor((timeToNext % 60000) / 1000);
+    energyDisplay = `${energy} (${minutes}:${seconds.toString().padStart(2, '0')})`;
+  }
+
   const stars = h.stars || 0;  // Telegram Stars - NOT rating!
   const gems = h.gems || 0;
   const gold = h.gold || 0;
@@ -478,14 +492,15 @@ function updateHeaderStats() {
     return n.toString();
   };
 
-  window.playerHeader.setResources(energy, stars, gems, formatNum(gold));
+  window.playerHeader.setResources(energyDisplay, stars, gems, formatNum(gold));
 
-  // Update EXP ring (calculate percent to next level)
-  const expForLevel = (h.level || 1) * 100; // Simple formula
-  const expPercent = (h.exp || 0) / expForLevel;
+  // === EXP ring (use maxExp from heroState) ===
+  const exp = h.exp || 0;
+  const maxExp = h.maxExp || ((h.level || 1) * 100);  // Use maxExp or calculate
+  const expPercent = exp / maxExp;
   window.playerHeader.setExp(Math.min(expPercent, 1));
 
-  console.log('[PlayerHeader] Stats updated:', { level: h.level, energy, stars, gems, gold });
+  console.log('[PlayerHeader] Stats updated:', { level: h.level, energy, exp, maxExp, expPercent: expPercent.toFixed(2) });
 }
 
 window.updateHeaderStats = updateHeaderStats;
