@@ -41,7 +41,7 @@ function saveGame() {
       musicMuted: typeof musicMuted !== "undefined" ? musicMuted : false,
     };
 
-    localStorage.setItem("pocketLineageSave", JSON.stringify(data));
+    localStorage.setItem("pocketChroniclesSave", JSON.stringify(data));
   } catch (e) {
     console.warn("[Save] Error saving game", e);
   }
@@ -49,7 +49,7 @@ function saveGame() {
 
 function loadGame() {
   try {
-    const raw = localStorage.getItem("pocketLineageSave");
+    const raw = localStorage.getItem("pocketChroniclesSave");
     if (!raw) return false;
 
     const data = JSON.parse(raw);
@@ -57,7 +57,7 @@ function loadGame() {
     // Проверка версии сейва
     if (data.v !== SAVE_VERSION) {
       console.warn("[Save] Version mismatch (got " + data.v + ", need " + SAVE_VERSION + "), resetting save");
-      localStorage.removeItem("pocketLineageSave");
+      localStorage.removeItem("pocketChroniclesSave");
       return false;
     }
 

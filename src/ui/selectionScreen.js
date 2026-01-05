@@ -397,7 +397,7 @@ function showSplash(scene) {
     .setDepth(40)
     .setInteractive();
   splashLogoText = scene.add
-    .text(w / 2, h / 2 - 40, "POCKET LINEAGE", {
+    .text(w / 2, h / 2 - 40, "POCKET CHRONICLES", {
       fontFamily: "Arial",
       fontSize: "38px",
       color: "#ffd700",
