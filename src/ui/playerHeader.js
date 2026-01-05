@@ -349,12 +349,29 @@ function createPlayerHeader(scene) {
     setAvatar(urlOrKey) {
       // Check if it's a URL (starts with http)
       if (urlOrKey.startsWith('http')) {
-        // Load external image
-        scene.load.image('player_avatar_custom', urlOrKey);
-        scene.load.once('complete', () => {
+        // Load via Image API to bypass CORS (t.me URLs)
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          // Create canvas texture
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          // Add to Phaser textures
+          if (scene.textures.exists('player_avatar_custom')) {
+            scene.textures.remove('player_avatar_custom');
+          }
+          scene.textures.addCanvas('player_avatar_custom', canvas);
           avatar.setTexture('player_avatar_custom');
-        });
-        scene.load.start();
+          console.log('[PlayerHeader] Avatar loaded via canvas');
+        };
+        img.onerror = function() {
+          console.warn('[PlayerHeader] Avatar CORS blocked, keeping placeholder');
+        };
+        img.src = urlOrKey;
       } else {
         // Use existing texture
         avatar.setTexture(urlOrKey);
