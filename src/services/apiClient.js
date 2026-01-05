@@ -9,6 +9,12 @@ const API_URL = 'https://pocketchronicle.ru';
 let authToken = null;
 let currentUser = null;
 
+// Telegram WebApp ready
+if (window.Telegram?.WebApp) {
+  window.Telegram.WebApp.ready();
+  console.log('[ApiClient] Telegram WebApp ready called');
+}
+
 /**
  * Авторизация через Telegram
  */
