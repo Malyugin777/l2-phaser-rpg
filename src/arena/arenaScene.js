@@ -676,6 +676,11 @@ function hideCity() {
     console.log('[ARENA] Player header hidden');
   }
 
+  // Hide header dark background (black bar at top)
+  if (window.playerHeaderDarkBg?.setVisible) {
+    window.playerHeaderDarkBg.setVisible(false);
+  }
+
   if (window.bottomUI?.container?.setVisible) {
     window.bottomUI.container.setVisible(false);
     console.log('[ARENA] Bottom UI hidden');
@@ -696,6 +701,11 @@ function showCity() {
   if (window.playerHeader?.setVisible) {
     window.playerHeader.setVisible(true);
     console.log('[ARENA] Player header restored');
+  }
+
+  // Show header dark background
+  if (window.playerHeaderDarkBg?.setVisible) {
+    window.playerHeaderDarkBg.setVisible(true);
   }
 
   if (window.bottomUI?.container?.setVisible) {

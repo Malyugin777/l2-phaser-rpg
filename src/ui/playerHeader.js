@@ -336,9 +336,16 @@ function createPlayerHeader(scene) {
     },
 
     /**
-     * Set player nickname
+     * Set player nickname (auto font size based on length)
      */
     setNickname(name) {
+      // Auto-size font based on name length
+      let fontSize = cfg.nickname.fontSize;  // default 24
+      if (name.length > 10) fontSize = 20;
+      if (name.length > 14) fontSize = 16;
+      if (name.length > 18) fontSize = 14;
+
+      nicknameText.setFontSize(fontSize);
       nicknameText.setText(name);
     },
 
