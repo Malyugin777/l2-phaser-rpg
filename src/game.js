@@ -381,6 +381,35 @@ function update(time, delta) {
 }
 
 // ============================================================
+//  AUTH
+// ============================================================
+
+async function initAuth() {
+  console.log('[Game] Starting auth...');
+
+  if (typeof apiAuth !== 'function') {
+    console.warn('[Game] apiAuth not available, skipping auth');
+    return;
+  }
+
+  const result = await apiAuth();
+
+  if (result.success) {
+    console.log('[Game] Auth success:', result.user);
+
+    // Обновить UI с реальными данными
+    if (result.user.first_name) {
+      window.playerName = result.user.first_name;
+    }
+    if (result.user.photo_url) {
+      window.playerAvatar = result.user.photo_url;
+    }
+  } else {
+    console.log('[Game] Auth failed, playing as guest');
+  }
+}
+
+// ============================================================
 //  CREATE
 // ============================================================
 
@@ -392,6 +421,9 @@ function create() {
   initSafeArea(this);
 
   loadGame();
+
+  // Авторизация через API при старте
+  initAuth();
 
   const w = this.scale.width;
   const h = this.scale.height;
