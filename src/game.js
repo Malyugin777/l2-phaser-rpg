@@ -607,6 +607,31 @@ function setupCleanMode(scene) {
     playerHeader.setResources(30, 150, 5000, 125000);  // Energy/Stars/Gems/Adena
   }
 
+  // DEBUG: Manual save button (temporary)
+  const saveBtn = scene.add.text(700, 150, '💾', { fontSize: '40px' })
+    .setScrollFactor(0)
+    .setDepth(9999)
+    .setInteractive();
+  saveBtn.on('pointerdown', async () => {
+    console.log('[DEBUG] Manual save triggered');
+    console.log('[DEBUG] authenticated:', typeof apiIsAuthenticated === 'function' ? apiIsAuthenticated() : 'N/A');
+    console.log('[DEBUG] heroState:', window.heroState);
+    if (typeof apiIsAuthenticated === 'function' && apiIsAuthenticated()) {
+      const result = await apiSaveProgress({
+        level: window.heroState?.level || 1,
+        rating: window.heroState?.rating || 0,
+        kills: window.heroState?.kills || 0
+      });
+      console.log('[DEBUG] Save result:', result);
+      saveBtn.setText('✅');
+      scene.time.delayedCall(1000, () => saveBtn.setText('💾'));
+    } else {
+      console.log('[DEBUG] Not authenticated, cannot save');
+      saveBtn.setText('❌');
+      scene.time.delayedCall(1000, () => saveBtn.setText('💾'));
+    }
+  });
+
   // Create panels (needed for icon clicks to work)
   if (typeof createMapUI === "function") createMapUI(scene);
   if (typeof createForgeUI === "function") createForgeUI(scene);
