@@ -107,11 +107,10 @@ class InventoryScene extends Phaser.Scene {
     
     // ===== ФИКСИРОВАННЫЕ РАЗМЕРЫ =====
     // Game pixels! Display = Game / 2
-    // Чтобы выглядело как 60px на экране, нужно 120 game px
-    C.equipSlot = 150;   // 75 display px
-    C.gridSlot = 105;    // ~52 display px (было 120)
-    C.heroBoxW = 280;    // 140 display px
-    C.heroBoxH = 360;    // 180 display px
+    C.equipSlot = 120;   // Было 150, уменьшил для места под grid
+    C.gridSlot = 100;    // Было 105
+    C.heroBoxW = 240;    // Было 280
+    C.heroBoxH = 320;    // Было 360
     C.gridVisibleRows = 2;
     
     console.log(`[INV] Screen: ${W}×${H}`);
@@ -195,7 +194,7 @@ class InventoryScene extends Phaser.Scene {
   createHeader(W) {
     const C = this.CFG;
     const P = this.panelBounds;
-    const headerH = 120;  // 60 display × 2
+    const headerH = 90;  // Было 120, уменьшил
     
     // Фон хедера
     const headerBg = this.add.graphics();
@@ -208,13 +207,13 @@ class InventoryScene extends Phaser.Scene {
     this.container.add(headerBg);
     
     // Заголовок
-    const title = this.add.text(P.x + C.padding, P.y + 45, 'ИНВЕНТАРЬ', {
+    const title = this.add.text(P.x + C.padding, P.y + 32, 'ИНВЕНТАРЬ', {
       fontFamily: '"Press Start 2P", Verdana, Arial',
-      fontSize: '32px',
+      fontSize: '28px',
       fontStyle: 'bold',
       color: C.gold,
     });
-    title.setShadow(0, 4, '#000000', 6);
+    title.setShadow(0, 3, '#000000', 5);
     this.container.add(title);
     
     // Subtitle убран
@@ -264,9 +263,9 @@ class InventoryScene extends Phaser.Scene {
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
     
-    // Gap между слотами = 4px display = 8 game
-    const slotGap = 4;
-    const slotWithLabel = C.equipSlot + 32;  // слот + label (16 display)
+    // Gap между слотами
+    const slotGap = 2;
+    const slotWithLabel = C.equipSlot + 24;  // слот + label
     
     // Левая колонка — светлые PNG рамки
     const leftX = P.x + C.padding + C.equipSlot/2;
@@ -384,14 +383,14 @@ class InventoryScene extends Phaser.Scene {
     // Только подиум (тень под ногами) - БЕЗ рамки
     const pedestal = this.add.graphics();
     pedestal.fillStyle(0x000000, 0.4);
-    pedestal.fillEllipse(x, y + 80, 120, 30);
+    pedestal.fillEllipse(x, y + 60, 100, 25);
     this.container.add(pedestal);
     
     // Spine герой - больше (+20%) и ниже
     if (this.game.cache?.custom?.spine?.has('hero') || this.cache?.custom?.spine?.get('hero')) {
       try {
-        this.heroSpine = this.add.spine(x, y + 80, 'hero', 'idle', true);
-        this.heroSpine.setScale(0.38);  // Было 0.32, +20%
+        this.heroSpine = this.add.spine(x, y + 60, 'hero', 'idle', true);
+        this.heroSpine.setScale(0.32);  // Уменьшил
         this.container.add(this.heroSpine);
       } catch (e) {
         console.warn('[INV] Spine hero failed, using fallback');
@@ -417,7 +416,7 @@ class InventoryScene extends Phaser.Scene {
   createStatsBar(W) {
     const C = this.CFG;
     const P = this.panelBounds;
-    const barH = 100;  // 50 × 2
+    const barH = 80;  // Было 100, уменьшил
     const y = this.equipZoneEndY;
     
     // Фон
@@ -505,11 +504,10 @@ class InventoryScene extends Phaser.Scene {
     const gridSlot = C.gridSlot;
     const gridGap = 8;
     
-    // Видимая область (от gridStartY до низа экрана)
-    const visibleH = H - gridStartY - 20;
-    const visibleRows = Math.floor(visibleH / (gridSlot + gridGap));
+    // Видимая область
+    const visibleH = H - gridStartY - 40;
     
-    // Всего рядов для отрисовки (минимум 6)
+    // Всего рядов
     const totalRows = Math.max(6, Math.ceil(totalSlots / C.gridCols));
     const contentH = totalRows * (gridSlot + gridGap);
     
@@ -517,21 +515,23 @@ class InventoryScene extends Phaser.Scene {
     const contentW = P.w - C.padding * 2;
     const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * gridGap;
     const gridOffsetX = (contentW - actualGridW) / 2;
-    const gridStartX = P.x + C.padding + gridOffsetX + gridSlot / 2;
+    
+    // ОТНОСИТЕЛЬНЫЕ координаты внутри gridContainer
+    const relativeStartX = P.x + C.padding + gridOffsetX + gridSlot / 2;
     
     console.log(`[INV] Grid: slot=${gridSlot}, totalRows=${totalRows}, visibleH=${visibleH}, contentH=${contentH}`);
     
-    // КОНТЕЙНЕР для скролла
-    this.gridContainer = this.add.container(0, gridStartY);
+    // КОНТЕЙНЕР для скролла (позиция Y = gridStartY)
+    this.gridContainer = this.add.container(0, 0);
     
     this.gridSlots = [];
     
-    // Рисуем ВСЕ ряды
+    // Рисуем ВСЕ ряды с ОТНОСИТЕЛЬНЫМИ координатами
     for (let row = 0; row < totalRows; row++) {
       for (let col = 0; col < C.gridCols; col++) {
         const i = row * C.gridCols + col;
-        const x = gridStartX + col * (gridSlot + gridGap);
-        const y = row * (gridSlot + gridGap) + gridSlot / 2;
+        const x = relativeStartX + col * (gridSlot + gridGap);
+        const y = gridStartY + row * (gridSlot + gridGap) + gridSlot / 2;
         
         const item = this.items[i] || null;
         this.createGridSlot(x, y, item, i, gridSlot);
@@ -553,8 +553,8 @@ class InventoryScene extends Phaser.Scene {
     this.container.add(scrollZone);
     
     // Лимиты скролла
-    const minY = gridStartY - (contentH - visibleH); // Максимум вверх
-    const maxY = gridStartY; // Начальная позиция
+    this.scrollMinY = -(contentH - visibleH);  // Максимум вверх (отрицательное)
+    this.scrollMaxY = 0;  // Начальная позиция
     
     // Переменные для drag
     let isDragging = false;
@@ -574,7 +574,7 @@ class InventoryScene extends Phaser.Scene {
       let newY = containerStartY + deltaY;
       
       // Clamp
-      newY = Phaser.Math.Clamp(newY, minY, maxY);
+      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
       this.gridContainer.y = newY;
     });
     
@@ -585,9 +585,11 @@ class InventoryScene extends Phaser.Scene {
     // Mouse wheel для ПК
     this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
       let newY = this.gridContainer.y - deltaY * 0.5;
-      newY = Phaser.Math.Clamp(newY, minY, maxY);
+      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
       this.gridContainer.y = newY;
     });
+    
+    console.log(`[INV] Scroll limits: min=${this.scrollMinY}, max=${this.scrollMaxY}`);
   }
 
   // ============================================================
@@ -891,4 +893,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v14 SCROLL+PNG loaded');
+console.log('[InventoryScene] v16 COMPACT loaded');
