@@ -233,15 +233,30 @@ function showArenaResult(scene, isWin, rewards, battleResult) {
     }
   });
 
-  // Apply rewards
-  if (stats.progression) {
-    stats.progression.xp += rewards.expReward;
+  // Apply rewards to heroState
+  if (window.heroState) {
+    window.heroState.exp = (window.heroState.exp || 0) + rewards.expReward;
+    window.heroState.gold = (window.heroState.gold || 0) + rewards.goldReward;
+    window.heroState.rating = rewards.newRating;
+    console.log("[ArenaUI] Rewards applied:", rewards);
   }
-  if (wallet) {
-    wallet.gold += rewards.goldReward;
+
+  // Update header UI
+  if (typeof window.updateHeaderStats === "function") {
+    window.updateHeaderStats();
   }
-  if (typeof saveGame === "function") {
-    saveGame();
+
+  // Save to server
+  if (typeof window.apiSaveProgress === "function" && typeof window.apiIsAuthenticated === "function" && window.apiIsAuthenticated()) {
+    window.apiSaveProgress({
+      level: window.heroState?.level || 1,
+      rating: window.heroState?.rating || 0,
+      kills: window.heroState?.kills || 0,
+      energy: window.heroState?.energy || 100,
+      gold: window.heroState?.gold || 0,
+      gems: window.heroState?.gems || 0,
+      exp: window.heroState?.exp || 0
+    });
   }
 }
 
@@ -264,9 +279,12 @@ function destroyArenaUI() {
   console.log("[ArenaUI] Destroyed");
 }
 
-// Expose globally for debugging
+// Expose globally
 window.createArenaUI = createArenaUI;
 window.updateArenaUI = updateArenaUI;
+window.showArenaResult = showArenaResult;
+window.hideArenaResult = hideArenaResult;
+window.destroyArenaUI = destroyArenaUI;
 window.arenaUIElements = arenaUIElements;
 
-console.log("[ArenaUI] Module loaded and exposed globally");
+console.log("[ArenaUI] Module loaded v2");
