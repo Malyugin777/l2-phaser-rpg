@@ -394,15 +394,16 @@ async function initAuth() {
 
   const result = await apiAuth();
 
-  if (result.success) {
+  if (result.success && result.user) {
     console.log('[Game] Auth success:', result.user);
 
-    // Обновить UI с реальными данными
-    if (result.user.first_name) {
-      window.playerName = result.user.first_name;
-    }
-    if (result.user.photo_url) {
-      window.playerAvatar = result.user.photo_url;
+    // Сохранить данные
+    window.playerName = result.user.first_name || 'Warrior';
+    window.playerAvatar = result.user.photo_url || null;
+
+    // Обновить header UI
+    if (typeof updatePlayerHeader === 'function') {
+      updatePlayerHeader(window.playerName, window.playerAvatar);
     }
   } else {
     console.log('[Game] Auth failed, playing as guest');

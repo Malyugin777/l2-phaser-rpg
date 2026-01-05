@@ -400,4 +400,30 @@ function createPlayerHeader(scene) {
 // Export for global access
 window.createPlayerHeader = createPlayerHeader;
 
+/**
+ * Update player header with API data
+ * @param {string} name - Player name from API
+ * @param {string} avatarUrl - Avatar URL from Telegram
+ */
+function updatePlayerHeader(name, avatarUrl) {
+  if (!window.playerHeader) {
+    console.warn('[PlayerHeader] Header not created yet, saving for later');
+    window._pendingPlayerName = name;
+    window._pendingPlayerAvatar = avatarUrl;
+    return;
+  }
+
+  if (name) {
+    window.playerHeader.setNickname(name);
+    console.log('[PlayerHeader] Name updated:', name);
+  }
+
+  if (avatarUrl) {
+    window.playerHeader.setAvatar(avatarUrl);
+    console.log('[PlayerHeader] Avatar loading:', avatarUrl);
+  }
+}
+
+window.updatePlayerHeader = updatePlayerHeader;
+
 console.log("[PlayerHeader] Module loaded");

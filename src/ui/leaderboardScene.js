@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v11 — Press Start 2P font + icon positions
+//  v12 — API integration + real data
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -81,7 +81,52 @@ class LeaderboardScene extends Phaser.Scene {
       rankKills: 77,
     };
 
+    // API data (null = use mock)
+    this.apiRating = null;
+    this.apiKills = null;
+    this.isLoading = false;
+
     this._drag = null;
+  }
+
+  /**
+   * Load leaderboard from API
+   */
+  async _loadLeaderboard(tab) {
+    if (typeof apiGetLeaderboard !== 'function') {
+      console.warn('[LEADERBOARD] API not available, using mock data');
+      return;
+    }
+
+    this.isLoading = true;
+    console.log('[LEADERBOARD] Loading from API, tab:', tab);
+
+    try {
+      const result = await apiGetLeaderboard(tab);
+
+      if (result.success && result.leaderboard) {
+        const data = result.leaderboard.map((u, i) => ({
+          id: i + 1,
+          name: u.first_name || u.username || 'Unknown',
+          level: u.level || 1,
+          value: tab === 'kills' ? (u.kills || 0) : (u.rating || 0),
+          avatar: u.photo_url || null
+        }));
+
+        if (tab === 'rating') {
+          this.apiRating = data;
+        } else {
+          this.apiKills = data;
+        }
+
+        console.log('[LEADERBOARD] API loaded:', data.length, 'entries');
+        this._refreshList();
+      }
+    } catch (error) {
+      console.error('[LEADERBOARD] API error:', error);
+    }
+
+    this.isLoading = false;
   }
 
   _expandMock(base, targetCount) {
@@ -162,7 +207,10 @@ class LeaderboardScene extends Phaser.Scene {
 
     this.input.keyboard?.on("keydown-ESC", () => this.close());
 
-    console.log("[LeaderboardScene] v11 Created");
+    // Load data from API
+    this._loadLeaderboard(this.currentTab);
+
+    console.log("[LeaderboardScene] v12 Created");
   }
 
   _createHeader() {
@@ -283,6 +331,12 @@ class LeaderboardScene extends Phaser.Scene {
     this._updateTabs();
     this._refreshList();
     this._updateFooter();
+
+    // Load API data for new tab if not already loaded
+    const hasData = key === 'rating' ? this.apiRating : this.apiKills;
+    if (!hasData) {
+      this._loadLeaderboard(key);
+    }
   }
 
   _createList() {
@@ -321,7 +375,12 @@ class LeaderboardScene extends Phaser.Scene {
   }
 
   _getTabData() {
-    return this.currentTab === "rating" ? this.mockRating : this.mockKills;
+    // Use API data if available, otherwise mock
+    if (this.currentTab === "rating") {
+      return this.apiRating || this.mockRating;
+    } else {
+      return this.apiKills || this.mockKills;
+    }
   }
 
   _refreshList() {
@@ -693,4 +752,4 @@ class LeaderboardScene extends Phaser.Scene {
 }
 
 window.LeaderboardScene = LeaderboardScene;
-console.log("[LeaderboardScene] v11 PIXEL-FONT loaded");
+console.log("[LeaderboardScene] v12 API-READY loaded");
