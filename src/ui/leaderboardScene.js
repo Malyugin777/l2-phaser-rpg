@@ -218,16 +218,17 @@ class LeaderboardScene extends Phaser.Scene {
     
     this.listBounds = { x: P.x + 16, y: listY, w: P.w - 32, h: listH };
     
+    console.log('[LEADERBOARD] createList: listY=' + listY + ', listH=' + listH);
+    
     // List container
     this.listContainer = this.add.container(0, 0);
     this.container.add(this.listContainer);
     
-    // Mask (НЕ белая, просто геометрия)
-    const maskGraphics = this.make.graphics();
-    maskGraphics.fillStyle(0x000000);  // Цвет не важен для геометрической маски
-    maskGraphics.fillRect(this.listBounds.x, this.listBounds.y, this.listBounds.w, this.listBounds.h);
-    const mask = maskGraphics.createGeometryMask();
-    this.listContainer.setMask(mask);
+    // ПРАВИЛЬНАЯ МАСКА (add: false — НЕ добавляется на сцену!)
+    const maskShape = this.make.graphics({ x: 0, y: 0, add: false });
+    maskShape.fillStyle(0xffffff, 1);
+    maskShape.fillRect(this.listBounds.x, this.listBounds.y, this.listBounds.w, this.listBounds.h);
+    this.listContainer.setMask(maskShape.createGeometryMask());
     
     this.refreshList();
     this.setupScroll();
@@ -402,4 +403,4 @@ class LeaderboardScene extends Phaser.Scene {
 }
 
 window.LeaderboardScene = LeaderboardScene;
-console.log('[LeaderboardScene] v2 Module loaded');
+console.log('[LeaderboardScene] v4 MASK-FIX loaded');
