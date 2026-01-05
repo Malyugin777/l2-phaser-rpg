@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v7 — GPT base + mask fix
+//  v10 — Focused row scaling effect
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -33,6 +33,12 @@ class LeaderboardScene extends Phaser.Scene {
       top1: { border: 0xd6b36a, badge: 0xd6b36a },
       top2: { border: 0xbec5d1, badge: 0xbec5d1 },
       top3: { border: 0xb37a4c, badge: 0xb37a4c },
+
+      // Focused row scaling
+      focusBaseScale: 1.0,
+      focusMaxScale: 1.08,
+      focusRadius: 250,
+      focusSmoothing: 0.15,
     };
 
     this.currentTab = "rating";
@@ -152,7 +158,7 @@ class LeaderboardScene extends Phaser.Scene {
 
     this.input.keyboard?.on("keydown-ESC", () => this.close());
 
-    console.log("[LeaderboardScene] v7 Created");
+    console.log("[LeaderboardScene] v10 Created");
   }
 
   _createHeader() {
@@ -336,6 +342,9 @@ class LeaderboardScene extends Phaser.Scene {
     this.scrollMinY = Math.min(0, L.h - contentH);
     this.listContent.y = 0;
 
+    // Apply initial focus effect
+    this._updateFocusEffect();
+
     console.log(`[LEADERBOARD] ${data.length} rows, contentH=${contentH}, listH=${L.h}, scrollMin=${this.scrollMinY}`);
   }
 
@@ -414,6 +423,35 @@ class LeaderboardScene extends Phaser.Scene {
     this.listContent.add(row);
   }
 
+  // Focused row scaling effect (no snap, just visual)
+  _updateFocusEffect() {
+    const C = this.CFG;
+    const L = this.listBounds;
+    const focusY = L.y + L.h / 2;  // Center of visible list area
+
+    const easeOutQuad = (t) => t * (2 - t);
+
+    const rows = this.listContent.list;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row.active) continue;
+
+      // Row world Y position (accounting for scroll offset)
+      const rowWorldY = row.y + this.listContent.y;
+      const dist = Math.abs(rowWorldY - focusY);
+
+      // Calculate target scale based on distance from focus
+      const t = Math.max(0, 1 - dist / C.focusRadius);
+      const targetScale = C.focusBaseScale + (C.focusMaxScale - C.focusBaseScale) * easeOutQuad(t);
+
+      // Smooth interpolation (lerp)
+      const currentScale = row.scaleX;
+      const newScale = currentScale + (targetScale - currentScale) * C.focusSmoothing;
+
+      row.setScale(newScale);
+    }
+  }
+
   _setupScroll() {
     const drag = {
       active: false,
@@ -443,6 +481,7 @@ class LeaderboardScene extends Phaser.Scene {
       const target = Phaser.Math.Clamp(this.listContent.y, this.scrollMinY, this.scrollMaxY);
       if (Math.abs(target - this.listContent.y) < 0.5) {
         this.listContent.y = target;
+        this._updateFocusEffect();
         return;
       }
       this.tweens.add({
@@ -450,6 +489,8 @@ class LeaderboardScene extends Phaser.Scene {
         y: target,
         duration: 180,
         ease: "Sine.Out",
+        onUpdate: () => this._updateFocusEffect(),
+        onComplete: () => this._updateFocusEffect(),
       });
     };
 
@@ -482,6 +523,7 @@ class LeaderboardScene extends Phaser.Scene {
       drag.lastT = t;
       const raw = drag.startContentY + (p.y - drag.startY);
       this.listContent.y = rubberClamp(raw);
+      this._updateFocusEffect();
     });
 
     this.input.on("pointerup", () => {
@@ -509,6 +551,8 @@ class LeaderboardScene extends Phaser.Scene {
           this.listContent.y = next;
           v *= 0.92;
 
+          this._updateFocusEffect();
+
           const outTop = this.listContent.y > this.scrollMaxY + 0.5;
           const outBot = this.listContent.y < this.scrollMinY - 0.5;
 
@@ -527,6 +571,7 @@ class LeaderboardScene extends Phaser.Scene {
       if (this.scrollMinY === 0 && this.scrollMaxY === 0) return;
       const next = Phaser.Math.Clamp(this.listContent.y - dy * 0.6, this.scrollMinY - 40, this.scrollMaxY + 40);
       this.listContent.y = next;
+      this._updateFocusEffect();
     });
   }
 
@@ -646,4 +691,4 @@ class LeaderboardScene extends Phaser.Scene {
 }
 
 window.LeaderboardScene = LeaderboardScene;
-console.log("[LeaderboardScene] v8 SCROLL-FIX loaded");
+console.log("[LeaderboardScene] v10 FOCUS-SCALE loaded");

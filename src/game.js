@@ -590,10 +590,15 @@ function setupCleanMode(scene) {
   // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
   setTimeout(() => applyFinalPositions(scene), 200);
 
-  // Rating button (right side) — FIXED SCALE
+  // Rating button (right side) — PROPORTIONAL SCALE
+  // Image is 597×368 px, preserve aspect ratio
   if (scene.textures.exists('btn_rating')) {
-    const ratingBtn = scene.add.image(scene.scale.width - 100, scene.scale.height - 400, 'btn_rating');
-    ratingBtn.setDisplaySize(140, 140);
+    const ratingBtn = scene.add.image(scene.scale.width - 130, scene.scale.height - 400, 'btn_rating');
+
+    // Proportional sizing: target height 120, calculate width from ratio
+    const targetHeight = 120;
+    const ratio = 597 / 368;  // ~1.62
+    ratingBtn.setDisplaySize(targetHeight * ratio, targetHeight);  // ~194 × 120
 
     // Save BASE scale AFTER setDisplaySize!
     const ratingBaseScaleX = ratingBtn.scaleX;
@@ -619,7 +624,7 @@ function setupCleanMode(scene) {
     });
 
     ratingBtn.setDepth(200);
-    console.log('[GAME] Rating button added, baseScale:', ratingBaseScaleX);
+    console.log('[GAME] Rating button added (proportional), baseScale:', ratingBaseScaleX.toFixed(3));
   }
 
   console.log("[CLEAN MODE] Initialized");
