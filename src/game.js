@@ -405,6 +405,22 @@ async function initAuth() {
     if (typeof updatePlayerHeader === 'function') {
       updatePlayerHeader(window.playerName, window.playerAvatar);
     }
+
+    // Автосохранение каждые 60 секунд
+    setInterval(() => {
+      if (typeof apiIsAuthenticated === 'function' && apiIsAuthenticated() && window.heroState) {
+        apiSaveProgress({
+          level: window.heroState.level || 1,
+          rating: window.heroState.rating || 0,
+          kills: window.heroState.kills || 0
+        });
+        console.log('[Game] Autosave sent');
+      }
+    }, 60000);
+    console.log('[Game] Autosave enabled (60s interval)');
+
+  } else if (result.offline) {
+    console.log('[Game] Offline mode - no save');
   } else {
     console.log('[Game] Auth failed, playing as guest');
   }

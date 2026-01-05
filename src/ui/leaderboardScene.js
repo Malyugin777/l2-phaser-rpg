@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v14 — @username display + safe area margins
+//  v15 — increased safe area (100px top/bottom, max 70% height)
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -161,14 +161,14 @@ class LeaderboardScene extends Phaser.Scene {
     const C = this.CFG;
 
     // Safe areas with fallback for phones with notches
-    const safeTop = Math.max((window?.SAFE_TOP_PX ?? 0) | 0, 60);
-    const safeBottom = Math.max((window?.SAFE_BOTTOM_PX ?? 0) | 0, 80);
+    const safeTop = Math.max((window?.SAFE_TOP_PX ?? 0) | 0, 100);
+    const safeBottom = Math.max((window?.SAFE_BOTTOM_PX ?? 0) | 0, 100);
     const usableH = H - safeTop - safeBottom;
 
     const panelW = Math.min(C.panelMaxW, W - C.panelSidePad * 2);
-    const panelH = Math.min(usableH - 40, H - safeTop - safeBottom - 40);
+    const panelH = Math.min(usableH - 80, H * 0.7);
     const panelX = (W - panelW) / 2;
-    const panelY = safeTop + Math.max(10, (usableH - panelH) / 2);
+    const panelY = safeTop + Math.max(20, (usableH - panelH) / 2);
 
     this.panelBounds = { x: panelX, y: panelY, w: panelW, h: panelH };
 
