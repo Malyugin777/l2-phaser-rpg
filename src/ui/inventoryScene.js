@@ -1,45 +1,53 @@
 "use strict";
 
 // ============================================================
-//  INVENTORY SCENE — FINAL v8
-//  Phaser Native | L2 Dark Fantasy | PNG Slots | Spine Hero
-//  
-//  Запуск: scene.launch('InventoryScene')
-//  Закрытие: scene.stop('InventoryScene')
+//  INVENTORY SCENE — Leaderboard Architecture v1
+//  Phaser Native | L2 Dark Fantasy | Proper Safe Areas + Mask
+//
+//  Based on LeaderboardScene architecture:
+//  - Safe area handling (120px min top)
+//  - Dimmer closes only on tap (not scroll)
+//  - Proper mask (not added to scene)
+//  - Gradient panel
 // ============================================================
 
 class InventoryScene extends Phaser.Scene {
   constructor() {
     super({ key: 'InventoryScene' });
-    
-    // ===== КОНФИГ L2 STYLE =====
-    // ВСЕ размеры в GAME PIXELS (display = game / 2)
+
     this.CFG = {
-      padding: 32,      // 16 display
-      gap: 16,          // 8 display
-      gridCols: 6,
-      gridRows: 6,      // Увеличил для скролла
-      
-      // Цвета L2 Dark Fantasy (hex для Phaser)
-      bgTop: 0x232730,
-      bgBottom: 0x0f1116,
+      panelMaxW: 720,
+      panelSidePad: 28,
+      panelInnerPad: 36,
+      radius: 28,
+
+      headerH: 100,
+
+      // Colors (L2 Dark Fantasy)
+      bgTop: 0x2a313b,
+      bgBottom: 0x0e141b,
       panelBg: 0x1a1d24,
       footerBg: 0x111318,
       border: 0x4b5563,
-      borderLight: 0x6b7280,
-      
-      // Текст
+
+      gold: "#D6B36A",
+      goldHex: 0xD6B36A,
       textColor: '#e2e8f0',
       textMuted: '#64748b',
-      gold: '#D6B36A',
       blue: '#4FA3FF',
       red: '#E05252',
-      
-      // Tint для слотов
-      slotTintEmpty: 0x667788,
-      slotTintFilled: 0xffffff,
-      
-      // Редкость
+
+      // Fonts
+      fontMain: 'Verdana, Arial, sans-serif',
+
+      // Slot sizes
+      equipSlot: 100,
+      gridSlot: 90,
+      heroBoxW: 200,
+      heroBoxH: 280,
+      gridCols: 6,
+
+      // Rarity colors
       rarity: {
         common:    { color: 0x4b5563, glow: null },
         uncommon:  { color: 0x22c55e, glow: 0x22c55e },
@@ -48,420 +56,344 @@ class InventoryScene extends Phaser.Scene {
         legendary: { color: 0xD6B36A, glow: 0xD6B36A },
       }
     };
-    
-    // Данные
+
     this.ICONS = {
       helmet: "⛑️", chest: "🎽", pants: "👖", gloves: "🧤",
       boots: "👢", mainHand: "🗡️", offHand: "🛡️", necklace: "📿",
       earring1: "💎", earring2: "💎", ring1: "💍", ring2: "💍"
     };
-    
+
     this.LABELS = {
       helmet: "Шлем", chest: "Броня", pants: "Штаны", gloves: "Перчатки",
       boots: "Ботинки", mainHand: "Оружие", offHand: "Щит", necklace: "Ожерелье",
       earring1: "Серьга", earring2: "Серьга", ring1: "Кольцо", ring2: "Кольцо"
     };
-    
-    // Состояние
+
     this.items = [];
     this.equipped = {};
     this.slotSprites = {};
     this.gridSlots = [];
-    this.selectedItem = null;
+    this._drag = null;
   }
 
-  // ============================================================
-  //  INIT — получаем данные извне
-  // ============================================================
   init(data) {
-    this.items = data?.items || this.getTestItems();
+    this.items = data?.items || this._getTestItems();
     this.equipped = data?.equipped || {};
   }
 
-  // ============================================================
-  //  CREATE — строим UI
-  // ============================================================
   create() {
-    const W = this.scale.width;   // 780
-    const H = this.scale.height;  // 1688
+    const W = this.scale.width;
+    const H = this.scale.height;
     const C = this.CFG;
-    
-    // Проверяем загружена ли PNG рамка
-    if (!this.textures.exists('inv_slot_frame')) {
-      // Пробуем загрузить динамически
-      this.load.image('inv_slot_frame', 'assets/ui/invertory_slot_frame.png');
-      this.load.once('complete', () => {
-        console.log('[INV] PNG slot frame loaded dynamically');
-        this.buildUI(W, H, C);
-      });
-      this.load.start();
-      return;
-    }
-    
-    this.buildUI(W, H, C);
-  }
-  
-  buildUI(W, H, C) {
-    // Логируем доступные текстуры для слотов
-    console.log('[INV] Textures: inv_slot_frame=', this.textures.exists('inv_slot_frame'));
-    
-    // ===== ФИКСИРОВАННЫЕ РАЗМЕРЫ =====
-    // Game pixels! Display = Game / 2
-    C.equipSlot = 120;   // Было 150, уменьшил для места под grid
-    C.gridSlot = 100;    // Было 105
-    C.heroBoxW = 240;    // Было 280
-    C.heroBoxH = 320;    // Было 360
-    C.gridVisibleRows = 2;
-    
-    console.log(`[INV] Screen: ${W}×${H}`);
-    console.log(`[INV] FIXED sizes (game px): equipSlot=${C.equipSlot}, gridSlot=${C.gridSlot}, hero=${C.heroBoxW}×${C.heroBoxH}`);
-    
-    // Контейнер для всего UI
-    this.container = this.add.container(0, 0);
-    
-    // 1. Затемнение фона
-    this.createDimmer(W, H);
-    
-    // 2. Основная панель с градиентом
-    this.createMainPanel(W, H);
-    
-    // 3. Header
-    this.createHeader(W);
-    
-    // 4. Зона экипировки + герой
-    this.createEquipmentZone(W);
-    
-    // 5. Статы
-    this.createStatsBar(W);
-    
-    // 6. Сетка предметов
-    this.createGrid(W, H);
-    
-    // 7. Popup (скрыт по умолчанию)
-    this.createPopup(W, H);
-    
-    // Кнопка закрытия по Escape
-    this.input.keyboard.on('keydown-ESC', () => this.closeInventory());
-    
-    console.log('[InventoryScene] Created');
-  }
 
-  // ============================================================
-  //  DIMMER — затемнение
-  // ============================================================
-  createDimmer(W, H) {
-    this.dimmer = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85);
-    this.dimmer.setInteractive();
-    this.dimmer.on('pointerdown', () => this.closeInventory());
-    this.container.add(this.dimmer);
-  }
+    // ===== SAFE AREA — CRITICAL for iPhone notch =====
+    const safeTop = Math.max((window?.SAFE_TOP_PX ?? 0) | 0, 120);  // Min 120px top!
+    const safeBottom = Math.max((window?.SAFE_BOTTOM_PX ?? 0) | 0, 100);
+    const usableH = H - safeTop - safeBottom;
 
-  // ============================================================
-  //  MAIN PANEL — градиентный фон
-  // ============================================================
-  createMainPanel(W, H) {
-    const C = this.CFG;
-    const panelW = W;      // На всю ширину
-    const panelH = H;      // На всю высоту
-    const panelX = 0;
-    const panelY = 0;
-    
+    const panelW = Math.min(C.panelMaxW, W - C.panelSidePad * 2);
+    const panelH = Math.min(usableH - 40, H * 0.85);
+    const panelX = (W - panelW) / 2;
+    const panelY = safeTop + 20;
+
     this.panelBounds = { x: panelX, y: panelY, w: panelW, h: panelH };
-    
-    // Фон с градиентом
+
+    // Main UI container
+    this.ui = this.add.container(0, 0);
+
+    // ===== DIMMER — close only on tap, not scroll =====
+    const dimmer = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8);
+    dimmer.setInteractive();
+
+    let dimmerDownTime = 0;
+    let dimmerDownPos = { x: 0, y: 0 };
+
+    dimmer.on('pointerdown', (p) => {
+      dimmerDownTime = Date.now();
+      dimmerDownPos = { x: p.x, y: p.y };
+    });
+
+    dimmer.on('pointerup', (p) => {
+      const dt = Date.now() - dimmerDownTime;
+      const dx = Math.abs(p.x - dimmerDownPos.x);
+      const dy = Math.abs(p.y - dimmerDownPos.y);
+
+      // Only close if quick tap (< 300ms) and didn't move much (< 20px)
+      if (dt < 300 && dx < 20 && dy < 20 && !this._drag?.active) {
+        this._close();
+      }
+    });
+
+    this.ui.add(dimmer);
+
+    // ===== PANEL CONTAINER =====
+    this.panel = this.add.container(panelX, panelY);
+    this.ui.add(this.panel);
+
+    // ===== GRADIENT BACKGROUND =====
     const bg = this.add.graphics();
-    
-    // Градиент сверху вниз
     bg.fillGradientStyle(C.bgTop, C.bgTop, C.bgBottom, C.bgBottom, 1);
-    bg.fillRect(panelX, panelY, panelW, panelH);
-    
-    // Внутренний блик сверху
-    bg.lineStyle(1, 0xffffff, 0.05);
-    bg.lineBetween(panelX, panelY + 1, panelX + panelW, panelY + 1);
-    
-    this.container.add(bg);
-    this.panelBg = bg;
-    
-    // Блокируем клики на панели (чтобы не закрывалось)
-    const blocker = this.add.rectangle(panelX + panelW/2, panelY + panelH/2, panelW, panelH, 0x000000, 0);
-    blocker.setInteractive();
-    this.container.add(blocker);
+    bg.fillRoundedRect(0, 0, panelW, panelH, C.radius);
+    this.panel.add(bg);
+
+    // Build UI sections
+    this._createHeader();
+    this._createEquipmentZone();
+    this._createStatsBar();
+    this._createGrid();
+
+    // Open animation
+    this.panel.setAlpha(0);
+    this.panel.setScale(0.98);
+    this.tweens.add({
+      targets: this.panel,
+      alpha: 1,
+      scale: 1,
+      duration: 180,
+      ease: 'Back.Out'
+    });
+
+    // ESC to close
+    this.input.keyboard?.on('keydown-ESC', () => this._close());
+
+    console.log('[InventoryScene] Created with safe area:', safeTop);
   }
 
   // ============================================================
   //  HEADER
   // ============================================================
-  createHeader(W) {
+  _createHeader() {
     const C = this.CFG;
     const P = this.panelBounds;
-    const headerH = 90;  // Было 120, уменьшил
-    
-    // Фон хедера
-    const headerBg = this.add.graphics();
-    headerBg.fillGradientStyle(0x2a2f3a, 0x2a2f3a, C.panelBg, C.panelBg, 1);
-    headerBg.fillRect(P.x, P.y, P.w, headerH);
-    
-    // Линия снизу
-    headerBg.lineStyle(6, C.border, 1);
-    headerBg.lineBetween(P.x, P.y + headerH, P.x + P.w, P.y + headerH);
-    this.container.add(headerBg);
-    
-    // Заголовок
-    const title = this.add.text(P.x + C.padding, P.y + 32, 'ИНВЕНТАРЬ', {
-      fontFamily: 'Verdana, Arial, sans-serif',
+
+    // Title
+    const title = this.add.text(C.panelInnerPad, 50, 'ИНВЕНТАРЬ', {
+      fontFamily: C.fontMain,
       fontSize: '32px',
       fontStyle: 'bold',
-      color: C.gold,
-    });
-    title.setShadow(0, 3, '#000000', 5);
-    this.container.add(title);
-    
-    // Subtitle убран
-    
-    // Кнопка закрытия
-    const closeBtnX = P.x + P.w - 70;
-    const closeBtnY = P.y + 60;
-    
-    if (this.textures.exists('btn_close')) {
-      const closeBtn = this.add.image(closeBtnX, closeBtnY, 'btn_close');
-      closeBtn.setDisplaySize(80, 80);
-      closeBtn.setInteractive({ useHandCursor: true });
-      closeBtn.on('pointerdown', () => this.closeInventory());
-      closeBtn.on('pointerover', () => closeBtn.setScale(1.1));
-      closeBtn.on('pointerout', () => closeBtn.setScale(1));
-      this.container.add(closeBtn);
-    } else {
-      // Fallback — красивая кнопка
-      const closeBtn = this.add.graphics();
-      closeBtn.fillStyle(0xdc2626, 1);
-      closeBtn.fillCircle(closeBtnX, closeBtnY, 36);
-      closeBtn.lineStyle(4, 0xef4444, 1);
-      closeBtn.strokeCircle(closeBtnX, closeBtnY, 36);
-      this.container.add(closeBtn);
-      
-      const closeX = this.add.text(closeBtnX, closeBtnY, '✕', {
-        fontSize: '36px',
-        fontStyle: 'bold',
-        color: '#ffffff',
-      }).setOrigin(0.5);
-      closeX.setInteractive({ useHandCursor: true });
-      closeX.on('pointerdown', () => this.closeInventory());
-      this.container.add(closeX);
-    }
-    
-    this.headerH = headerH;
+      color: C.gold
+    }).setOrigin(0, 0.5);
+    title.setShadow(0, 4, '#000000', 8);
+    this.panel.add(title);
+
+    // Close button (like leaderboard)
+    const cx = P.w - 54;
+    const cy = 50;
+
+    const closeBg = this.add.graphics();
+    closeBg.fillStyle(0x0e141b, 0.35);
+    closeBg.fillCircle(cx, cy, 30);
+    closeBg.lineStyle(2, 0xffffff, 0.12);
+    closeBg.strokeCircle(cx, cy, 30);
+    this.panel.add(closeBg);
+
+    const closeX = this.add.text(cx, cy, '×', {
+      fontSize: '50px',
+      fontStyle: 'bold',
+      color: '#0E141B'
+    }).setOrigin(0.5);
+
+    closeX.setInteractive({ useHandCursor: true });
+    closeX.on('pointerdown', () => this._close());
+    this.panel.add(closeX);
+
+    // Separator line
+    const line = this.add.graphics();
+    line.lineStyle(2, 0xffffff, 0.10);
+    line.lineBetween(0, C.headerH, P.w, C.headerH);
+    this.panel.add(line);
   }
 
   // ============================================================
-  //  EQUIPMENT ZONE — слоты + герой
+  //  EQUIPMENT ZONE — slots + hero
   // ============================================================
-  createEquipmentZone(W) {
+  _createEquipmentZone() {
     const C = this.CFG;
     const P = this.panelBounds;
-    const startY = P.y + this.headerH + 20;
-    
+    const startY = C.headerH + 20;
+
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
-    
-    // Gap между слотами
-    const slotGap = 2;
-    const slotWithLabel = C.equipSlot + 24;  // слот + label
-    
-    // Левая колонка — светлые PNG рамки
-    const leftX = P.x + C.padding + C.equipSlot/2;
+
+    const slotGap = 4;
+    const slotWithLabel = C.equipSlot + 20;
+
+    // Left column
+    const leftX = C.panelInnerPad + C.equipSlot / 2;
     leftSlots.forEach((type, i) => {
-      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(leftX, y, type);
+      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot / 2;
+      this._createEquipSlot(leftX, y, type);
     });
-    
-    // Правая колонка — светлые PNG рамки
-    const rightX = P.x + P.w - C.padding - C.equipSlot/2;
+
+    // Right column
+    const rightX = P.w - C.panelInnerPad - C.equipSlot / 2;
     rightSlots.forEach((type, i) => {
-      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot/2;
-      this.createEquipSlot(rightX, y, type);
+      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot / 2;
+      this._createEquipSlot(rightX, y, type);
     });
-    
-    // Центр — герой (по центру между колонками)
-    const centerX = P.x + P.w/2;
+
+    // Hero in center
+    const centerX = P.w / 2;
     const equipColH = 6 * (slotWithLabel + slotGap);
     const centerY = startY + equipColH / 2;
-    this.createHeroPreview(centerX, centerY);
-    
+    this._createHeroPreview(centerX, centerY);
+
     this.equipZoneEndY = startY + equipColH + 10;
   }
 
-  // ============================================================
-  //  EQUIP SLOT — PNG с tint
-  // ============================================================
-  createEquipSlot(x, y, type) {
+  _createEquipSlot(x, y, type) {
     const C = this.CFG;
     const item = this.equipped[type];
-    
-    // Контейнер слота
+
     const container = this.add.container(x, y);
-    
-    // 1. ЧЕРНАЯ ПОДЛОЖКА (эффект глубины)
+
+    // Black depth background
     const depth = this.add.graphics();
     depth.fillStyle(0x000000, 1);
-    depth.fillRoundedRect(-C.equipSlot/2 + 8, -C.equipSlot/2 + 8, C.equipSlot - 16, C.equipSlot - 16, 8);
+    depth.fillRoundedRect(-C.equipSlot/2 + 6, -C.equipSlot/2 + 6, C.equipSlot - 12, C.equipSlot - 12, 8);
     container.add(depth);
-    
-    // 2. PNG РАМКА
+
+    // Slot frame
     const hasSlotFrame = this.textures.exists('inv_slot_frame');
     let slotBg;
-    
+
     if (hasSlotFrame) {
       slotBg = this.add.image(0, 0, 'inv_slot_frame');
       slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
-      
-      // Цветная рамка ТОЛЬКО для редких предметов
       if (item && item.rarity !== 'common' && C.rarity[item.rarity]?.color) {
         slotBg.setTint(C.rarity[item.rarity].color);
       }
-      // Иначе — светлый камень (без tint)
     } else {
-      // Fallback — рисуем
       slotBg = this.add.graphics();
       const borderColor = (item && item.rarity !== 'common') ? C.rarity[item.rarity]?.color || C.border : C.border;
       slotBg.fillStyle(0x2a2a35, 1);
-      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
-      slotBg.lineStyle(6, borderColor, 1);
-      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 16);
+      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 12);
+      slotBg.lineStyle(4, borderColor, 1);
+      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 12);
     }
     container.add(slotBg);
-    
-    // 3. ИКОНКА
+
+    // Icon
     const icon = this.add.text(0, -4, this.ICONS[type], {
-      fontSize: `${Math.round(C.equipSlot * 0.4)}px`,
+      fontSize: `${Math.round(C.equipSlot * 0.4)}px`
     }).setOrigin(0.5);
-    // Пустой слот — еле видная иконка
     icon.setAlpha(item ? 1 : 0.15);
     container.add(icon);
-    
-    // Уровень предмета
+
+    // Item level
     if (item) {
-      const lvl = this.add.text(C.equipSlot/2 - 16, C.equipSlot/2 - 24, item.level, {
-        fontFamily: 'Verdana',
-        fontSize: '22px',
+      const lvl = this.add.text(C.equipSlot/2 - 14, C.equipSlot/2 - 20, item.level, {
+        fontFamily: C.fontMain,
+        fontSize: '18px',
         fontStyle: 'bold',
-        color: C.gold,
+        color: C.gold
       }).setOrigin(0.5);
       lvl.setShadow(0, 2, '#000000', 4);
       container.add(lvl);
     }
-    
-    // Подпись
-    const label = this.add.text(0, C.equipSlot/2 + 20, this.LABELS[type], {
-      fontFamily: 'Verdana',
-      fontSize: '18px',
-      color: C.textMuted,
+
+    // Label
+    const label = this.add.text(0, C.equipSlot/2 + 16, this.LABELS[type], {
+      fontFamily: C.fontMain,
+      fontSize: '14px',
+      color: C.textMuted
     }).setOrigin(0.5);
     container.add(label);
-    
-    // Интерактив
+
+    // Interactive hit area
     const hitArea = this.add.rectangle(0, 0, C.equipSlot, C.equipSlot, 0xffffff, 0);
     hitArea.setInteractive({ useHandCursor: true });
     hitArea.on('pointerdown', () => {
-      if (item) this.showPopup(item, 'unequip');
+      if (item) this._showPopup(item, 'unequip');
     });
     hitArea.on('pointerover', () => container.setScale(1.05));
     hitArea.on('pointerout', () => container.setScale(1));
     container.add(hitArea);
-    
-    this.container.add(container);
+
+    this.panel.add(container);
     this.slotSprites[type] = { container, slotBg, icon };
   }
 
-  // ============================================================
-  //  HERO PREVIEW — Spine или fallback
-  // ============================================================
-  createHeroPreview(x, y) {
+  _createHeroPreview(x, y) {
     const C = this.CFG;
-    const boxW = C.heroBoxW;
-    const boxH = C.heroBoxH;
-    
-    // Только подиум (тень под ногами) - БЕЗ рамки
+
+    // Pedestal shadow
     const pedestal = this.add.graphics();
     pedestal.fillStyle(0x000000, 0.4);
-    pedestal.fillEllipse(x, y + 60, 100, 25);
-    this.container.add(pedestal);
-    
-    // Spine герой - больше (+20%) и ниже
+    pedestal.fillEllipse(x, y + 50, 80, 20);
+    this.panel.add(pedestal);
+
+    // Spine hero or fallback
     if (this.game.cache?.custom?.spine?.has('hero') || this.cache?.custom?.spine?.get('hero')) {
       try {
-        this.heroSpine = this.add.spine(x, y + 60, 'hero', 'idle', true);
-        this.heroSpine.setScale(0.32);  // Уменьшил
-        this.container.add(this.heroSpine);
+        this.heroSpine = this.add.spine(x, y + 50, 'hero', 'idle', true);
+        this.heroSpine.setScale(0.28);
+        this.panel.add(this.heroSpine);
       } catch (e) {
-        console.warn('[INV] Spine hero failed, using fallback');
-        this.createHeroFallback(x, y);
+        this._createHeroFallback(x, y);
       }
     } else {
-      this.createHeroFallback(x, y);
+      this._createHeroFallback(x, y);
     }
-    
-    // Текст Warrior/Level убран
   }
-  
-  createHeroFallback(x, y) {
-    const emoji = this.add.text(x, y + 40, '🧙‍♂️', {
-      fontSize: '120px',
-    }).setOrigin(0.5);
-    this.container.add(emoji);
+
+  _createHeroFallback(x, y) {
+    const emoji = this.add.text(x, y + 30, '🧙‍♂️', { fontSize: '100px' }).setOrigin(0.5);
+    this.panel.add(emoji);
   }
 
   // ============================================================
   //  STATS BAR
   // ============================================================
-  createStatsBar(W) {
+  _createStatsBar() {
     const C = this.CFG;
     const P = this.panelBounds;
-    const barH = 80;  // Было 100, уменьшил
+    const barH = 70;
     const y = this.equipZoneEndY;
-    
-    // Фон
+
+    // Background
     const bg = this.add.graphics();
     bg.fillStyle(C.footerBg, 1);
-    bg.fillRect(P.x, y, P.w, barH);
+    bg.fillRect(0, y, P.w, barH);
     bg.lineStyle(2, 0x1f2937, 1);
-    bg.lineBetween(P.x, y, P.x + P.w, y);
-    bg.lineBetween(P.x, y + barH, P.x + P.w, y + barH);
-    this.container.add(bg);
-    
-    // Статы
-    const stats = this.calculateStats();
+    bg.lineBetween(0, y, P.w, y);
+    bg.lineBetween(0, y + barH, P.w, y + barH);
+    this.panel.add(bg);
+
+    // Stats
+    const stats = this._calculateStats();
     const statsData = [
       { icon: '❤️', value: stats.hp, label: 'HP', color: C.red },
       { icon: '⚔️', value: stats.atk, label: 'ATK', color: C.gold },
-      { icon: '🛡️', value: stats.def, label: 'DEF', color: C.blue },
+      { icon: '🛡️', value: stats.def, label: 'DEF', color: C.blue }
     ];
-    
+
     const statW = P.w / 3;
     statsData.forEach((stat, i) => {
-      const sx = P.x + statW * i + statW/2;
-      const sy = y + barH/2;
-      
-      const val = this.add.text(sx, sy - 12, `${stat.icon} ${stat.value}`, {
-        fontFamily: 'Verdana',
-        fontSize: '30px',
+      const sx = statW * i + statW / 2;
+      const sy = y + barH / 2;
+
+      const val = this.add.text(sx, sy - 8, `${stat.icon} ${stat.value}`, {
+        fontFamily: C.fontMain,
+        fontSize: '24px',
         fontStyle: 'bold',
-        color: stat.color,
+        color: stat.color
       }).setOrigin(0.5);
       val.setShadow(0, 2, '#000000', 4);
-      this.container.add(val);
-      
-      const lbl = this.add.text(sx, sy + 24, stat.label, {
-        fontFamily: 'Verdana',
-        fontSize: '18px',
-        color: C.textMuted,
+      this.panel.add(val);
+
+      const lbl = this.add.text(sx, sy + 18, stat.label, {
+        fontFamily: C.fontMain,
+        fontSize: '14px',
+        color: C.textMuted
       }).setOrigin(0.5);
-      this.container.add(lbl);
+      this.panel.add(lbl);
     });
-    
+
     this.statsBarEndY = y + barH;
   }
-  
-  calculateStats() {
+
+  _calculateStats() {
     let hp = 850, atk = 120, def = 75;
     Object.values(this.equipped).forEach(item => {
       if (item) {
@@ -474,337 +406,413 @@ class InventoryScene extends Phaser.Scene {
   }
 
   // ============================================================
-  //  GRID — сетка предметов
+  //  GRID — scrollable items
   // ============================================================
-  createGrid(W, H) {
+  _createGrid() {
     const C = this.CFG;
     const P = this.panelBounds;
-    const startY = this.statsBarEndY + C.padding;
-    
-    // Заголовок
-    const title = this.add.text(P.x + C.padding, startY, 'Предметы', {
-      fontFamily: 'Verdana',
-      fontSize: '28px',
+    const startY = this.statsBarEndY + 16;
+
+    // Title
+    const title = this.add.text(C.panelInnerPad, startY, 'Предметы', {
+      fontFamily: C.fontMain,
+      fontSize: '22px',
       fontStyle: 'bold',
-      color: C.textColor,
+      color: C.textColor
     });
-    this.container.add(title);
-    
-    const totalSlots = C.gridCols * C.gridRows;
-    const count = this.add.text(P.x + P.w - C.padding, startY, `${this.items.length}/${totalSlots}`, {
-      fontFamily: 'Verdana',
-      fontSize: '24px',
-      color: C.textMuted,
+    this.panel.add(title);
+
+    // Count
+    const totalSlots = C.gridCols * 6;
+    const count = this.add.text(P.w - C.panelInnerPad, startY, `${this.items.length}/${totalSlots}`, {
+      fontFamily: C.fontMain,
+      fontSize: '18px',
+      color: C.textMuted
     }).setOrigin(1, 0);
-    this.container.add(count);
+    this.panel.add(count);
     this.gridCountText = count;
-    
-    // ===== СКРОЛЛ СЕТКА =====
-    const gridStartY = startY + 50;
+
+    // Grid area
+    const gridStartY = startY + 40;
     const gridSlot = C.gridSlot;
     const gridGap = 8;
-    
-    // Видимая область
-    const visibleH = H - gridStartY - 40;
-    
-    // Всего рядов
+    const listH = P.h - gridStartY - 20;
+
+    // Total rows
     const totalRows = Math.max(6, Math.ceil(totalSlots / C.gridCols));
     const contentH = totalRows * (gridSlot + gridGap);
-    
-    // Центрируем сетку по X
-    const contentW = P.w - C.padding * 2;
+
+    // Center grid
+    const contentW = P.w - C.panelInnerPad * 2;
     const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * gridGap;
     const gridOffsetX = (contentW - actualGridW) / 2;
-    
-    // ОТНОСИТЕЛЬНЫЕ координаты внутри gridContainer
-    const relativeStartX = P.x + C.padding + gridOffsetX + gridSlot / 2;
-    
-    console.log(`[INV] Grid: slot=${gridSlot}, totalRows=${totalRows}, visibleH=${visibleH}, contentH=${contentH}`);
-    
-    // КОНТЕЙНЕР для скролла (позиция Y = gridStartY)
-    this.gridContainer = this.add.container(0, 0);
-    
+    const relativeStartX = C.panelInnerPad + gridOffsetX + gridSlot / 2;
+
+    // List bounds (relative to panel)
+    this.listBounds = {
+      x: 16,
+      y: gridStartY,
+      w: P.w - 32,
+      h: listH
+    };
+
+    // Global bounds for scroll detection
+    this.listGlobalBounds = {
+      x: P.x + this.listBounds.x,
+      y: P.y + this.listBounds.y,
+      w: this.listBounds.w,
+      h: this.listBounds.h
+    };
+
+    // Grid content container
+    this.gridContent = this.add.container(0, 0);
+    this.panel.add(this.gridContent);
+
+    // Create slots
     this.gridSlots = [];
-    
-    // Рисуем ВСЕ ряды с ОТНОСИТЕЛЬНЫМИ координатами
     for (let row = 0; row < totalRows; row++) {
       for (let col = 0; col < C.gridCols; col++) {
         const i = row * C.gridCols + col;
         const x = relativeStartX + col * (gridSlot + gridGap);
         const y = gridStartY + row * (gridSlot + gridGap) + gridSlot / 2;
-        
+
         const item = this.items[i] || null;
-        this.createGridSlot(x, y, item, i, gridSlot);
+        this._createGridSlot(x, y, item, i, gridSlot);
       }
     }
-    
-    // МАСКА (видимая область)
-    const maskShape = this.add.graphics();
-    maskShape.fillStyle(0xffffff);
-    maskShape.fillRect(P.x, gridStartY, P.w, visibleH);
-    const mask = maskShape.createGeometryMask();
-    this.gridContainer.setMask(mask);
-    
-    this.container.add(this.gridContainer);
-    
-    // ЗОНА для touch/drag скролла
-    const scrollZone = this.add.zone(P.x + P.w/2, gridStartY + visibleH/2, P.w, visibleH);
-    scrollZone.setInteractive();
-    this.container.add(scrollZone);
-    
-    // Лимиты скролла
-    this.scrollMinY = -(contentH - visibleH);  // Максимум вверх (отрицательное)
-    this.scrollMaxY = 0;  // Начальная позиция
-    
-    // Переменные для drag
-    let isDragging = false;
-    let dragStartY = 0;
-    let containerStartY = 0;
-    
-    scrollZone.on('pointerdown', (pointer) => {
-      isDragging = true;
-      dragStartY = pointer.y;
-      containerStartY = this.gridContainer.y;
-    });
-    
-    this.input.on('pointermove', (pointer) => {
-      if (!isDragging) return;
-      
-      const deltaY = pointer.y - dragStartY;
-      let newY = containerStartY + deltaY;
-      
-      // Clamp
-      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
-      this.gridContainer.y = newY;
-    });
-    
-    this.input.on('pointerup', () => {
-      isDragging = false;
-    });
-    
-    // Mouse wheel для ПК
-    this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
-      let newY = this.gridContainer.y - deltaY * 0.5;
-      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
-      this.gridContainer.y = newY;
-    });
-    
-    console.log(`[INV] Scroll limits: min=${this.scrollMinY}, max=${this.scrollMaxY}`);
+
+    // ===== MASK — CORRECT WAY (not added to scene!) =====
+    const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+    maskGraphics.fillStyle(0xffffff, 1);
+    maskGraphics.fillRect(this.listBounds.x, this.listBounds.y, this.listBounds.w, this.listBounds.h);
+    this.gridContent.setMask(maskGraphics.createGeometryMask());
+
+    // Scroll limits
+    this.scrollMaxY = 0;
+    this.scrollMinY = Math.min(0, listH - contentH);
+
+    // Setup scroll
+    this._setupScroll();
+
+    console.log(`[INV] Grid: rows=${totalRows}, contentH=${contentH}, listH=${listH}, scrollMin=${this.scrollMinY}`);
   }
 
-  // ============================================================
-  //  GRID SLOT
-  // ============================================================
-  createGridSlot(x, y, item, index, slotSize) {
+  _createGridSlot(x, y, item, index, size) {
     const C = this.CFG;
-    const size = slotSize || C.gridSlot;
-    
+
     const container = this.add.container(x, y);
-    
-    // 1. ЧЕРНАЯ ПОДЛОЖКА (эффект глубины)
+
+    // Black depth background
     const depth = this.add.graphics();
     depth.fillStyle(0x000000, 1);
-    depth.fillRoundedRect(-size/2 + 6, -size/2 + 6, size - 12, size - 12, 6);
+    depth.fillRoundedRect(-size/2 + 4, -size/2 + 4, size - 8, size - 8, 6);
     container.add(depth);
-    
-    // 2. PNG РАМКА
+
+    // Slot frame
     const hasSlotFrame = this.textures.exists('inv_slot_frame');
     let slotBg;
-    
+
     if (hasSlotFrame) {
       slotBg = this.add.image(0, 0, 'inv_slot_frame');
       slotBg.setDisplaySize(size, size);
-      
-      // Цветная рамка ТОЛЬКО для редких предметов
       if (item && item.rarity !== 'common' && C.rarity[item.rarity]?.color) {
         slotBg.setTint(C.rarity[item.rarity].color);
       }
     } else {
-      // Fallback
       slotBg = this.add.graphics();
       const borderColor = (item && item.rarity !== 'common') ? C.rarity[item.rarity]?.color || C.border : C.border;
       slotBg.fillStyle(0x2a2a35, 1);
-      slotBg.fillRoundedRect(-size/2, -size/2, size, size, 12);
-      slotBg.lineStyle(4, borderColor, 1);
-      slotBg.strokeRoundedRect(-size/2, -size/2, size, size, 12);
+      slotBg.fillRoundedRect(-size/2, -size/2, size, size, 10);
+      slotBg.lineStyle(3, borderColor, 1);
+      slotBg.strokeRoundedRect(-size/2, -size/2, size, size, 10);
     }
     container.add(slotBg);
-    
+
     if (item) {
-      // 3. ИКОНКА предмета
+      // Icon
       const icon = this.add.text(0, -4, this.ICONS[item.type], {
-        fontSize: `${Math.round(size * 0.4)}px`,
+        fontSize: `${Math.round(size * 0.4)}px`
       }).setOrigin(0.5);
       container.add(icon);
-      
-      // 4. Уровень
-      const lvl = this.add.text(size/2 - 12, size/2 - 16, item.level, {
-        fontFamily: 'Verdana',
-        fontSize: '20px',
+
+      // Level
+      const lvl = this.add.text(size/2 - 10, size/2 - 14, item.level, {
+        fontFamily: C.fontMain,
+        fontSize: '16px',
         fontStyle: 'bold',
-        color: C.gold,
+        color: C.gold
       }).setOrigin(0.5);
       lvl.setShadow(0, 2, '#000000', 4);
       container.add(lvl);
-      
-      // 5. Интерактив
+
+      // Interactive
       const hitArea = this.add.rectangle(0, 0, size, size, 0xffffff, 0);
       hitArea.setInteractive({ useHandCursor: true });
-      hitArea.on('pointerdown', () => this.showPopup(item, 'equip'));
-      hitArea.on('pointerover', () => container.setScale(1.08));
+      hitArea.on('pointerdown', () => this._showPopup(item, 'equip'));
+      hitArea.on('pointerover', () => container.setScale(1.06));
       hitArea.on('pointerout', () => container.setScale(1));
       container.add(hitArea);
     }
-    
-    // Добавляем в gridContainer (для скролла)
-    this.gridContainer.add(container);
+
+    this.gridContent.add(container);
     this.gridSlots.push({ container, slotBg, index });
+  }
+
+  // ============================================================
+  //  SCROLL SETUP (like leaderboard)
+  // ============================================================
+  _setupScroll() {
+    const drag = {
+      active: false,
+      startY: 0,
+      startContentY: 0,
+      lastY: 0,
+      lastT: 0,
+      vel: 0,
+      inertiaEvent: null
+    };
+    this._drag = drag;
+
+    const rubberClamp = (y) => {
+      if (y > this.scrollMaxY) return this.scrollMaxY + (y - this.scrollMaxY) * 0.35;
+      if (y < this.scrollMinY) return this.scrollMinY + (y - this.scrollMinY) * 0.35;
+      return y;
+    };
+
+    const stopInertia = () => {
+      if (drag.inertiaEvent) {
+        drag.inertiaEvent.remove(false);
+        drag.inertiaEvent = null;
+      }
+    };
+
+    const snapToBounds = () => {
+      const target = Phaser.Math.Clamp(this.gridContent.y, this.scrollMinY, this.scrollMaxY);
+      if (Math.abs(target - this.gridContent.y) < 0.5) {
+        this.gridContent.y = target;
+        return;
+      }
+      this.tweens.add({
+        targets: this.gridContent,
+        y: target,
+        duration: 180,
+        ease: 'Sine.Out'
+      });
+    };
+
+    // Check if pointer is in list area
+    const isInListArea = (px, py) => {
+      const b = this.listGlobalBounds;
+      return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
+    };
+
+    // Global events
+    this.input.on('pointerdown', (p) => {
+      if (!isInListArea(p.x, p.y)) return;
+
+      stopInertia();
+      drag.active = true;
+      drag.startY = p.y;
+      drag.startContentY = this.gridContent.y;
+      drag.lastY = p.y;
+      drag.lastT = p.event?.timeStamp ?? performance.now();
+      drag.vel = 0;
+    });
+
+    this.input.on('pointermove', (p) => {
+      if (!drag.active) return;
+      const t = p.event?.timeStamp ?? performance.now();
+      const dt = Math.max(16, t - drag.lastT);
+      const dy = p.y - drag.lastY;
+      drag.vel = dy / dt;
+      drag.lastY = p.y;
+      drag.lastT = t;
+      const raw = drag.startContentY + (p.y - drag.startY);
+      this.gridContent.y = rubberClamp(raw);
+    });
+
+    this.input.on('pointerup', () => {
+      if (!drag.active) return;
+      drag.active = false;
+
+      if (this.scrollMinY === 0 && this.scrollMaxY === 0) {
+        snapToBounds();
+        return;
+      }
+
+      stopInertia();
+      let v = Phaser.Math.Clamp(drag.vel, -2.5, 2.5);
+      if (Math.abs(v) < 0.02) {
+        snapToBounds();
+        return;
+      }
+
+      drag.inertiaEvent = this.time.addEvent({
+        delay: 16,
+        loop: true,
+        callback: () => {
+          const step = v * 16 * 28;
+          const next = rubberClamp(this.gridContent.y + step);
+          this.gridContent.y = next;
+          v *= 0.92;
+
+          const outTop = this.gridContent.y > this.scrollMaxY + 0.5;
+          const outBot = this.gridContent.y < this.scrollMinY - 0.5;
+
+          if (Math.abs(v) < 0.02) {
+            stopInertia();
+            snapToBounds();
+          } else if (outTop || outBot) {
+            v *= 0.75;
+          }
+        }
+      });
+    });
+
+    // Mouse wheel
+    this.input.on('wheel', (p, go, dx, dy) => {
+      if (!isInListArea(p.x, p.y)) return;
+      if (this.scrollMinY === 0 && this.scrollMaxY === 0) return;
+      const next = Phaser.Math.Clamp(this.gridContent.y - dy * 0.6, this.scrollMinY - 40, this.scrollMaxY + 40);
+      this.gridContent.y = next;
+    });
   }
 
   // ============================================================
   //  POPUP
   // ============================================================
-  createPopup(W, H) {
-    this.popupContainer = this.add.container(W/2, H/2);
-    this.popupContainer.setVisible(false);
-    this.popupContainer.setDepth(100);
-    
-    // Создадим при показе
-  }
-  
-  showPopup(item, action) {
+  _showPopup(item, action) {
     const C = this.CFG;
     const W = this.scale.width;
     const H = this.scale.height;
-    
-    // Очищаем старый попап
+
     if (this.popupContainer) this.popupContainer.destroy();
-    
+
     this.popupContainer = this.add.container(0, 0);
     this.popupContainer.setDepth(100);
-    
-    // Затемнение
+
+    // Dimmer
     const dim = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.6);
     dim.setInteractive();
-    dim.on('pointerdown', () => this.hidePopup());
+    dim.on('pointerdown', () => this._hidePopup());
     this.popupContainer.add(dim);
-    
-    // Панель попапа - БОЛЬШЕ
-    const popupW = Math.min(W * 0.92, 680);
-    const popupH = 280;
+
+    // Panel
+    const popupW = Math.min(W * 0.9, 640);
+    const popupH = 260;
     const popupX = (W - popupW) / 2;
-    const popupY = H - popupH - 60;
-    
+    const popupY = H - popupH - 80;
+
     const rarity = C.rarity[item.rarity] || C.rarity.common;
-    
-    // Фон
+
+    // Background
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x252a33, 0x252a33, C.panelBg, C.panelBg, 1);
-    bg.fillRoundedRect(popupX, popupY, popupW, popupH, 24);
-    bg.lineStyle(6, rarity.color, 1);
-    bg.strokeRoundedRect(popupX, popupY, popupW, popupH, 24);
+    bg.fillRoundedRect(popupX, popupY, popupW, popupH, 20);
+    bg.lineStyle(4, rarity.color, 1);
+    bg.strokeRoundedRect(popupX, popupY, popupW, popupH, 20);
     this.popupContainer.add(bg);
-    
-    // Иконка предмета
+
+    // Item icon background
     const iconBg = this.add.graphics();
     iconBg.fillStyle(0x1a1d24, 1);
-    iconBg.fillRoundedRect(popupX + 28, popupY + 28, 100, 100, 16);
-    iconBg.lineStyle(4, rarity.color, 1);
-    iconBg.strokeRoundedRect(popupX + 28, popupY + 28, 100, 100, 16);
+    iconBg.fillRoundedRect(popupX + 24, popupY + 24, 90, 90, 14);
+    iconBg.lineStyle(3, rarity.color, 1);
+    iconBg.strokeRoundedRect(popupX + 24, popupY + 24, 90, 90, 14);
     this.popupContainer.add(iconBg);
-    
-    const icon = this.add.text(popupX + 78, popupY + 78, this.ICONS[item.type], {
-      fontSize: '48px',
+
+    const icon = this.add.text(popupX + 69, popupY + 69, this.ICONS[item.type], {
+      fontSize: '42px'
     }).setOrigin(0.5);
     this.popupContainer.add(icon);
-    
-    // Название
-    const name = this.add.text(popupX + 150, popupY + 35, item.name, {
-      fontFamily: 'Verdana',
-      fontSize: '28px',
+
+    // Name
+    const name = this.add.text(popupX + 130, popupY + 30, item.name, {
+      fontFamily: C.fontMain,
+      fontSize: '24px',
       fontStyle: 'bold',
-      color: `#${rarity.color.toString(16).padStart(6, '0')}`,
+      color: `#${rarity.color.toString(16).padStart(6, '0')}`
     });
     name.setShadow(0, 2, '#000000', 4);
     this.popupContainer.add(name);
-    
-    // Мета
+
+    // Meta
     const rarityNames = { common: 'Обычный', uncommon: 'Необычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
-    const meta = this.add.text(popupX + 150, popupY + 72, `${rarityNames[item.rarity]} • ${this.LABELS[item.type]} • Ур.${item.level}`, {
-      fontFamily: 'Verdana',
-      fontSize: '18px',
-      color: C.textMuted,
+    const meta = this.add.text(popupX + 130, popupY + 62, `${rarityNames[item.rarity]} • ${this.LABELS[item.type]} • Ур.${item.level}`, {
+      fontFamily: C.fontMain,
+      fontSize: '14px',
+      color: C.textMuted
     });
     this.popupContainer.add(meta);
-    
-    // Статы предмета
+
+    // Stats
     let statsStr = '';
     if (item.atk) statsStr += `⚔️+${item.atk}  `;
     if (item.def) statsStr += `🛡️+${item.def}  `;
     if (item.hp) statsStr += `❤️+${item.hp}`;
-    
+
     if (statsStr) {
-      const stats = this.add.text(popupX + 150, popupY + 105, statsStr.trim(), {
-        fontFamily: 'Verdana',
-        fontSize: '24px',
-        color: C.textColor,
+      const stats = this.add.text(popupX + 130, popupY + 92, statsStr.trim(), {
+        fontFamily: C.fontMain,
+        fontSize: '20px',
+        color: C.textColor
       });
       this.popupContainer.add(stats);
     }
-    
-    // Кнопки
-    const btnY = popupY + popupH - 80;
-    const btnW = (popupW - 80) / 2;
-    const btnH = 60;
-    
-    // Кнопка действия (Надеть/Снять)
-    this.createButton(
-      popupX + 28, btnY, btnW, btnH,
+
+    // Buttons
+    const btnY = popupY + popupH - 70;
+    const btnW = (popupW - 72) / 2;
+    const btnH = 50;
+
+    // Action button (Equip/Unequip)
+    this._createButton(
+      popupX + 24, btnY, btnW, btnH,
       action === 'equip' ? '✨ Надеть' : '📤 Снять',
       0x2d6a4f, 0x40916c,
-      () => action === 'equip' ? this.equipItem(item) : this.unequipItem(item)
+      () => action === 'equip' ? this._equipItem(item) : this._unequipItem(item)
     );
-    
-    // Кнопка продать
-    this.createButton(
-      popupX + 28 + btnW + 24, btnY, btnW, btnH,
+
+    // Sell button
+    this._createButton(
+      popupX + 24 + btnW + 24, btnY, btnW, btnH,
       '💰 Продать',
-      0x1a1d24, 0xD6B36A,
-      () => this.sellItem(item),
+      0x1a1d24, C.goldHex,
+      () => this._sellItem(item),
       true
     );
   }
-  
-  createButton(x, y, w, h, text, bgColor, borderColor, callback, outline = false) {
+
+  _createButton(x, y, w, h, text, bgColor, borderColor, callback, outline = false) {
     const btn = this.add.graphics();
-    
+
     if (outline) {
       btn.fillStyle(0x000000, 0);
-      btn.lineStyle(4, borderColor, 1);
-      btn.strokeRoundedRect(x, y, w, h, 12);
+      btn.lineStyle(3, borderColor, 1);
+      btn.strokeRoundedRect(x, y, w, h, 10);
     } else {
       btn.fillStyle(bgColor, 1);
-      btn.fillRoundedRect(x, y, w, h, 12);
-      btn.lineStyle(4, borderColor, 1);
-      btn.strokeRoundedRect(x, y, w, h, 12);
+      btn.fillRoundedRect(x, y, w, h, 10);
+      btn.lineStyle(3, borderColor, 1);
+      btn.strokeRoundedRect(x, y, w, h, 10);
     }
     this.popupContainer.add(btn);
-    
+
     const label = this.add.text(x + w/2, y + h/2, text, {
-      fontFamily: 'Verdana',
-      fontSize: '24px',
+      fontFamily: this.CFG.fontMain,
+      fontSize: '20px',
       fontStyle: 'bold',
-      color: outline ? `#${borderColor.toString(16).padStart(6, '0')}` : '#ffffff',
+      color: outline ? `#${borderColor.toString(16).padStart(6, '0')}` : '#ffffff'
     }).setOrigin(0.5);
     this.popupContainer.add(label);
-    
+
     const hitArea = this.add.rectangle(x + w/2, y + h/2, w, h, 0xffffff, 0);
     hitArea.setInteractive({ useHandCursor: true });
     hitArea.on('pointerdown', callback);
     this.popupContainer.add(hitArea);
   }
-  
-  hidePopup() {
+
+  _hidePopup() {
     if (this.popupContainer) {
       this.popupContainer.destroy();
       this.popupContainer = null;
@@ -814,58 +822,67 @@ class InventoryScene extends Phaser.Scene {
   // ============================================================
   //  ACTIONS
   // ============================================================
-  equipItem(item) {
-    // Если что-то надето — в инвентарь
+  _equipItem(item) {
     if (this.equipped[item.type]) {
       this.items.push(this.equipped[item.type]);
     }
     this.equipped[item.type] = item;
     this.items = this.items.filter(i => i.id !== item.id);
-    
-    this.hidePopup();
-    this.refreshUI();
+
+    this._hidePopup();
+    this._refreshUI();
     console.log('[INV] Equipped:', item.name);
   }
-  
-  unequipItem(item) {
+
+  _unequipItem(item) {
     delete this.equipped[item.type];
     this.items.push(item);
-    
-    this.hidePopup();
-    this.refreshUI();
+
+    this._hidePopup();
+    this._refreshUI();
     console.log('[INV] Unequipped:', item.name);
   }
-  
-  sellItem(item) {
+
+  _sellItem(item) {
     this.items = this.items.filter(i => i.id !== item.id);
     Object.keys(this.equipped).forEach(type => {
       if (this.equipped[type]?.id === item.id) delete this.equipped[type];
     });
-    
-    this.hidePopup();
-    this.refreshUI();
+
+    this._hidePopup();
+    this._refreshUI();
     console.log('[INV] Sold:', item.name);
   }
-  
-  refreshUI() {
-    // Пересоздаём UI
-    this.container.destroy();
+
+  _refreshUI() {
+    // Recreate UI
+    this.ui.destroy();
     this.create();
   }
 
   // ============================================================
   //  CLOSE
   // ============================================================
-  closeInventory() {
-    this.hidePopup();
-    this.scene.stop();
-    console.log('[INV] Closed');
+  _close() {
+    this._hidePopup();
+
+    this.tweens.add({
+      targets: this.panel,
+      alpha: 0,
+      scale: 0.985,
+      duration: 140,
+      ease: 'Sine.In',
+      onComplete: () => {
+        this.scene.stop('InventoryScene');
+        console.log('[INV] Closed');
+      }
+    });
   }
 
   // ============================================================
   //  TEST DATA
   // ============================================================
-  getTestItems() {
+  _getTestItems() {
     return [
       { id: "1", type: "mainHand", rarity: "common", level: 5, name: "Железный меч", atk: 15 },
       { id: "2", type: "helmet", rarity: "rare", level: 8, name: "Шлем мага", def: 12, hp: 50 },
@@ -875,7 +892,6 @@ class InventoryScene extends Phaser.Scene {
       { id: "6", type: "ring1", rarity: "legendary", level: 20, name: "Кольцо Феникса", atk: 30, hp: 200 },
       { id: "7", type: "gloves", rarity: "common", level: 4, name: "Перчатки воина", def: 5 },
       { id: "8", type: "necklace", rarity: "rare", level: 12, name: "Амулет мудрости", hp: 80 },
-      // Дополнительные для скролла
       { id: "9", type: "offHand", rarity: "uncommon", level: 7, name: "Щит стража", def: 25 },
       { id: "10", type: "earring1", rarity: "rare", level: 10, name: "Серьга удачи", atk: 8 },
       { id: "11", type: "mainHand", rarity: "epic", level: 18, name: "Меч бури", atk: 55 },
@@ -883,7 +899,7 @@ class InventoryScene extends Phaser.Scene {
       { id: "13", type: "boots", rarity: "legendary", level: 25, name: "Сапоги ветра", def: 20, atk: 15 },
       { id: "14", type: "chest", rarity: "uncommon", level: 9, name: "Кольчуга", def: 30 },
       { id: "15", type: "gloves", rarity: "rare", level: 11, name: "Перчатки вора", atk: 12 },
-      { id: "16", type: "ring2", rarity: "epic", level: 16, name: "Кольцо силы", atk: 25 },
+      { id: "16", type: "ring2", rarity: "epic", level: 16, name: "Кольцо силы", atk: 25 }
     ];
   }
 }
@@ -893,4 +909,4 @@ class InventoryScene extends Phaser.Scene {
 // ============================================================
 window.InventoryScene = InventoryScene;
 
-console.log('[InventoryScene] v16 COMPACT loaded');
+console.log('[InventoryScene] Leaderboard Architecture v1 loaded');
