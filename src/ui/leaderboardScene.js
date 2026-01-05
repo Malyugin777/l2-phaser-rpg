@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v15 — increased safe area (100px top/bottom, max 70% height)
+//  v16 — emoji icons (no pixelation)
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -299,10 +299,9 @@ class LeaderboardScene extends Phaser.Scene {
     const bg = this.add.graphics();
     tab.add(bg);
 
-    const iconKey = key === "rating" ? "icon_golden_cup" : "icon_pvp";
-    const icon = this.textures.exists(iconKey)
-      ? this.add.image(30, tabH / 2, iconKey).setDisplaySize(32, 32)
-      : this.add.text(30, tabH / 2, key === "rating" ? "🏆" : "☠️", { fontSize: "28px" }).setOrigin(0.5);
+    // Use emoji for crisp icons (no pixelation)
+    const emoji = key === "rating" ? "🏆" : "💀";
+    const icon = this.add.text(30, tabH / 2, emoji, { fontSize: "28px" }).setOrigin(0.5);
     tab.add(icon);
 
     const text = this.add.text(60, tabH / 2, label, {
@@ -487,14 +486,11 @@ class LeaderboardScene extends Phaser.Scene {
     // Name - ближе
     row.add(this.add.text(lvlX + 50, 0, data.name, { fontFamily: C.fontMain, fontSize: "18px", color: "#ffffff" }).setOrigin(0, 0.5));
 
-    // Value + icon
+    // Value + emoji icon (crisp, no pixelation)
     const valueX = rowW / 2 - 30;
-    const iconKey = this.currentTab === "rating" ? "icon_golden_cup" : "icon_pvp";
-    if (this.textures.exists(iconKey)) {
-      const icon = this.add.image(valueX - 90, 0, iconKey);  // Сдвинуто влево
-      icon.setDisplaySize(24, 24).setAlpha(0.85);  // Чуть меньше
-      row.add(icon);
-    }
+    const emoji = this.currentTab === "rating" ? "🏆" : "💀";
+    const icon = this.add.text(valueX - 90, 0, emoji, { fontSize: "18px" }).setOrigin(0.5).setAlpha(0.85);
+    row.add(icon);
 
     row.add(this.add.text(valueX, 0, String(data.value), {
       fontFamily: C.fontMain,
@@ -735,17 +731,16 @@ class LeaderboardScene extends Phaser.Scene {
     this.footerSub.setPosition(nameX, lvlY + 16);
 
     const valueX = x + footerW - 30;
-    const iconKey = isRating ? "icon_golden_cup" : "icon_pvp";
+    const emoji = isRating ? "🏆" : "💀";
 
     if (this.footerIcon) {
       this.footerIcon.destroy();
       this.footerIcon = null;
     }
 
-    if (this.textures.exists(iconKey)) {
-      this.footerIcon = this.add.image(valueX - 110, lvlY, iconKey).setDisplaySize(28, 28).setAlpha(0.85);
-      this.footer.add(this.footerIcon);
-    }
+    // Use emoji for crisp icon
+    this.footerIcon = this.add.text(valueX - 110, lvlY, emoji, { fontSize: "22px" }).setOrigin(0.5).setAlpha(0.85);
+    this.footer.add(this.footerIcon);
 
     this.footerValue.setText(String(meValue)).setPosition(valueX, lvlY);
   }

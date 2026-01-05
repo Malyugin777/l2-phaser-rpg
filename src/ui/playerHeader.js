@@ -443,4 +443,44 @@ function updatePlayerHeader(name, avatarUrl) {
 
 window.updatePlayerHeader = updatePlayerHeader;
 
+/**
+ * Update header stats from heroState
+ * Call after loading progress or after changes
+ */
+function updateHeaderStats() {
+  if (!window.playerHeader) {
+    console.warn('[PlayerHeader] Header not created yet');
+    return;
+  }
+
+  const h = window.heroState || {};
+
+  // Update level
+  window.playerHeader.setLevel(h.level || 1);
+
+  // Update resources: Energy, Stars(rating), Gems, Gold(adena)
+  const energy = h.energy || 100;
+  const rating = h.rating || 0;
+  const gems = h.gems || 0;
+  const gold = h.gold || 0;
+
+  // Format large numbers
+  const formatNum = (n) => {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+    return n.toString();
+  };
+
+  window.playerHeader.setResources(energy, rating, gems, formatNum(gold));
+
+  // Update EXP ring (calculate percent to next level)
+  const expForLevel = (h.level || 1) * 100; // Simple formula
+  const expPercent = (h.exp || 0) / expForLevel;
+  window.playerHeader.setExp(Math.min(expPercent, 1));
+
+  console.log('[PlayerHeader] Stats updated:', { level: h.level, energy, rating, gems, gold });
+}
+
+window.updateHeaderStats = updateHeaderStats;
+
 console.log("[PlayerHeader] Module loaded");
