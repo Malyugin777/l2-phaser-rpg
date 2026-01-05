@@ -144,17 +144,59 @@ function createBottomUI(scene) {
 //  CLICK HANDLERS
 // ============================================================
 
-function onFightButtonClick(scene) {
+async function onFightButtonClick(scene) {
   console.log('[UI] Fight button → Arena');
 
-  // Тестовый противник
-  const testEnemy = {
-    name: "Тень воина",
-    level: window.stats?.level || 1
-  };
+  // Проверка энергии
+  const energy = window.heroState?.energy || 0;
+  if (energy < 5) {
+    console.log('[UI] Not enough energy:', energy);
+    // Показать сообщение (можно добавить UI позже)
+    if (window.showToast) {
+      window.showToast('Недостаточно энергии! ⚡');
+    }
+    return;
+  }
+
+  // Тратим энергию
+  window.heroState = window.heroState || {};
+  window.heroState.energy = (window.heroState.energy || 100) - 5;
+  console.log('[UI] Energy spent, remaining:', window.heroState.energy);
+
+  // Обновить header
+  if (typeof window.updateHeaderStats === 'function') {
+    window.updateHeaderStats();
+  }
+
+  // Попробовать получить реального противника из API
+  let enemyData = null;
+  if (typeof window.apiGetOpponent === 'function' && typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
+    const result = await window.apiGetOpponent();
+    if (result.success && result.opponent) {
+      enemyData = {
+        name: result.opponent.username ? `@${result.opponent.username}` : (result.opponent.first_name || 'Игрок'),
+        level: result.opponent.level || 1,
+        rating: result.opponent.rating || 0,
+        isReal: true,  // Пометка что это реальный игрок
+        odId: result.opponent.id  // ID для отправки результата
+      };
+      console.log('[UI] Real opponent:', enemyData.name);
+    }
+  }
+
+  // Fallback на бота если нет реального противника
+  if (!enemyData) {
+    enemyData = {
+      name: "Тень воина",
+      level: window.heroState?.level || 1,
+      rating: window.heroState?.rating || 0,
+      isReal: false
+    };
+    console.log('[UI] Bot opponent:', enemyData.name);
+  }
 
   if (typeof startArena === 'function') {
-    startArena(scene, testEnemy);
+    startArena(scene, enemyData);
   }
 }
 

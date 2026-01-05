@@ -155,6 +155,68 @@ function apiIsOffline() {
   return isOfflineMode;
 }
 
+// ============================================================
+//  ARENA API
+// ============================================================
+
+/**
+ * Получить случайного противника для арены
+ */
+async function apiGetOpponent() {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/arena/opponent`, {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+
+    if (!response.ok) {
+      console.warn('[API] No opponent available');
+      return { success: false };
+    }
+
+    const data = await response.json();
+    console.log('[API] Opponent found:', data.opponent?.username || data.opponent?.first_name);
+    return { success: true, opponent: data.opponent };
+
+  } catch (error) {
+    console.error('[API] Opponent error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Отправить результат боя на арене
+ * @param {boolean} win - Победил ли игрок
+ */
+async function apiArenaResult(win) {
+  try {
+    const response = await fetch(`${API_URL}/api/v1/arena/result`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ win })
+    });
+
+    if (!response.ok) {
+      return { success: false };
+    }
+
+    const data = await response.json();
+    console.log('[API] Arena result:', win ? 'WIN' : 'LOSE', 'delta:', data.delta);
+    return {
+      success: true,
+      rating: data.rating,
+      kills: data.kills,
+      delta: data.delta
+    };
+
+  } catch (error) {
+    console.error('[API] Arena result error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Экспорт
 window.apiAuth = apiAuth;
 window.apiGetProfile = apiGetProfile;
@@ -163,5 +225,7 @@ window.apiGetLeaderboard = apiGetLeaderboard;
 window.apiGetCurrentUser = apiGetCurrentUser;
 window.apiIsAuthenticated = apiIsAuthenticated;
 window.apiIsOffline = apiIsOffline;
+window.apiGetOpponent = apiGetOpponent;
+window.apiArenaResult = apiArenaResult;
 
 console.log('[ApiClient] Loaded, API_URL:', API_URL);

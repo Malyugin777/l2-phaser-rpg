@@ -1813,6 +1813,24 @@ function handleArenaEnd(scene, result) {
   const enemyRating = currentMatchData?.enemyRating || (arenaData.rating + Math.floor(Math.random() * 200) - 100);
   const rewards = applyArenaResult(isWin, enemyRating);
 
+  // === ОТПРАВИТЬ РЕЗУЛЬТАТ НА СЕРВЕР ===
+  if (typeof window.apiArenaResult === 'function' && typeof window.apiIsAuthenticated === 'function' && window.apiIsAuthenticated()) {
+    window.apiArenaResult(isWin).then(apiResult => {
+      if (apiResult.success) {
+        // Обновить heroState с серверными данными
+        window.heroState = window.heroState || {};
+        window.heroState.rating = apiResult.rating;
+        window.heroState.kills = apiResult.kills;
+        console.log('[ARENA] API result: rating=' + apiResult.rating + ', delta=' + apiResult.delta);
+
+        // Обновить UI header
+        if (typeof window.updateHeaderStats === 'function') {
+          window.updateHeaderStats();
+        }
+      }
+    });
+  }
+
   // Calculate match duration
   const duration = Date.now() - matchStartTime;
 
