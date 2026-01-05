@@ -2,6 +2,11 @@
 
 // ============================================================
 //  PHASER CONFIG — Game configuration and scaling
+//
+//  ⚠️  ВНИМАНИЕ! НЕ МЕНЯТЬ SCALE MODE! ⚠️
+//  ENVELOP — растягивает на весь экран БЕЗ чёрных полос
+//  FIT — создаёт letterbox (чёрные полосы) — НЕ ИСПОЛЬЗОВАТЬ!
+//
 // ============================================================
 
 const BASE_W = 780;
@@ -38,8 +43,9 @@ try {
 syncAppHeight();
 window.visualViewport?.addEventListener("resize", syncAppHeight);
 
-// Scale mode — FIT for proper TMA desktop support
-const getScaleMode = () => Phaser.Scale.FIT;
+// Scale mode — ENVELOP (fullscreen without black bars)
+// ⚠️ НЕ МЕНЯТЬ! FIT создаёт чёрные полосы!
+const getScaleMode = () => Phaser.Scale.ENVELOP;
 
 // Safe area for TMA
 const SAFE_AREA = {
