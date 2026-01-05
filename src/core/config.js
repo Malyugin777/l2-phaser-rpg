@@ -38,8 +38,8 @@ try {
 syncAppHeight();
 window.visualViewport?.addEventListener("resize", syncAppHeight);
 
-// Scale mode
-const getScaleMode = () => Phaser.Scale.ENVELOP;
+// Scale mode — FIT for proper TMA desktop support
+const getScaleMode = () => Phaser.Scale.FIT;
 
 // Safe area for TMA
 const SAFE_AREA = {
