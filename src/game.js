@@ -590,16 +590,36 @@ function setupCleanMode(scene) {
   // Apply final hardcoded positions (200ms delay to override tune mode's 150ms)
   setTimeout(() => applyFinalPositions(scene), 200);
 
-  // Rating button (right side)
+  // Rating button (right side) — FIXED SCALE
   if (scene.textures.exists('btn_rating')) {
-    const ratingBtn = scene.add.image(scene.scale.width - 80, scene.scale.height - 350, 'btn_rating');
-    ratingBtn.setDisplaySize(120, 120);
+    const ratingBtn = scene.add.image(scene.scale.width - 100, scene.scale.height - 400, 'btn_rating');
+    ratingBtn.setDisplaySize(140, 140);
+
+    // Save BASE scale AFTER setDisplaySize!
+    const ratingBaseScaleX = ratingBtn.scaleX;
+    const ratingBaseScaleY = ratingBtn.scaleY;
+
     ratingBtn.setInteractive({ useHandCursor: true });
-    ratingBtn.on('pointerdown', () => scene.scene.launch('LeaderboardScene'));
-    ratingBtn.on('pointerover', () => ratingBtn.setScale(1.1));
-    ratingBtn.on('pointerout', () => ratingBtn.setScale(1));
+
+    ratingBtn.on('pointerover', () => {
+      ratingBtn.setScale(ratingBaseScaleX * 1.05, ratingBaseScaleY * 1.05);
+    });
+
+    ratingBtn.on('pointerout', () => {
+      ratingBtn.setScale(ratingBaseScaleX, ratingBaseScaleY);
+    });
+
+    ratingBtn.on('pointerdown', () => {
+      ratingBtn.setScale(ratingBaseScaleX * 0.95, ratingBaseScaleY * 0.95);
+      scene.scene.launch('LeaderboardScene');
+    });
+
+    ratingBtn.on('pointerup', () => {
+      ratingBtn.setScale(ratingBaseScaleX, ratingBaseScaleY);
+    });
+
     ratingBtn.setDepth(200);
-    console.log('[GAME] Rating button added');
+    console.log('[GAME] Rating button added, baseScale:', ratingBaseScaleX);
   }
 
   console.log("[CLEAN MODE] Initialized");

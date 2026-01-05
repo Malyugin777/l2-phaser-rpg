@@ -291,23 +291,22 @@ class LeaderboardScene extends Phaser.Scene {
       h: Math.max(220, listH),
     };
 
+    // Глобальные bounds для проверки кликов
+    this.listGlobalBounds = {
+      x: P.x + this.listBounds.x,
+      y: P.y + this.listBounds.y,
+      w: this.listBounds.w,
+      h: this.listBounds.h,
+    };
+
     this.listContent = this.add.container(0, 0);
     this.panel.add(this.listContent);
 
-    // ✅ ПРАВИЛЬНАЯ МАСКА — add: false!
+    // Маска
     const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false });
     maskGraphics.fillStyle(0xffffff, 1);
     maskGraphics.fillRect(this.listBounds.x, this.listBounds.y, this.listBounds.w, this.listBounds.h);
     this.listContent.setMask(maskGraphics.createGeometryMask());
-
-    this.scrollZone = this.add.zone(
-      this.listBounds.x + this.listBounds.w / 2,
-      this.listBounds.y + this.listBounds.h / 2,
-      this.listBounds.w,
-      this.listBounds.h
-    );
-    this.scrollZone.setInteractive();
-    this.panel.add(this.scrollZone);
 
     this._setupScroll();
     this._refreshList();
@@ -344,7 +343,7 @@ class LeaderboardScene extends Phaser.Scene {
     const C = this.CFG;
     const L = this.listBounds;
     const isTop = rank <= 3;
-    const rowW = L.w - 16;
+    const rowW = L.w - 48;  // Было -16, теперь больше padding
 
     const row = this.add.container(x, y);
 
@@ -362,8 +361,8 @@ class LeaderboardScene extends Phaser.Scene {
     }
     row.add(bg);
 
-    // Rank badge
-    const badgeX = -rowW / 2 + 50;
+    // Rank badge - сдвинул правее
+    const badgeX = -rowW / 2 + 45;
     const badge = this.add.graphics();
     if (isTop) {
       const cfg = rank === 1 ? C.top1 : rank === 2 ? C.top2 : C.top3;
@@ -371,50 +370,46 @@ class LeaderboardScene extends Phaser.Scene {
     } else {
       badge.fillStyle(0xffffff, 0.08);
     }
-    badge.fillCircle(badgeX, 0, 24);
+    badge.fillCircle(badgeX, 0, 22);  // Чуть меньше
     row.add(badge);
 
     row.add(this.add.text(badgeX, 0, String(rank), {
-      fontSize: "24px",
+      fontSize: "22px",
       fontStyle: "bold",
       color: isTop ? "#0E141B" : "rgba(255,255,255,0.55)",
     }).setOrigin(0.5));
 
-    // Level badge
-    const lvlX = badgeX + 70;
+    // Level badge - ближе к rank
+    const lvlX = badgeX + 58;  // Было 70
     const lvlBg = this.add.graphics();
     lvlBg.fillStyle(0xffffff, 0.10);
-    lvlBg.fillCircle(lvlX, 0, 32);
+    lvlBg.fillCircle(lvlX, 0, 28);  // Чуть меньше
     lvlBg.lineStyle(2, 0xffffff, 0.15);
-    lvlBg.strokeCircle(lvlX, 0, 32);
+    lvlBg.strokeCircle(lvlX, 0, 28);
     row.add(lvlBg);
 
-    row.add(this.add.text(lvlX, -12, "Lvl", { fontSize: "16px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5));
-    row.add(this.add.text(lvlX, 10, String(data.level), { fontSize: "24px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0.5));
+    row.add(this.add.text(lvlX, -10, "Lvl", { fontSize: "14px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5));
+    row.add(this.add.text(lvlX, 8, String(data.level), { fontSize: "20px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0.5));
 
-    // Name
-    row.add(this.add.text(lvlX + 60, 0, data.name, { fontSize: "26px", color: "#ffffff" }).setOrigin(0, 0.5));
+    // Name - ближе
+    row.add(this.add.text(lvlX + 50, 0, data.name, { fontSize: "24px", color: "#ffffff" }).setOrigin(0, 0.5));
 
     // Value + icon
-    const valueX = rowW / 2 - 40;
+    const valueX = rowW / 2 - 30;
     const iconKey = this.currentTab === "rating" ? "icon_golden_cup" : "icon_pvp";
     if (this.textures.exists(iconKey)) {
-      const icon = this.add.image(valueX - 70, 0, iconKey);
-      icon.setDisplaySize(28, 28).setAlpha(0.85);
+      const icon = this.add.image(valueX - 60, 0, iconKey);  // Было -70
+      icon.setDisplaySize(24, 24).setAlpha(0.85);  // Чуть меньше
       row.add(icon);
     }
 
     row.add(this.add.text(valueX, 0, String(data.value), {
-      fontSize: "28px",
+      fontSize: "24px",
       fontStyle: "bold",
       color: isTop ? "#ffffff" : "rgba(255,255,255,0.82)",
     }).setOrigin(1, 0.5));
 
-    // Micro press
-    const hit = this.add.rectangle(0, 0, rowW, C.rowH, 0xffffff, 0);
-    hit.setInteractive({ useHandCursor: true });
-    hit.on("pointerdown", () => this._pressPop(row, 0.985));
-    row.add(hit);
+    // БЕЗ hitbox на строке - скролл через scrollZone
 
     this.listContent.add(row);
   }
@@ -458,7 +453,16 @@ class LeaderboardScene extends Phaser.Scene {
       });
     };
 
-    this.scrollZone.on("pointerdown", (p) => {
+    // Проверка что pointer внутри list bounds
+    const isInListArea = (px, py) => {
+      const b = this.listGlobalBounds;
+      return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
+    };
+
+    // Глобальные события
+    this.input.on("pointerdown", (p) => {
+      if (!isInListArea(p.x, p.y)) return;
+      
       stopInertia();
       drag.active = true;
       drag.startY = p.y;
@@ -519,6 +523,7 @@ class LeaderboardScene extends Phaser.Scene {
     });
 
     this.input.on("wheel", (p, go, dx, dy) => {
+      if (!isInListArea(p.x, p.y)) return;
       if (this.scrollMinY === 0 && this.scrollMaxY === 0) return;
       const next = Phaser.Math.Clamp(this.listContent.y - dy * 0.6, this.scrollMinY - 40, this.scrollMaxY + 40);
       this.listContent.y = next;
@@ -641,4 +646,4 @@ class LeaderboardScene extends Phaser.Scene {
 }
 
 window.LeaderboardScene = LeaderboardScene;
-console.log("[LeaderboardScene] v7 GPT+FIX loaded");
+console.log("[LeaderboardScene] v8 SCROLL-FIX loaded");
