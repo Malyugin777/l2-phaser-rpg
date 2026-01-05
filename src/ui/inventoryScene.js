@@ -208,8 +208,8 @@ class InventoryScene extends Phaser.Scene {
     
     // Заголовок
     const title = this.add.text(P.x + C.padding, P.y + 32, 'ИНВЕНТАРЬ', {
-      fontFamily: '"Press Start 2P", Verdana, Arial',
-      fontSize: '28px',
+      fontFamily: 'Verdana, Arial, sans-serif',
+      fontSize: '32px',
       fontStyle: 'bold',
       color: C.gold,
     });

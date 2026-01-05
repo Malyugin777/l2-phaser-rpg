@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v12 — API integration + real data
+//  v13 — Readable fonts + scroll fix
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -30,9 +30,9 @@ class LeaderboardScene extends Phaser.Scene {
       gold: "#D6B36A",
       goldHex: 0xD6B36A,
 
-      // Font families
-      fontPixel: '"Press Start 2P", monospace',
-      fontReadable: 'Verdana, sans-serif',
+      // Font families (readable, no pixel fonts)
+      fontMain: 'Verdana, Arial, sans-serif',
+      fontReadable: 'Verdana, Arial, sans-serif',
 
       top1: { border: 0xd6b36a, badge: 0xd6b36a },
       top2: { border: 0xbec5d1, badge: 0xbec5d1 },
@@ -173,10 +173,29 @@ class LeaderboardScene extends Phaser.Scene {
 
     this.ui = this.add.container(0, 0);
 
-    // Dimmer
+    // Dimmer - close only on tap (not during scroll)
     const dimmer = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75);
     dimmer.setInteractive();
-    dimmer.on("pointerdown", () => this.close());
+
+    let dimmerDownTime = 0;
+    let dimmerDownPos = { x: 0, y: 0 };
+
+    dimmer.on("pointerdown", (pointer) => {
+      dimmerDownTime = Date.now();
+      dimmerDownPos = { x: pointer.x, y: pointer.y };
+    });
+
+    dimmer.on("pointerup", (pointer) => {
+      // Only close if it was a quick tap (< 300ms) and didn't move much (< 20px)
+      const dt = Date.now() - dimmerDownTime;
+      const dx = Math.abs(pointer.x - dimmerDownPos.x);
+      const dy = Math.abs(pointer.y - dimmerDownPos.y);
+
+      if (dt < 300 && dx < 20 && dy < 20 && !this._drag?.active) {
+        this.close();
+      }
+    });
+
     this.ui.add(dimmer);
 
     // Panel container
@@ -210,7 +229,7 @@ class LeaderboardScene extends Phaser.Scene {
     // Load data from API
     this._loadLeaderboard(this.currentTab);
 
-    console.log("[LeaderboardScene] v12 Created");
+    console.log("[LeaderboardScene] v13 Created");
   }
 
   _createHeader() {
@@ -218,8 +237,9 @@ class LeaderboardScene extends Phaser.Scene {
     const P = this.panelBounds;
 
     const title = this.add.text(C.panelInnerPad, 54, "ЛИДЕРБОРД", {
-      fontFamily: C.fontPixel,
-      fontSize: "28px",
+      fontFamily: C.fontMain,
+      fontSize: "36px",
+      fontStyle: "bold",
       color: C.gold,
     });
     title.setOrigin(0, 0.5);
@@ -285,8 +305,9 @@ class LeaderboardScene extends Phaser.Scene {
     tab.add(icon);
 
     const text = this.add.text(60, tabH / 2, label, {
-      fontFamily: C.fontPixel,
-      fontSize: "14px",
+      fontFamily: C.fontMain,
+      fontSize: "20px",
+      fontStyle: "bold",
       color: "#ffffff",
     }).setOrigin(0, 0.5);
     tab.add(text);
@@ -444,8 +465,9 @@ class LeaderboardScene extends Phaser.Scene {
     row.add(badge);
 
     row.add(this.add.text(badgeX, 0, String(rank), {
-      fontFamily: C.fontPixel,
-      fontSize: "12px",
+      fontFamily: C.fontMain,
+      fontSize: "18px",
+      fontStyle: "bold",
       color: isTop ? "#0E141B" : "rgba(255,255,255,0.55)",
     }).setOrigin(0.5));
 
@@ -458,11 +480,11 @@ class LeaderboardScene extends Phaser.Scene {
     lvlBg.strokeCircle(lvlX, 0, 28);
     row.add(lvlBg);
 
-    row.add(this.add.text(lvlX, -10, "Lvl", { fontFamily: C.fontReadable, fontSize: "10px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5));
-    row.add(this.add.text(lvlX, 8, String(data.level), { fontFamily: C.fontPixel, fontSize: "12px", color: "#ffffff" }).setOrigin(0.5));
+    row.add(this.add.text(lvlX, -10, "Lvl", { fontFamily: C.fontReadable, fontSize: "12px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5));
+    row.add(this.add.text(lvlX, 8, String(data.level), { fontFamily: C.fontMain, fontSize: "16px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0.5));
 
     // Name - ближе
-    row.add(this.add.text(lvlX + 50, 0, data.name, { fontFamily: C.fontPixel, fontSize: "11px", color: "#ffffff" }).setOrigin(0, 0.5));
+    row.add(this.add.text(lvlX + 50, 0, data.name, { fontFamily: C.fontMain, fontSize: "18px", color: "#ffffff" }).setOrigin(0, 0.5));
 
     // Value + icon
     const valueX = rowW / 2 - 30;
@@ -474,8 +496,9 @@ class LeaderboardScene extends Phaser.Scene {
     }
 
     row.add(this.add.text(valueX, 0, String(data.value), {
-      fontFamily: C.fontPixel,
-      fontSize: "14px",
+      fontFamily: C.fontMain,
+      fontSize: "18px",
+      fontStyle: "bold",
       color: isTop ? "#ffffff" : "rgba(255,255,255,0.82)",
     }).setOrigin(1, 0.5));
 
@@ -646,26 +669,26 @@ class LeaderboardScene extends Phaser.Scene {
     this.footerBg = this.add.graphics();
     this.footer.add(this.footerBg);
 
-    this.footerRankText = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "16px", color: C.gold });
+    this.footerRankText = this.add.text(0, 0, "", { fontFamily: C.fontMain, fontSize: "22px", fontStyle: "bold", color: C.gold });
     this.footer.add(this.footerRankText);
 
     this.footerLvlBg = this.add.graphics();
     this.footer.add(this.footerLvlBg);
 
-    this.footerLvlTop = this.add.text(0, 0, "Lvl", { fontFamily: C.fontReadable, fontSize: "10px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5);
+    this.footerLvlTop = this.add.text(0, 0, "Lvl", { fontFamily: C.fontReadable, fontSize: "12px", color: "rgba(255,255,255,0.55)" }).setOrigin(0.5);
     this.footer.add(this.footerLvlTop);
 
-    this.footerLvlNum = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "14px", color: "#ffffff" }).setOrigin(0.5);
+    this.footerLvlNum = this.add.text(0, 0, "", { fontFamily: C.fontMain, fontSize: "18px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0.5);
     this.footer.add(this.footerLvlNum);
 
-    this.footerName = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "12px", color: "#ffffff" }).setOrigin(0, 0.5);
+    this.footerName = this.add.text(0, 0, "", { fontFamily: C.fontMain, fontSize: "18px", fontStyle: "bold", color: "#ffffff" }).setOrigin(0, 0.5);
     this.footer.add(this.footerName);
 
-    this.footerSub = this.add.text(0, 0, "Это ты", { fontFamily: C.fontReadable, fontSize: "10px", color: "rgba(255,255,255,0.4)" }).setOrigin(0, 0.5);
+    this.footerSub = this.add.text(0, 0, "Это ты", { fontFamily: C.fontReadable, fontSize: "12px", color: "rgba(255,255,255,0.4)" }).setOrigin(0, 0.5);
     this.footer.add(this.footerSub);
 
     this.footerIcon = null;
-    this.footerValue = this.add.text(0, 0, "", { fontFamily: C.fontPixel, fontSize: "16px", color: C.gold }).setOrigin(1, 0.5);
+    this.footerValue = this.add.text(0, 0, "", { fontFamily: C.fontMain, fontSize: "22px", fontStyle: "bold", color: C.gold }).setOrigin(1, 0.5);
     this.footer.add(this.footerValue);
 
     this.footerY = P.h - C.footerH + 12;
@@ -752,4 +775,4 @@ class LeaderboardScene extends Phaser.Scene {
 }
 
 window.LeaderboardScene = LeaderboardScene;
-console.log("[LeaderboardScene] v12 API-READY loaded");
+console.log("[LeaderboardScene] v13 READABLE loaded");
