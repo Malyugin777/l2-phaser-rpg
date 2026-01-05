@@ -334,6 +334,22 @@ function preload() {
   this.load.image('ui_exp_ring_full', 'assets/ui/ui_exp_ring_full.png');
   this.load.image('ui_avatar_placeholder', 'assets/ui/avatar_placeholder.png');
 
+  // Inventory UI
+  this.load.image('btn_close', 'assets/ui/btn_close.png');
+  this.load.image('inv_slot_frame', 'assets/ui/invertory_slot_frame.png');
+  this.load.image('inv_helmet', 'assets/ui/helmet_inv.png');
+  this.load.image('inv_armor', 'assets/ui/armor_inv.png');
+  this.load.image('inv_legg', 'assets/ui/legg_inv.png');
+  this.load.image('inv_gloves', 'assets/ui/gloves_inv.png');
+  this.load.image('inv_boots', 'assets/ui/boots_inv.png');
+  this.load.image('inv_sword', 'assets/ui/sword_inv.png');
+  this.load.image('inv_shield', 'assets/ui/shield_inv_.png');
+  this.load.image('inv_necklace', 'assets/ui/necklase_inv.png');
+  this.load.image('inv_ring', 'assets/ui/ring_inv.png');
+  this.load.image('icon_hp', 'assets/ui/hp.png');
+  this.load.image('icon_atk', 'assets/ui/atk.png');
+  this.load.image('icon_def', 'assets/ui/def.png');
+
   // Spine hero (Boy_1)
   this.load.spine('hero', 'assets/spine-main/Boy_1.json', 'assets/spine-main/Boy_1.atlas');
 

@@ -1,14 +1,12 @@
 "use strict";
 
 // ============================================================
-//  INVENTORY SCENE — Leaderboard Architecture v1
-//  Phaser Native | L2 Dark Fantasy | Proper Safe Areas + Mask
-//
-//  Based on LeaderboardScene architecture:
-//  - Safe area handling (120px min top)
-//  - Dimmer closes only on tap (not scroll)
-//  - Proper mask (not added to scene)
-//  - Gradient panel
+//  INVENTORY SCENE v2 — Clean Design
+//  - PNG slot icons (helmet, armor, sword, etc.)
+//  - No labels under equipment slots
+//  - Hero positioned lower (30% down from center)
+//  - Clickable stats bar as button
+//  - Proper grid alignment
 // ============================================================
 
 class InventoryScene extends Phaser.Scene {
@@ -16,19 +14,19 @@ class InventoryScene extends Phaser.Scene {
     super({ key: 'InventoryScene' });
 
     this.CFG = {
-      panelMaxW: 720,
-      panelSidePad: 28,
-      panelInnerPad: 36,
-      radius: 28,
+      panelMaxW: 700,
+      panelSidePad: 20,
+      panelInnerPad: 24,
+      radius: 20,
 
-      headerH: 100,
+      headerH: 70,
 
       // Colors (L2 Dark Fantasy)
       bgTop: 0x2a313b,
       bgBottom: 0x0e141b,
       panelBg: 0x1a1d24,
-      footerBg: 0x111318,
-      border: 0x4b5563,
+      slotBg: 0x1e2229,
+      border: 0x3d4654,
 
       gold: "#D6B36A",
       goldHex: 0xD6B36A,
@@ -37,43 +35,46 @@ class InventoryScene extends Phaser.Scene {
       blue: '#4FA3FF',
       red: '#E05252',
 
-      // Fonts
       fontMain: 'Verdana, Arial, sans-serif',
 
       // Slot sizes
-      equipSlot: 100,
-      gridSlot: 90,
-      heroBoxW: 200,
-      heroBoxH: 280,
+      equipSlot: 80,      // Equipment slot size
+      equipGap: 8,        // Gap between equipment slots
+      gridSlot: 80,       // Inventory grid slot size
+      gridGap: 6,
       gridCols: 6,
+      gridRows: 4,
 
       // Rarity colors
       rarity: {
-        common:    { color: 0x4b5563, glow: null },
-        uncommon:  { color: 0x22c55e, glow: 0x22c55e },
-        rare:      { color: 0x3b82f6, glow: 0x3b82f6 },
-        epic:      { color: 0xa855f7, glow: 0xa855f7 },
-        legendary: { color: 0xD6B36A, glow: 0xD6B36A },
+        common:    { color: 0x4b5563 },
+        uncommon:  { color: 0x22c55e },
+        rare:      { color: 0x3b82f6 },
+        epic:      { color: 0xa855f7 },
+        legendary: { color: 0xD6B36A },
       }
     };
 
-    this.ICONS = {
-      helmet: "⛑️", chest: "🎽", pants: "👖", gloves: "🧤",
-      boots: "👢", mainHand: "🗡️", offHand: "🛡️", necklace: "📿",
-      earring1: "💎", earring2: "💎", ring1: "💍", ring2: "💍"
-    };
-
-    this.LABELS = {
-      helmet: "Шлем", chest: "Броня", pants: "Штаны", gloves: "Перчатки",
-      boots: "Ботинки", mainHand: "Оружие", offHand: "Щит", necklace: "Ожерелье",
-      earring1: "Серьга", earring2: "Серьга", ring1: "Кольцо", ring2: "Кольцо"
+    // PNG icon mapping for equipment slots
+    this.SLOT_ICONS = {
+      helmet:   'inv_helmet',
+      chest:    'inv_armor',
+      pants:    'inv_legg',
+      gloves:   'inv_gloves',
+      boots:    'inv_boots',
+      mainHand: 'inv_sword',
+      offHand:  'inv_shield',
+      necklace: 'inv_necklace',
+      earring1: 'inv_ring',
+      earring2: 'inv_ring',
+      ring1:    'inv_ring',
+      ring2:    'inv_ring'
     };
 
     this.items = [];
     this.equipped = {};
     this.slotSprites = {};
     this.gridSlots = [];
-    this._drag = null;
   }
 
   init(data) {
@@ -86,65 +87,44 @@ class InventoryScene extends Phaser.Scene {
     const H = this.scale.height;
     const C = this.CFG;
 
-    // ===== SAFE AREA — CRITICAL for iPhone notch =====
-    const safeTop = Math.max((window?.SAFE_TOP_PX ?? 0) | 0, 120);  // Min 120px top!
-    const safeBottom = Math.max((window?.SAFE_BOTTOM_PX ?? 0) | 0, 100);
+    // Safe area
+    const safeTop = Math.max((window?.SAFE_TOP_PX ?? 0) | 0, 100);
+    const safeBottom = Math.max((window?.SAFE_BOTTOM_PX ?? 0) | 0, 80);
     const usableH = H - safeTop - safeBottom;
 
     const panelW = Math.min(C.panelMaxW, W - C.panelSidePad * 2);
-    const panelH = Math.min(usableH - 40, H * 0.85);
+    const panelH = Math.min(usableH - 20, H * 0.88);
     const panelX = (W - panelW) / 2;
-    const panelY = safeTop + 20;
+    const panelY = safeTop + 10;
 
     this.panelBounds = { x: panelX, y: panelY, w: panelW, h: panelH };
 
-    // Main UI container
     this.ui = this.add.container(0, 0);
 
-    // ===== DIMMER — close only on tap, not scroll =====
-    const dimmer = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8);
-    dimmer.setInteractive();
+    // Dimmer with tap-only close
+    this._createDimmer(W, H);
 
-    let dimmerDownTime = 0;
-    let dimmerDownPos = { x: 0, y: 0 };
-
-    dimmer.on('pointerdown', (p) => {
-      dimmerDownTime = Date.now();
-      dimmerDownPos = { x: p.x, y: p.y };
-    });
-
-    dimmer.on('pointerup', (p) => {
-      const dt = Date.now() - dimmerDownTime;
-      const dx = Math.abs(p.x - dimmerDownPos.x);
-      const dy = Math.abs(p.y - dimmerDownPos.y);
-
-      // Only close if quick tap (< 300ms) and didn't move much (< 20px)
-      if (dt < 300 && dx < 20 && dy < 20 && !this._drag?.active) {
-        this._close();
-      }
-    });
-
-    this.ui.add(dimmer);
-
-    // ===== PANEL CONTAINER =====
+    // Main panel
     this.panel = this.add.container(panelX, panelY);
     this.ui.add(this.panel);
 
-    // ===== GRADIENT BACKGROUND =====
+    // Panel background with gradient
     const bg = this.add.graphics();
     bg.fillGradientStyle(C.bgTop, C.bgTop, C.bgBottom, C.bgBottom, 1);
     bg.fillRoundedRect(0, 0, panelW, panelH, C.radius);
+    bg.lineStyle(2, C.border, 0.5);
+    bg.strokeRoundedRect(0, 0, panelW, panelH, C.radius);
     this.panel.add(bg);
 
     // Build UI sections
     this._createHeader();
     this._createEquipmentZone();
-    this._createStatsBar();
+    this._createStatsButton();
     this._createGrid();
 
     // Open animation
     this.panel.setAlpha(0);
-    this.panel.setScale(0.98);
+    this.panel.setScale(0.96);
     this.tweens.add({
       targets: this.panel,
       alpha: 1,
@@ -154,9 +134,36 @@ class InventoryScene extends Phaser.Scene {
     });
 
     // ESC to close
-    this.input.keyboard?.on('keydown-ESC', () => this._close());
+    this.input.keyboard?.on('keydown-ESC', () => this.closeInventory());
 
-    console.log('[InventoryScene] Created with safe area:', safeTop);
+    console.log('[InventoryScene] v2 Created');
+  }
+
+  // ============================================================
+  //  DIMMER — closes only on tap, not scroll
+  // ============================================================
+  _createDimmer(W, H) {
+    const dimmer = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.8);
+    dimmer.setInteractive();
+
+    let downTime = 0;
+    let downPos = { x: 0, y: 0 };
+
+    dimmer.on('pointerdown', (p) => {
+      downTime = Date.now();
+      downPos = { x: p.x, y: p.y };
+    });
+
+    dimmer.on('pointerup', (p) => {
+      const dt = Date.now() - downTime;
+      const dx = Math.abs(p.x - downPos.x);
+      const dy = Math.abs(p.y - downPos.y);
+      if (dt < 300 && dx < 20 && dy < 20) {
+        this.closeInventory();
+      }
+    });
+
+    this.ui.add(dimmer);
   }
 
   // ============================================================
@@ -167,229 +174,269 @@ class InventoryScene extends Phaser.Scene {
     const P = this.panelBounds;
 
     // Title
-    const title = this.add.text(C.panelInnerPad, 50, 'ИНВЕНТАРЬ', {
+    const title = this.add.text(C.panelInnerPad, C.headerH / 2, 'ИНВЕНТАРЬ', {
       fontFamily: C.fontMain,
-      fontSize: '32px',
+      fontSize: '28px',
       fontStyle: 'bold',
       color: C.gold
     }).setOrigin(0, 0.5);
-    title.setShadow(0, 4, '#000000', 8);
+    title.setShadow(0, 3, '#000000', 6);
     this.panel.add(title);
 
-    // Close button (like leaderboard)
-    const cx = P.w - 54;
-    const cy = 50;
+    // Close button
+    const closeX = P.w - 45;
+    const closeY = C.headerH / 2;
 
     const closeBg = this.add.graphics();
-    closeBg.fillStyle(0x0e141b, 0.35);
-    closeBg.fillCircle(cx, cy, 30);
-    closeBg.lineStyle(2, 0xffffff, 0.12);
-    closeBg.strokeCircle(cx, cy, 30);
+    closeBg.fillStyle(0x0e141b, 0.5);
+    closeBg.fillCircle(closeX, closeY, 22);
     this.panel.add(closeBg);
 
-    const closeX = this.add.text(cx, cy, '×', {
-      fontSize: '50px',
+    const closeBtn = this.add.text(closeX, closeY, '×', {
+      fontSize: '36px',
       fontStyle: 'bold',
-      color: '#0E141B'
+      color: '#ffffff'
     }).setOrigin(0.5);
+    closeBtn.setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerdown', () => this.closeInventory());
+    closeBtn.on('pointerover', () => closeBtn.setColor(C.gold));
+    closeBtn.on('pointerout', () => closeBtn.setColor('#ffffff'));
+    this.panel.add(closeBtn);
 
-    closeX.setInteractive({ useHandCursor: true });
-    closeX.on('pointerdown', () => this._close());
-    this.panel.add(closeX);
-
-    // Separator line
+    // Separator
     const line = this.add.graphics();
-    line.lineStyle(2, 0xffffff, 0.10);
+    line.lineStyle(1, 0xffffff, 0.1);
     line.lineBetween(0, C.headerH, P.w, C.headerH);
     this.panel.add(line);
   }
 
   // ============================================================
-  //  EQUIPMENT ZONE — slots + hero
+  //  EQUIPMENT ZONE — NO LABELS, PNG ICONS
   // ============================================================
   _createEquipmentZone() {
     const C = this.CFG;
     const P = this.panelBounds;
-    const startY = C.headerH + 20;
+    const startY = C.headerH + 16;
 
     const leftSlots = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand'];
     const rightSlots = ['offHand', 'necklace', 'earring1', 'earring2', 'ring1', 'ring2'];
 
-    const slotGap = 4;
-    const slotWithLabel = C.equipSlot + 20;
+    const slotSize = C.equipSlot;
+    const gap = C.equipGap;
 
-    // Left column
-    const leftX = C.panelInnerPad + C.equipSlot / 2;
+    // Calculate zone height
+    const zoneH = leftSlots.length * slotSize + (leftSlots.length - 1) * gap;
+
+    // Left column — align to left edge with padding
+    const leftX = C.panelInnerPad + slotSize / 2;
     leftSlots.forEach((type, i) => {
-      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot / 2;
-      this._createEquipSlot(leftX, y, type);
+      const y = startY + i * (slotSize + gap) + slotSize / 2;
+      this._createEquipSlot(leftX, y, type, slotSize);
     });
 
-    // Right column
-    const rightX = P.w - C.panelInnerPad - C.equipSlot / 2;
+    // Right column — align to right edge with padding
+    const rightX = P.w - C.panelInnerPad - slotSize / 2;
     rightSlots.forEach((type, i) => {
-      const y = startY + i * (slotWithLabel + slotGap) + C.equipSlot / 2;
-      this._createEquipSlot(rightX, y, type);
+      const y = startY + i * (slotSize + gap) + slotSize / 2;
+      this._createEquipSlot(rightX, y, type, slotSize);
     });
 
-    // Hero in center
+    // Hero in center — positioned 30% lower
     const centerX = P.w / 2;
-    const equipColH = 6 * (slotWithLabel + slotGap);
-    const centerY = startY + equipColH / 2;
-    this._createHeroPreview(centerX, centerY);
+    const heroZoneTop = startY;
+    const heroZoneBottom = startY + zoneH;
+    const heroCenter = heroZoneTop + (heroZoneBottom - heroZoneTop) * 0.55;  // 55% down (30% lower than center)
+    this._createHeroPreview(centerX, heroCenter);
 
-    this.equipZoneEndY = startY + equipColH + 10;
+    this.equipZoneEndY = startY + zoneH + 16;
   }
 
-  _createEquipSlot(x, y, type) {
+  // ============================================================
+  //  EQUIPMENT SLOT — PNG icon, NO label
+  // ============================================================
+  _createEquipSlot(x, y, type, size) {
     const C = this.CFG;
     const item = this.equipped[type];
 
     const container = this.add.container(x, y);
 
-    // Black depth background
-    const depth = this.add.graphics();
-    depth.fillStyle(0x000000, 1);
-    depth.fillRoundedRect(-C.equipSlot/2 + 6, -C.equipSlot/2 + 6, C.equipSlot - 12, C.equipSlot - 12, 8);
-    container.add(depth);
+    // Slot background
+    const bg = this.add.graphics();
+    bg.fillStyle(C.slotBg, 1);
+    bg.fillRoundedRect(-size/2, -size/2, size, size, 10);
+    bg.lineStyle(2, item ? C.rarity[item.rarity]?.color || C.border : C.border, 0.8);
+    bg.strokeRoundedRect(-size/2, -size/2, size, size, 10);
+    container.add(bg);
 
-    // Slot frame
-    const hasSlotFrame = this.textures.exists('inv_slot_frame');
-    let slotBg;
-
-    if (hasSlotFrame) {
-      slotBg = this.add.image(0, 0, 'inv_slot_frame');
-      slotBg.setDisplaySize(C.equipSlot, C.equipSlot);
-      if (item && item.rarity !== 'common' && C.rarity[item.rarity]?.color) {
-        slotBg.setTint(C.rarity[item.rarity].color);
-      }
-    } else {
-      slotBg = this.add.graphics();
-      const borderColor = (item && item.rarity !== 'common') ? C.rarity[item.rarity]?.color || C.border : C.border;
-      slotBg.fillStyle(0x2a2a35, 1);
-      slotBg.fillRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 12);
-      slotBg.lineStyle(4, borderColor, 1);
-      slotBg.strokeRoundedRect(-C.equipSlot/2, -C.equipSlot/2, C.equipSlot, C.equipSlot, 12);
+    // PNG Icon (or fallback)
+    const iconKey = this.SLOT_ICONS[type];
+    if (iconKey && this.textures.exists(iconKey)) {
+      const icon = this.add.image(0, 0, iconKey);
+      icon.setDisplaySize(size * 0.55, size * 0.55);
+      icon.setAlpha(item ? 1 : 0.3);
+      if (!item) icon.setTint(0x666666);
+      container.add(icon);
     }
-    container.add(slotBg);
 
-    // Icon
-    const icon = this.add.text(0, -4, this.ICONS[type], {
-      fontSize: `${Math.round(C.equipSlot * 0.4)}px`
-    }).setOrigin(0.5);
-    icon.setAlpha(item ? 1 : 0.15);
-    container.add(icon);
+    // Item level badge (if equipped)
+    if (item && item.level) {
+      const lvlBg = this.add.graphics();
+      lvlBg.fillStyle(0x000000, 0.7);
+      lvlBg.fillCircle(size/2 - 14, size/2 - 14, 12);
+      container.add(lvlBg);
 
-    // Item level
-    if (item) {
-      const lvl = this.add.text(C.equipSlot/2 - 14, C.equipSlot/2 - 20, item.level, {
+      const lvl = this.add.text(size/2 - 14, size/2 - 14, item.level, {
         fontFamily: C.fontMain,
-        fontSize: '18px',
+        fontSize: '14px',
         fontStyle: 'bold',
         color: C.gold
       }).setOrigin(0.5);
-      lvl.setShadow(0, 2, '#000000', 4);
       container.add(lvl);
     }
 
-    // Label
-    const label = this.add.text(0, C.equipSlot/2 + 16, this.LABELS[type], {
-      fontFamily: C.fontMain,
-      fontSize: '14px',
-      color: C.textMuted
-    }).setOrigin(0.5);
-    container.add(label);
-
-    // Interactive hit area
-    const hitArea = this.add.rectangle(0, 0, C.equipSlot, C.equipSlot, 0xffffff, 0);
+    // Interactive
+    const hitArea = this.add.rectangle(0, 0, size, size, 0xffffff, 0);
     hitArea.setInteractive({ useHandCursor: true });
     hitArea.on('pointerdown', () => {
-      if (item) this._showPopup(item, 'unequip');
+      if (item) this._showItemPopup(item, 'unequip');
     });
-    hitArea.on('pointerover', () => container.setScale(1.05));
-    hitArea.on('pointerout', () => container.setScale(1));
+    hitArea.on('pointerover', () => {
+      bg.clear();
+      bg.fillStyle(0x2a3040, 1);
+      bg.fillRoundedRect(-size/2, -size/2, size, size, 10);
+      bg.lineStyle(2, C.goldHex, 1);
+      bg.strokeRoundedRect(-size/2, -size/2, size, size, 10);
+    });
+    hitArea.on('pointerout', () => {
+      bg.clear();
+      bg.fillStyle(C.slotBg, 1);
+      bg.fillRoundedRect(-size/2, -size/2, size, size, 10);
+      bg.lineStyle(2, item ? C.rarity[item.rarity]?.color || C.border : C.border, 0.8);
+      bg.strokeRoundedRect(-size/2, -size/2, size, size, 10);
+    });
     container.add(hitArea);
 
     this.panel.add(container);
-    this.slotSprites[type] = { container, slotBg, icon };
+    this.slotSprites[type] = { container, bg };
   }
 
+  // ============================================================
+  //  HERO PREVIEW — 20% bigger, 30% lower
+  // ============================================================
   _createHeroPreview(x, y) {
-    const C = this.CFG;
+    // Shadow/pedestal
+    const shadow = this.add.graphics();
+    shadow.fillStyle(0x000000, 0.3);
+    shadow.fillEllipse(x, y + 100, 100, 25);
+    this.panel.add(shadow);
 
-    // Pedestal shadow
-    const pedestal = this.add.graphics();
-    pedestal.fillStyle(0x000000, 0.4);
-    pedestal.fillEllipse(x, y + 50, 80, 20);
-    this.panel.add(pedestal);
-
-    // Spine hero or fallback
-    if (this.game.cache?.custom?.spine?.has('hero') || this.cache?.custom?.spine?.get('hero')) {
+    // Try Spine hero
+    if (this.cache?.custom?.spine?.get('hero')) {
       try {
-        this.heroSpine = this.add.spine(x, y + 50, 'hero', 'idle', true);
-        this.heroSpine.setScale(0.28);
+        this.heroSpine = this.add.spine(x, y + 80, 'hero', 'idle', true);
+        this.heroSpine.setScale(0.35);  // 20% bigger than 0.28
         this.panel.add(this.heroSpine);
+        return;
       } catch (e) {
-        this._createHeroFallback(x, y);
+        console.log('[INV] Spine failed, using fallback');
       }
-    } else {
-      this._createHeroFallback(x, y);
+    }
+
+    // Fallback - use hero image if exists
+    if (this.textures.exists('hero_preview')) {
+      const hero = this.add.image(x, y + 40, 'hero_preview');
+      hero.setDisplaySize(180, 220);
+      this.panel.add(hero);
     }
   }
 
-  _createHeroFallback(x, y) {
-    const emoji = this.add.text(x, y + 30, '🧙‍♂️', { fontSize: '100px' }).setOrigin(0.5);
-    this.panel.add(emoji);
-  }
-
   // ============================================================
-  //  STATS BAR
+  //  STATS BUTTON — Clickable bar with HP/ATK/DEF
   // ============================================================
-  _createStatsBar() {
+  _createStatsButton() {
     const C = this.CFG;
     const P = this.panelBounds;
-    const barH = 70;
+    const barH = 56;
     const y = this.equipZoneEndY;
 
-    // Background
+    const container = this.add.container(0, y);
+
+    // Button background
     const bg = this.add.graphics();
-    bg.fillStyle(C.footerBg, 1);
-    bg.fillRect(0, y, P.w, barH);
-    bg.lineStyle(2, 0x1f2937, 1);
-    bg.lineBetween(0, y, P.w, y);
-    bg.lineBetween(0, y + barH, P.w, y + barH);
-    this.panel.add(bg);
+    bg.fillStyle(0x1a1d24, 1);
+    bg.fillRoundedRect(16, 0, P.w - 32, barH, 12);
+    bg.lineStyle(2, C.border, 0.6);
+    bg.strokeRoundedRect(16, 0, P.w - 32, barH, 12);
+    container.add(bg);
 
     // Stats
     const stats = this._calculateStats();
-    const statsData = [
-      { icon: '❤️', value: stats.hp, label: 'HP', color: C.red },
-      { icon: '⚔️', value: stats.atk, label: 'ATK', color: C.gold },
-      { icon: '🛡️', value: stats.def, label: 'DEF', color: C.blue }
-    ];
+    const centerY = barH / 2;
+    const statW = (P.w - 32) / 3;
 
-    const statW = P.w / 3;
-    statsData.forEach((stat, i) => {
-      const sx = statW * i + statW / 2;
-      const sy = y + barH / 2;
+    // HP
+    const hpX = 16 + statW * 0.5;
+    if (this.textures.exists('icon_hp')) {
+      container.add(this.add.image(hpX - 40, centerY, 'icon_hp').setDisplaySize(24, 24));
+    } else {
+      container.add(this.add.text(hpX - 40, centerY, '❤️', { fontSize: '20px' }).setOrigin(0.5));
+    }
+    container.add(this.add.text(hpX, centerY, stats.hp.toString(), {
+      fontFamily: C.fontMain, fontSize: '22px', fontStyle: 'bold', color: C.red
+    }).setOrigin(0.5));
 
-      const val = this.add.text(sx, sy - 8, `${stat.icon} ${stat.value}`, {
-        fontFamily: C.fontMain,
-        fontSize: '24px',
-        fontStyle: 'bold',
-        color: stat.color
-      }).setOrigin(0.5);
-      val.setShadow(0, 2, '#000000', 4);
-      this.panel.add(val);
+    // ATK
+    const atkX = 16 + statW * 1.5;
+    if (this.textures.exists('icon_atk')) {
+      container.add(this.add.image(atkX - 40, centerY, 'icon_atk').setDisplaySize(24, 24));
+    } else {
+      container.add(this.add.text(atkX - 40, centerY, '⚔️', { fontSize: '20px' }).setOrigin(0.5));
+    }
+    container.add(this.add.text(atkX, centerY, stats.atk.toString(), {
+      fontFamily: C.fontMain, fontSize: '22px', fontStyle: 'bold', color: '#ffffff'
+    }).setOrigin(0.5));
 
-      const lbl = this.add.text(sx, sy + 18, stat.label, {
-        fontFamily: C.fontMain,
-        fontSize: '14px',
-        color: C.textMuted
-      }).setOrigin(0.5);
-      this.panel.add(lbl);
+    // DEF
+    const defX = 16 + statW * 2.5;
+    if (this.textures.exists('icon_def')) {
+      container.add(this.add.image(defX - 40, centerY, 'icon_def').setDisplaySize(24, 24));
+    } else {
+      container.add(this.add.text(defX - 40, centerY, '🛡️', { fontSize: '20px' }).setOrigin(0.5));
+    }
+    container.add(this.add.text(defX, centerY, stats.def.toString(), {
+      fontFamily: C.fontMain, fontSize: '22px', fontStyle: 'bold', color: C.blue
+    }).setOrigin(0.5));
+
+    // Arrow indicator (shows it's clickable)
+    const arrow = this.add.text(P.w - 40, centerY, '›', {
+      fontSize: '28px', color: C.textMuted
+    }).setOrigin(0.5);
+    container.add(arrow);
+
+    // Make clickable
+    const hitbox = this.add.rectangle(P.w / 2, centerY, P.w - 32, barH, 0xffffff, 0);
+    hitbox.setInteractive({ useHandCursor: true });
+    hitbox.on('pointerdown', () => {
+      // Visual feedback
+      bg.clear();
+      bg.fillStyle(0x252830, 1);
+      bg.fillRoundedRect(16, 0, P.w - 32, barH, 12);
+      bg.lineStyle(2, C.goldHex, 1);
+      bg.strokeRoundedRect(16, 0, P.w - 32, barH, 12);
+
+      // Open stats panel
+      this._openStatsDetail();
     });
+    hitbox.on('pointerup', () => {
+      bg.clear();
+      bg.fillStyle(0x1a1d24, 1);
+      bg.fillRoundedRect(16, 0, P.w - 32, barH, 12);
+      bg.lineStyle(2, C.border, 0.6);
+      bg.strokeRoundedRect(16, 0, P.w - 32, barH, 12);
+    });
+    container.add(hitbox);
 
+    this.panel.add(container);
     this.statsBarEndY = y + barH;
   }
 
@@ -402,480 +449,216 @@ class InventoryScene extends Phaser.Scene {
         def += item.def || 0;
       }
     });
+    // Also check heroState
+    if (window.heroState) {
+      hp = window.heroState.maxHp || hp;
+      atk = window.heroState.attack || atk;
+      def = window.heroState.defense || def;
+    }
     return { hp, atk, def };
   }
 
+  _openStatsDetail() {
+    console.log('[INV] Opening stats detail panel');
+    // TODO: Open detailed stats panel
+  }
+
   // ============================================================
-  //  GRID — scrollable items
+  //  GRID — Properly aligned inventory slots
   // ============================================================
   _createGrid() {
     const C = this.CFG;
     const P = this.panelBounds;
-    const startY = this.statsBarEndY + 16;
+    const startY = this.statsBarEndY + 12;
 
-    // Title
-    const title = this.add.text(C.panelInnerPad, startY, 'Предметы', {
-      fontFamily: C.fontMain,
-      fontSize: '22px',
-      fontStyle: 'bold',
-      color: C.textColor
-    });
-    this.panel.add(title);
+    // Title bar
+    const titleBg = this.add.graphics();
+    titleBg.fillStyle(0x0e1116, 0.5);
+    titleBg.fillRect(0, startY, P.w, 36);
+    this.panel.add(titleBg);
 
-    // Count
-    const totalSlots = C.gridCols * 6;
-    const count = this.add.text(P.w - C.panelInnerPad, startY, `${this.items.length}/${totalSlots}`, {
+    const title = this.add.text(C.panelInnerPad, startY + 18, 'Предметы', {
       fontFamily: C.fontMain,
       fontSize: '18px',
+      fontStyle: 'bold',
+      color: C.textColor
+    }).setOrigin(0, 0.5);
+    this.panel.add(title);
+
+    const totalSlots = C.gridCols * C.gridRows;
+    const count = this.add.text(P.w - C.panelInnerPad, startY + 18, `${this.items.length}/${totalSlots}`, {
+      fontFamily: C.fontMain,
+      fontSize: '16px',
       color: C.textMuted
-    }).setOrigin(1, 0);
+    }).setOrigin(1, 0.5);
     this.panel.add(count);
-    this.gridCountText = count;
 
-    // Grid area
-    const gridStartY = startY + 40;
-    const gridSlot = C.gridSlot;
-    const gridGap = 8;
-    const listH = P.h - gridStartY - 20;
+    // Grid content
+    const gridStartY = startY + 44;
+    const slotSize = C.gridSlot;
+    const gap = C.gridGap;
+    const listH = P.h - gridStartY - 16;
 
-    // Total rows
-    const totalRows = Math.max(6, Math.ceil(totalSlots / C.gridCols));
-    const contentH = totalRows * (gridSlot + gridGap);
+    // Calculate grid dimensions
+    const totalRows = Math.max(C.gridRows, Math.ceil(this.items.length / C.gridCols));
+    const contentH = totalRows * (slotSize + gap);
 
-    // Center grid
-    const contentW = P.w - C.panelInnerPad * 2;
-    const actualGridW = C.gridCols * gridSlot + (C.gridCols - 1) * gridGap;
-    const gridOffsetX = (contentW - actualGridW) / 2;
-    const relativeStartX = C.panelInnerPad + gridOffsetX + gridSlot / 2;
+    // Center the grid horizontally
+    const actualGridW = C.gridCols * slotSize + (C.gridCols - 1) * gap;
+    const gridStartX = (P.w - actualGridW) / 2 + slotSize / 2;
 
-    // List bounds (relative to panel)
-    this.listBounds = {
-      x: 16,
-      y: gridStartY,
-      w: P.w - 32,
-      h: listH
-    };
-
-    // Global bounds for scroll detection
-    this.listGlobalBounds = {
-      x: P.x + this.listBounds.x,
-      y: P.y + this.listBounds.y,
-      w: this.listBounds.w,
-      h: this.listBounds.h
-    };
-
-    // Grid content container
+    // Grid container for scrolling
     this.gridContent = this.add.container(0, 0);
     this.panel.add(this.gridContent);
 
     // Create slots
-    this.gridSlots = [];
     for (let row = 0; row < totalRows; row++) {
       for (let col = 0; col < C.gridCols; col++) {
         const i = row * C.gridCols + col;
-        const x = relativeStartX + col * (gridSlot + gridGap);
-        const y = gridStartY + row * (gridSlot + gridGap) + gridSlot / 2;
+        const x = gridStartX + col * (slotSize + gap);
+        const y = gridStartY + row * (slotSize + gap) + slotSize / 2;
 
         const item = this.items[i] || null;
-        this._createGridSlot(x, y, item, i, gridSlot);
+        this._createGridSlot(x, y, item, i, slotSize);
       }
     }
 
-    // ===== MASK — CORRECT WAY (not added to scene!) =====
-    const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false });
-    maskGraphics.fillStyle(0xffffff, 1);
-    maskGraphics.fillRect(this.listBounds.x, this.listBounds.y, this.listBounds.w, this.listBounds.h);
-    this.gridContent.setMask(maskGraphics.createGeometryMask());
+    // Mask (NOT added to scene!)
+    const maskGfx = this.make.graphics({ add: false });
+    maskGfx.fillStyle(0xffffff, 1);
+    maskGfx.fillRect(0, gridStartY, P.w, listH);
+    this.gridContent.setMask(maskGfx.createGeometryMask());
 
-    // Scroll limits
+    // Scroll bounds
     this.scrollMaxY = 0;
     this.scrollMinY = Math.min(0, listH - contentH);
 
-    // Setup scroll
-    this._setupScroll();
+    // Setup scroll if needed
+    if (contentH > listH) {
+      this._setupScroll(gridStartY, listH);
+    }
 
-    console.log(`[INV] Grid: rows=${totalRows}, contentH=${contentH}, listH=${listH}, scrollMin=${this.scrollMinY}`);
+    console.log(`[INV] Grid: ${totalRows} rows, scrollable: ${contentH > listH}`);
   }
 
   _createGridSlot(x, y, item, index, size) {
     const C = this.CFG;
-
     const container = this.add.container(x, y);
 
-    // Black depth background
-    const depth = this.add.graphics();
-    depth.fillStyle(0x000000, 1);
-    depth.fillRoundedRect(-size/2 + 4, -size/2 + 4, size - 8, size - 8, 6);
-    container.add(depth);
-
-    // Slot frame
-    const hasSlotFrame = this.textures.exists('inv_slot_frame');
-    let slotBg;
-
-    if (hasSlotFrame) {
-      slotBg = this.add.image(0, 0, 'inv_slot_frame');
-      slotBg.setDisplaySize(size, size);
-      if (item && item.rarity !== 'common' && C.rarity[item.rarity]?.color) {
-        slotBg.setTint(C.rarity[item.rarity].color);
-      }
+    // Slot background
+    const bg = this.add.graphics();
+    bg.fillStyle(C.slotBg, 1);
+    bg.fillRoundedRect(-size/2, -size/2, size, size, 8);
+    if (item) {
+      bg.lineStyle(2, C.rarity[item.rarity]?.color || C.border, 1);
     } else {
-      slotBg = this.add.graphics();
-      const borderColor = (item && item.rarity !== 'common') ? C.rarity[item.rarity]?.color || C.border : C.border;
-      slotBg.fillStyle(0x2a2a35, 1);
-      slotBg.fillRoundedRect(-size/2, -size/2, size, size, 10);
-      slotBg.lineStyle(3, borderColor, 1);
-      slotBg.strokeRoundedRect(-size/2, -size/2, size, size, 10);
+      bg.lineStyle(1, C.border, 0.4);
     }
-    container.add(slotBg);
+    bg.strokeRoundedRect(-size/2, -size/2, size, size, 8);
+    container.add(bg);
 
     if (item) {
-      // Icon
-      const icon = this.add.text(0, -4, this.ICONS[item.type], {
-        fontSize: `${Math.round(size * 0.4)}px`
-      }).setOrigin(0.5);
-      container.add(icon);
+      // Item icon
+      const iconKey = this.SLOT_ICONS[item.type];
+      if (iconKey && this.textures.exists(iconKey)) {
+        const icon = this.add.image(0, -4, iconKey);
+        icon.setDisplaySize(size * 0.5, size * 0.5);
+        container.add(icon);
+      }
 
-      // Level
-      const lvl = this.add.text(size/2 - 10, size/2 - 14, item.level, {
-        fontFamily: C.fontMain,
-        fontSize: '16px',
-        fontStyle: 'bold',
-        color: C.gold
-      }).setOrigin(0.5);
-      lvl.setShadow(0, 2, '#000000', 4);
-      container.add(lvl);
+      // Level badge
+      if (item.level) {
+        const lvl = this.add.text(size/2 - 12, size/2 - 12, item.level, {
+          fontFamily: C.fontMain,
+          fontSize: '14px',
+          fontStyle: 'bold',
+          color: C.gold
+        }).setOrigin(0.5);
+        lvl.setShadow(1, 1, '#000000', 3);
+        container.add(lvl);
+      }
+
+      // Quantity (if stackable)
+      if (item.quantity && item.quantity > 1) {
+        const qty = this.add.text(-size/2 + 12, size/2 - 12, 'x' + item.quantity, {
+          fontFamily: C.fontMain,
+          fontSize: '12px',
+          color: '#ffffff'
+        }).setOrigin(0.5);
+        qty.setShadow(1, 1, '#000000', 2);
+        container.add(qty);
+      }
 
       // Interactive
       const hitArea = this.add.rectangle(0, 0, size, size, 0xffffff, 0);
       hitArea.setInteractive({ useHandCursor: true });
-      hitArea.on('pointerdown', () => this._showPopup(item, 'equip'));
-      hitArea.on('pointerover', () => container.setScale(1.06));
-      hitArea.on('pointerout', () => container.setScale(1));
+      hitArea.on('pointerdown', () => this._showItemPopup(item, 'equip'));
       container.add(hitArea);
     }
 
     this.gridContent.add(container);
-    this.gridSlots.push({ container, slotBg, index });
+    this.gridSlots.push({ container, item, index });
   }
 
   // ============================================================
-  //  SCROLL SETUP (like leaderboard)
+  //  SCROLL
   // ============================================================
-  _setupScroll() {
-    const drag = {
-      active: false,
-      startY: 0,
-      startContentY: 0,
-      lastY: 0,
-      lastT: 0,
-      vel: 0,
-      inertiaEvent: null
-    };
-    this._drag = drag;
+  _setupScroll(startY, viewH) {
+    const P = this.panelBounds;
 
-    const rubberClamp = (y) => {
-      if (y > this.scrollMaxY) return this.scrollMaxY + (y - this.scrollMaxY) * 0.35;
-      if (y < this.scrollMinY) return this.scrollMinY + (y - this.scrollMinY) * 0.35;
-      return y;
-    };
+    let isDragging = false;
+    let startDragY = 0;
+    let startScrollY = 0;
 
-    const stopInertia = () => {
-      if (drag.inertiaEvent) {
-        drag.inertiaEvent.remove(false);
-        drag.inertiaEvent = null;
+    this.input.on('pointerdown', (pointer) => {
+      // Check if inside grid area
+      const localY = pointer.y - P.y;
+      if (localY > startY && localY < startY + viewH) {
+        isDragging = true;
+        startDragY = pointer.y;
+        startScrollY = this.gridContent.y;
       }
-    };
-
-    const snapToBounds = () => {
-      const target = Phaser.Math.Clamp(this.gridContent.y, this.scrollMinY, this.scrollMaxY);
-      if (Math.abs(target - this.gridContent.y) < 0.5) {
-        this.gridContent.y = target;
-        return;
-      }
-      this.tweens.add({
-        targets: this.gridContent,
-        y: target,
-        duration: 180,
-        ease: 'Sine.Out'
-      });
-    };
-
-    // Check if pointer is in list area
-    const isInListArea = (px, py) => {
-      const b = this.listGlobalBounds;
-      return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
-    };
-
-    // Global events
-    this.input.on('pointerdown', (p) => {
-      if (!isInListArea(p.x, p.y)) return;
-
-      stopInertia();
-      drag.active = true;
-      drag.startY = p.y;
-      drag.startContentY = this.gridContent.y;
-      drag.lastY = p.y;
-      drag.lastT = p.event?.timeStamp ?? performance.now();
-      drag.vel = 0;
     });
 
-    this.input.on('pointermove', (p) => {
-      if (!drag.active) return;
-      const t = p.event?.timeStamp ?? performance.now();
-      const dt = Math.max(16, t - drag.lastT);
-      const dy = p.y - drag.lastY;
-      drag.vel = dy / dt;
-      drag.lastY = p.y;
-      drag.lastT = t;
-      const raw = drag.startContentY + (p.y - drag.startY);
-      this.gridContent.y = rubberClamp(raw);
+    this.input.on('pointermove', (pointer) => {
+      if (!isDragging) return;
+      const delta = pointer.y - startDragY;
+      let newY = startScrollY + delta;
+      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
+      this.gridContent.y = newY;
     });
 
     this.input.on('pointerup', () => {
-      if (!drag.active) return;
-      drag.active = false;
-
-      if (this.scrollMinY === 0 && this.scrollMaxY === 0) {
-        snapToBounds();
-        return;
-      }
-
-      stopInertia();
-      let v = Phaser.Math.Clamp(drag.vel, -2.5, 2.5);
-      if (Math.abs(v) < 0.02) {
-        snapToBounds();
-        return;
-      }
-
-      drag.inertiaEvent = this.time.addEvent({
-        delay: 16,
-        loop: true,
-        callback: () => {
-          const step = v * 16 * 28;
-          const next = rubberClamp(this.gridContent.y + step);
-          this.gridContent.y = next;
-          v *= 0.92;
-
-          const outTop = this.gridContent.y > this.scrollMaxY + 0.5;
-          const outBot = this.gridContent.y < this.scrollMinY - 0.5;
-
-          if (Math.abs(v) < 0.02) {
-            stopInertia();
-            snapToBounds();
-          } else if (outTop || outBot) {
-            v *= 0.75;
-          }
-        }
-      });
+      isDragging = false;
     });
 
     // Mouse wheel
-    this.input.on('wheel', (p, go, dx, dy) => {
-      if (!isInListArea(p.x, p.y)) return;
-      if (this.scrollMinY === 0 && this.scrollMaxY === 0) return;
-      const next = Phaser.Math.Clamp(this.gridContent.y - dy * 0.6, this.scrollMinY - 40, this.scrollMaxY + 40);
-      this.gridContent.y = next;
+    this.input.on('wheel', (pointer, objects, dx, dy) => {
+      let newY = this.gridContent.y - dy * 0.5;
+      newY = Phaser.Math.Clamp(newY, this.scrollMinY, this.scrollMaxY);
+      this.gridContent.y = newY;
     });
   }
 
   // ============================================================
-  //  POPUP
+  //  ITEM POPUP
   // ============================================================
-  _showPopup(item, action) {
-    const C = this.CFG;
-    const W = this.scale.width;
-    const H = this.scale.height;
-
-    if (this.popupContainer) this.popupContainer.destroy();
-
-    this.popupContainer = this.add.container(0, 0);
-    this.popupContainer.setDepth(100);
-
-    // Dimmer
-    const dim = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.6);
-    dim.setInteractive();
-    dim.on('pointerdown', () => this._hidePopup());
-    this.popupContainer.add(dim);
-
-    // Panel
-    const popupW = Math.min(W * 0.9, 640);
-    const popupH = 260;
-    const popupX = (W - popupW) / 2;
-    const popupY = H - popupH - 80;
-
-    const rarity = C.rarity[item.rarity] || C.rarity.common;
-
-    // Background
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0x252a33, 0x252a33, C.panelBg, C.panelBg, 1);
-    bg.fillRoundedRect(popupX, popupY, popupW, popupH, 20);
-    bg.lineStyle(4, rarity.color, 1);
-    bg.strokeRoundedRect(popupX, popupY, popupW, popupH, 20);
-    this.popupContainer.add(bg);
-
-    // Item icon background
-    const iconBg = this.add.graphics();
-    iconBg.fillStyle(0x1a1d24, 1);
-    iconBg.fillRoundedRect(popupX + 24, popupY + 24, 90, 90, 14);
-    iconBg.lineStyle(3, rarity.color, 1);
-    iconBg.strokeRoundedRect(popupX + 24, popupY + 24, 90, 90, 14);
-    this.popupContainer.add(iconBg);
-
-    const icon = this.add.text(popupX + 69, popupY + 69, this.ICONS[item.type], {
-      fontSize: '42px'
-    }).setOrigin(0.5);
-    this.popupContainer.add(icon);
-
-    // Name
-    const name = this.add.text(popupX + 130, popupY + 30, item.name, {
-      fontFamily: C.fontMain,
-      fontSize: '24px',
-      fontStyle: 'bold',
-      color: `#${rarity.color.toString(16).padStart(6, '0')}`
-    });
-    name.setShadow(0, 2, '#000000', 4);
-    this.popupContainer.add(name);
-
-    // Meta
-    const rarityNames = { common: 'Обычный', uncommon: 'Необычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
-    const meta = this.add.text(popupX + 130, popupY + 62, `${rarityNames[item.rarity]} • ${this.LABELS[item.type]} • Ур.${item.level}`, {
-      fontFamily: C.fontMain,
-      fontSize: '14px',
-      color: C.textMuted
-    });
-    this.popupContainer.add(meta);
-
-    // Stats
-    let statsStr = '';
-    if (item.atk) statsStr += `⚔️+${item.atk}  `;
-    if (item.def) statsStr += `🛡️+${item.def}  `;
-    if (item.hp) statsStr += `❤️+${item.hp}`;
-
-    if (statsStr) {
-      const stats = this.add.text(popupX + 130, popupY + 92, statsStr.trim(), {
-        fontFamily: C.fontMain,
-        fontSize: '20px',
-        color: C.textColor
-      });
-      this.popupContainer.add(stats);
-    }
-
-    // Buttons
-    const btnY = popupY + popupH - 70;
-    const btnW = (popupW - 72) / 2;
-    const btnH = 50;
-
-    // Action button (Equip/Unequip)
-    this._createButton(
-      popupX + 24, btnY, btnW, btnH,
-      action === 'equip' ? '✨ Надеть' : '📤 Снять',
-      0x2d6a4f, 0x40916c,
-      () => action === 'equip' ? this._equipItem(item) : this._unequipItem(item)
-    );
-
-    // Sell button
-    this._createButton(
-      popupX + 24 + btnW + 24, btnY, btnW, btnH,
-      '💰 Продать',
-      0x1a1d24, C.goldHex,
-      () => this._sellItem(item),
-      true
-    );
-  }
-
-  _createButton(x, y, w, h, text, bgColor, borderColor, callback, outline = false) {
-    const btn = this.add.graphics();
-
-    if (outline) {
-      btn.fillStyle(0x000000, 0);
-      btn.lineStyle(3, borderColor, 1);
-      btn.strokeRoundedRect(x, y, w, h, 10);
-    } else {
-      btn.fillStyle(bgColor, 1);
-      btn.fillRoundedRect(x, y, w, h, 10);
-      btn.lineStyle(3, borderColor, 1);
-      btn.strokeRoundedRect(x, y, w, h, 10);
-    }
-    this.popupContainer.add(btn);
-
-    const label = this.add.text(x + w/2, y + h/2, text, {
-      fontFamily: this.CFG.fontMain,
-      fontSize: '20px',
-      fontStyle: 'bold',
-      color: outline ? `#${borderColor.toString(16).padStart(6, '0')}` : '#ffffff'
-    }).setOrigin(0.5);
-    this.popupContainer.add(label);
-
-    const hitArea = this.add.rectangle(x + w/2, y + h/2, w, h, 0xffffff, 0);
-    hitArea.setInteractive({ useHandCursor: true });
-    hitArea.on('pointerdown', callback);
-    this.popupContainer.add(hitArea);
-  }
-
-  _hidePopup() {
-    if (this.popupContainer) {
-      this.popupContainer.destroy();
-      this.popupContainer = null;
-    }
-  }
-
-  // ============================================================
-  //  ACTIONS
-  // ============================================================
-  _equipItem(item) {
-    if (this.equipped[item.type]) {
-      this.items.push(this.equipped[item.type]);
-    }
-    this.equipped[item.type] = item;
-    this.items = this.items.filter(i => i.id !== item.id);
-
-    this._hidePopup();
-    this._refreshUI();
-    console.log('[INV] Equipped:', item.name);
-  }
-
-  _unequipItem(item) {
-    delete this.equipped[item.type];
-    this.items.push(item);
-
-    this._hidePopup();
-    this._refreshUI();
-    console.log('[INV] Unequipped:', item.name);
-  }
-
-  _sellItem(item) {
-    this.items = this.items.filter(i => i.id !== item.id);
-    Object.keys(this.equipped).forEach(type => {
-      if (this.equipped[type]?.id === item.id) delete this.equipped[type];
-    });
-
-    this._hidePopup();
-    this._refreshUI();
-    console.log('[INV] Sold:', item.name);
-  }
-
-  _refreshUI() {
-    // Recreate UI
-    this.ui.destroy();
-    this.create();
+  _showItemPopup(item, action) {
+    console.log('[INV] Item clicked:', item.name, action);
+    // TODO: Show item detail popup with equip/unequip button
   }
 
   // ============================================================
   //  CLOSE
   // ============================================================
-  _close() {
-    this._hidePopup();
-
+  closeInventory() {
     this.tweens.add({
       targets: this.panel,
       alpha: 0,
-      scale: 0.985,
-      duration: 140,
-      ease: 'Sine.In',
-      onComplete: () => {
-        this.scene.stop('InventoryScene');
-        console.log('[INV] Closed');
-      }
+      scale: 0.95,
+      duration: 150,
+      ease: 'Power2',
+      onComplete: () => this.scene.stop()
     });
   }
 
@@ -883,30 +666,25 @@ class InventoryScene extends Phaser.Scene {
   //  TEST DATA
   // ============================================================
   _getTestItems() {
-    return [
-      { id: "1", type: "mainHand", rarity: "common", level: 5, name: "Железный меч", atk: 15 },
-      { id: "2", type: "helmet", rarity: "rare", level: 8, name: "Шлем мага", def: 12, hp: 50 },
-      { id: "3", type: "boots", rarity: "uncommon", level: 3, name: "Сапоги следопыта", def: 8 },
-      { id: "4", type: "chest", rarity: "epic", level: 15, name: "Доспех дракона", def: 45, hp: 120 },
-      { id: "5", type: "pants", rarity: "uncommon", level: 6, name: "Стальные поножи", def: 18 },
-      { id: "6", type: "ring1", rarity: "legendary", level: 20, name: "Кольцо Феникса", atk: 30, hp: 200 },
-      { id: "7", type: "gloves", rarity: "common", level: 4, name: "Перчатки воина", def: 5 },
-      { id: "8", type: "necklace", rarity: "rare", level: 12, name: "Амулет мудрости", hp: 80 },
-      { id: "9", type: "offHand", rarity: "uncommon", level: 7, name: "Щит стража", def: 25 },
-      { id: "10", type: "earring1", rarity: "rare", level: 10, name: "Серьга удачи", atk: 8 },
-      { id: "11", type: "mainHand", rarity: "epic", level: 18, name: "Меч бури", atk: 55 },
-      { id: "12", type: "helmet", rarity: "common", level: 2, name: "Кожаный шлем", def: 5 },
-      { id: "13", type: "boots", rarity: "legendary", level: 25, name: "Сапоги ветра", def: 20, atk: 15 },
-      { id: "14", type: "chest", rarity: "uncommon", level: 9, name: "Кольчуга", def: 30 },
-      { id: "15", type: "gloves", rarity: "rare", level: 11, name: "Перчатки вора", atk: 12 },
-      { id: "16", type: "ring2", rarity: "epic", level: 16, name: "Кольцо силы", atk: 25 }
-    ];
+    const types = ['helmet', 'chest', 'pants', 'gloves', 'boots', 'mainHand', 'offHand', 'necklace', 'ring1'];
+    const rarities = ['common', 'common', 'common', 'uncommon', 'uncommon', 'rare', 'epic'];
+
+    return Array.from({ length: 16 }, (_, i) => ({
+      id: i + 1,
+      name: `Item ${i + 1}`,
+      type: types[i % types.length],
+      rarity: rarities[i % rarities.length],
+      level: Math.floor(Math.random() * 20) + 1,
+      hp: Math.floor(Math.random() * 50),
+      atk: Math.floor(Math.random() * 20),
+      def: Math.floor(Math.random() * 15)
+    }));
   }
 }
 
-// ============================================================
-//  EXPORT
-// ============================================================
-window.InventoryScene = InventoryScene;
+// Register scene
+if (typeof window !== 'undefined') {
+  window.InventoryScene = InventoryScene;
+}
 
-console.log('[InventoryScene] Leaderboard Architecture v1 loaded');
+console.log('[InventoryScene] v2 Clean Design loaded');

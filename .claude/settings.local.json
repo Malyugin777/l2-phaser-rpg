@@ -28,7 +28,8 @@
       "Bash(git checkout:*)",
       "Bash(ls -la \"C:\\Users\\maliu\\OneDrive\\Desktop\\Projects\\L2 Phaser RPG\\src\\assets\\ui\"\" | grep -E \"btn_close)",
       "Bash(invertory_slot:*)",
-      "Bash(Invertory_header\" 2>/dev/null || ls \"C:UsersmaliuOneDriveDesktopProjectsL2 Phaser RPGsrcassetsui\"\")"
+      "Bash(Invertory_header\" 2>/dev/null || ls \"C:UsersmaliuOneDriveDesktopProjectsL2 Phaser RPGsrcassetsui\"\")",
+      "Bash(dir:*)"
     ]
   }
 }
