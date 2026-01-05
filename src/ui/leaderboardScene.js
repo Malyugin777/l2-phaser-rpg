@@ -72,14 +72,16 @@ class LeaderboardScene extends Phaser.Scene {
     this.mockRating = this._expandMock(baseRating, 40);
     this.mockKills = this._expandMock(baseKills, 40);
 
+    // Will be updated with real player data
     this.myData = {
-      name: "Malyugin777",
-      level: 20,
-      rating: 98,
-      kills: 12,
-      rankRating: 42,
-      rankKills: 77,
+      name: "Player",
+      level: 1,
+      rating: 0,
+      kills: 0,
+      rankRating: 0,
+      rankKills: 0,
     };
+    this._updateMyData();  // Get real player data
 
     // API data (null = use mock)
     this.apiRating = null;
@@ -120,6 +122,7 @@ class LeaderboardScene extends Phaser.Scene {
         }
 
         console.log('[LEADERBOARD] API loaded:', data.length, 'entries');
+        this._updateMyData();  // Update my rank based on loaded data
         this._refreshList();
       }
     } catch (error) {
@@ -144,6 +147,47 @@ class LeaderboardScene extends Phaser.Scene {
       }
     }
     return out;
+  }
+
+  /**
+   * Update myData with real player data from window.currentUser and window.heroState
+   */
+  _updateMyData() {
+    const user = window.currentUser || (typeof window.apiGetCurrentUser === 'function' ? window.apiGetCurrentUser() : null) || {};
+    const progress = window.heroState || {};
+
+    this.myData.name = user.username || user.first_name || 'Player';
+    this.myData.level = progress.level || 1;
+    this.myData.rating = progress.rating || 0;
+    this.myData.kills = progress.kills || 0;
+
+    // Find my rank in current leaderboard data
+    const currentData = this.currentTab === 'rating' ? (this.apiRating || this.mockRating) : (this.apiKills || this.mockKills);
+
+    if (currentData && currentData.length > 0) {
+      // Try to find player in list by name
+      const myName = this.myData.name;
+      const myIndex = currentData.findIndex(p =>
+        p.name === myName || p.name === `@${myName}` || p.name.includes(myName)
+      );
+
+      if (myIndex >= 0) {
+        if (this.currentTab === 'rating') {
+          this.myData.rankRating = myIndex + 1;
+        } else {
+          this.myData.rankKills = myIndex + 1;
+        }
+      } else {
+        // Not in top list - show "50+"
+        if (this.currentTab === 'rating') {
+          this.myData.rankRating = '50+';
+        } else {
+          this.myData.rankKills = '50+';
+        }
+      }
+    }
+
+    console.log('[LEADERBOARD] My data updated:', this.myData);
   }
 
   preload() {

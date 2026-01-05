@@ -659,6 +659,11 @@ function setupCleanMode(scene) {
     playerHeader.setNickname('Warrior');
     playerHeader.setExp(0.75);  // 75% to next level
     playerHeader.setResources(30, 150, 5000, 125000);  // Energy/Stars/Gems/Adena
+
+    // Start energy timer (updates every second)
+    if (typeof window.startEnergyTimer === 'function') {
+      window.startEnergyTimer();
+    }
   }
 
   // Create panels (needed for icon clicks to work)

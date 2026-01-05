@@ -339,11 +339,13 @@ function createPlayerHeader(scene) {
      * Set player nickname (auto font size based on length)
      */
     setNickname(name) {
-      // Auto-size font based on name length
+      // Auto-size font based on name length (more aggressive)
       let fontSize = cfg.nickname.fontSize;  // default 24
+      if (name.length > 8) fontSize = 22;
       if (name.length > 10) fontSize = 20;
+      if (name.length > 12) fontSize = 18;
       if (name.length > 14) fontSize = 16;
-      if (name.length > 18) fontSize = 14;
+      if (name.length > 16) fontSize = 14;
 
       nicknameText.setFontSize(fontSize);
       nicknameText.setText(name);
@@ -504,5 +506,67 @@ function updateHeaderStats() {
 }
 
 window.updateHeaderStats = updateHeaderStats;
+
+/**
+ * Start energy timer that updates every second
+ * Call once after header is created
+ */
+let energyTimerInterval = null;
+
+function startEnergyTimer() {
+  // Don't start multiple timers
+  if (energyTimerInterval) return;
+
+  const ENERGY_REGEN_TIME = 300000;  // 5 minutes per 1 energy
+
+  energyTimerInterval = setInterval(() => {
+    if (!window.heroState || !window.headerTextEnergy) return;
+
+    const h = window.heroState;
+    const energy = h.energy || 0;
+    const maxEnergy = h.maxEnergy || 100;
+
+    // Initialize lastEnergyUpdate if not set
+    if (!h.lastEnergyUpdate) {
+      h.lastEnergyUpdate = Date.now();
+    }
+
+    const now = Date.now();
+    const elapsed = now - h.lastEnergyUpdate;
+
+    // Check if energy should regenerate
+    if (energy < maxEnergy && elapsed >= ENERGY_REGEN_TIME) {
+      h.energy = Math.min(maxEnergy, energy + 1);
+      h.lastEnergyUpdate = now;
+      console.log('[EnergyTimer] Regenerated 1 energy, now:', h.energy);
+    }
+
+    // Update display
+    let energyDisplay = h.energy.toString();
+
+    if (h.energy < maxEnergy) {
+      const timeToNext = Math.max(0, ENERGY_REGEN_TIME - (elapsed % ENERGY_REGEN_TIME));
+      const mins = Math.floor(timeToNext / 60000);
+      const secs = Math.floor((timeToNext % 60000) / 1000);
+      energyDisplay = `${h.energy} ${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    window.headerTextEnergy.setText(energyDisplay);
+
+  }, 1000);
+
+  console.log('[PlayerHeader] Energy timer started');
+}
+
+function stopEnergyTimer() {
+  if (energyTimerInterval) {
+    clearInterval(energyTimerInterval);
+    energyTimerInterval = null;
+    console.log('[PlayerHeader] Energy timer stopped');
+  }
+}
+
+window.startEnergyTimer = startEnergyTimer;
+window.stopEnergyTimer = stopEnergyTimer;
 
 console.log("[PlayerHeader] Module loaded");

@@ -73,10 +73,10 @@ const ARENA_CONFIG = {
   engageDistance: 420,  // Must be > fightOffset * 2 to trigger before tweens end
   runSpeed: 2500,
 
-  // Transitions (faster!)
-  vsScreenDuration: 800,   // Was 1500 - reduced for faster start
-  fadeTime: 200,
-  engagePause: 200,
+  // Transitions (ORIGINAL values restored)
+  vsScreenDuration: 1500,
+  fadeTime: 300,
+  engagePause: 300,
 
   camera: {
     lerpSpeed: 0.06,
@@ -86,13 +86,13 @@ const ARENA_CONFIG = {
     zoomLerpSpeed: 0.02  // Slower for smooth transition
   },
   cinematic: {
-    introArenaDuration: 600,    // Was 1200 - faster intro
-    zoomToPlayerDuration: 200,  // Was 400
-    introPlayerDuration: 400,   // Was 1000
-    panToEnemyDuration: 300,    // Was 600
-    introEnemyDuration: 400,    // Was 800
-    readyDuration: 200,         // Was 300
-    zoomOutDuration: 300        // Was 500
+    introArenaDuration: 1200,
+    zoomToPlayerDuration: 400,
+    introPlayerDuration: 1000,
+    panToEnemyDuration: 600,
+    introEnemyDuration: 800,
+    readyDuration: 300,
+    zoomOutDuration: 500
   }
 };
 
