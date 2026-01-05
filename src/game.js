@@ -408,13 +408,18 @@ async function initAuth() {
 
     // Автосохранение каждые 60 секунд
     setInterval(() => {
-      if (typeof apiIsAuthenticated === 'function' && apiIsAuthenticated() && window.heroState) {
-        apiSaveProgress({
+      const isAuth = typeof apiIsAuthenticated === 'function' && apiIsAuthenticated();
+      const hasHero = !!window.heroState;
+      console.log('[Autosave] Check: authenticated=' + isAuth + ', heroState=' + hasHero);
+
+      if (isAuth && hasHero) {
+        const data = {
           level: window.heroState.level || 1,
           rating: window.heroState.rating || 0,
           kills: window.heroState.kills || 0
-        });
-        console.log('[Game] Autosave sent');
+        };
+        console.log('[Autosave] Sending:', data);
+        apiSaveProgress(data);
       }
     }, 60000);
     console.log('[Game] Autosave enabled (60s interval)');

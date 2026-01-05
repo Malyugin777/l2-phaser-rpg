@@ -51,7 +51,7 @@ async function apiAuth() {
     // Сохраняем токен
     localStorage.setItem('pc_token', authToken);
 
-    console.log('[API] Auth success:', currentUser);
+    console.log('[API] Auth success, token saved:', !!authToken, 'user:', currentUser?.username || currentUser?.first_name);
     return { success: true, user: currentUser };
 
   } catch (error) {
@@ -144,6 +144,7 @@ function apiGetCurrentUser() {
  * Проверить авторизован ли
  */
 function apiIsAuthenticated() {
+  console.log('[API] isAuthenticated check, token exists:', !!authToken);
   return !!authToken;
 }
 
