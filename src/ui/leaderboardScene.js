@@ -3,7 +3,7 @@
 // ============================================================
 //  LEADERBOARD SCENE — Dark Fantasy Style (Phaser 3)
 //  Modal panel with tabs + scrollable list + "me" row
-//  v16 — emoji icons (no pixelation)
+//  v17 — restored icons with LINEAR filter
 // ============================================================
 
 class LeaderboardScene extends Phaser.Scene {
@@ -299,9 +299,17 @@ class LeaderboardScene extends Phaser.Scene {
     const bg = this.add.graphics();
     tab.add(bg);
 
-    // Use emoji for crisp icons (no pixelation)
-    const emoji = key === "rating" ? "🏆" : "💀";
-    const icon = this.add.text(30, tabH / 2, emoji, { fontSize: "28px" }).setOrigin(0.5);
+    // Icon with linear filtering for smooth scaling
+    const iconKey = key === "rating" ? "icon_golden_cup" : "icon_pvp";
+    let icon;
+    if (this.textures.exists(iconKey)) {
+      const tex = this.textures.get(iconKey);
+      tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      icon = this.add.image(30, tabH / 2, iconKey);
+      icon.setDisplaySize(32, 32);
+    } else {
+      icon = this.add.text(30, tabH / 2, key === "rating" ? "🏆" : "💀", { fontSize: "28px" }).setOrigin(0.5);
+    }
     tab.add(icon);
 
     const text = this.add.text(60, tabH / 2, label, {
@@ -486,11 +494,16 @@ class LeaderboardScene extends Phaser.Scene {
     // Name - ближе
     row.add(this.add.text(lvlX + 50, 0, data.name, { fontFamily: C.fontMain, fontSize: "18px", color: "#ffffff" }).setOrigin(0, 0.5));
 
-    // Value + emoji icon (crisp, no pixelation)
+    // Value + icon with linear filtering
     const valueX = rowW / 2 - 30;
-    const emoji = this.currentTab === "rating" ? "🏆" : "💀";
-    const icon = this.add.text(valueX - 90, 0, emoji, { fontSize: "18px" }).setOrigin(0.5).setAlpha(0.85);
-    row.add(icon);
+    const iconKey = this.currentTab === "rating" ? "icon_golden_cup" : "icon_pvp";
+    if (this.textures.exists(iconKey)) {
+      const tex = this.textures.get(iconKey);
+      tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      const icon = this.add.image(valueX - 90, 0, iconKey);
+      icon.setDisplaySize(24, 24).setAlpha(0.85);
+      row.add(icon);
+    }
 
     row.add(this.add.text(valueX, 0, String(data.value), {
       fontFamily: C.fontMain,
@@ -731,16 +744,21 @@ class LeaderboardScene extends Phaser.Scene {
     this.footerSub.setPosition(nameX, lvlY + 16);
 
     const valueX = x + footerW - 30;
-    const emoji = isRating ? "🏆" : "💀";
+    const iconKey = isRating ? "icon_golden_cup" : "icon_pvp";
 
     if (this.footerIcon) {
       this.footerIcon.destroy();
       this.footerIcon = null;
     }
 
-    // Use emoji for crisp icon
-    this.footerIcon = this.add.text(valueX - 110, lvlY, emoji, { fontSize: "22px" }).setOrigin(0.5).setAlpha(0.85);
-    this.footer.add(this.footerIcon);
+    // Icon with linear filtering
+    if (this.textures.exists(iconKey)) {
+      const tex = this.textures.get(iconKey);
+      tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+      this.footerIcon = this.add.image(valueX - 110, lvlY, iconKey);
+      this.footerIcon.setDisplaySize(28, 28).setAlpha(0.85);
+      this.footer.add(this.footerIcon);
+    }
 
     this.footerValue.setText(String(meValue)).setPosition(valueX, lvlY);
   }
